@@ -10,6 +10,7 @@
 
 #include "core/ecs/world/camera.hpp"
 #include "core/ecs/world/renderable.hpp"
+#include "core/ui/ui_drawcmds.hpp"
 
 namespace nekomata2 {
 
@@ -20,6 +21,7 @@ struct MRThreadsSharedDataLeaf {
     ecs::ComponentSetSnapshot<ecs::components::Camera> m_cameras;
     std::vector<u32> m_textureToImageShaderIndexSnapshot;
     std::vector<u32> m_textureToSamplerShaderIndexSnapshot;
+    std::vector<ui::UiDrawCmd> m_uiDrawCmds;
 };
 
 class MRThreadsSharedData {

@@ -17,7 +17,7 @@ struct PushConstants {
 
 struct VSOut {
     float4 position : SV_Position;
-    float2 texcoord;
+    float2 texcoord : TEXCOORD;
     nointerpolation uint textureIndex;
 };
 

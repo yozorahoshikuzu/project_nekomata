@@ -51,6 +51,12 @@ public:
 
     VulkanPipelineLayout m_bitmapFontRendererLayout = nullptr;
     VulkanGraphicsPipeline m_bitmapFontRendererPipeline = nullptr;
+
+    VulkanPipelineLayout m_uiRectRendererLayout = nullptr;
+    VulkanGraphicsPipeline m_uiRectRendererPipeline = nullptr;
+
+    VulkanPipelineLayout m_uiTextureRendererLayout = nullptr;
+    VulkanGraphicsPipeline m_uiTextureRendererPipeline = nullptr;
 private:
     VulkanPipelineLayout m_simpleLayout = nullptr;
     VulkanGraphicsPipeline m_simplePipeline = nullptr;

@@ -3,6 +3,7 @@
 #include "core/ecs/ecs.hpp"
 #include "core/platform/sdl.hpp"
 #include "core/runtime/shared_data.hpp"
+#include "core/ui/ui_node.hpp"
 #include "graphics/fontsystem/font_manager.hpp"
 #include "graphics/meshsystem/mesh_asset_storage.hpp"
 #include "graphics/vulkan/context.hpp"
@@ -28,6 +29,8 @@ private:
     std::unique_ptr<meshsystem::MeshAssetStorage> m_meshAssetStorage = nullptr;
     std::unique_ptr<graphics::texturesystem::TextureManager> m_textureManager = nullptr;
     std::unique_ptr<graphics::fonts::FontManager> m_fontManager = nullptr;
+
+    std::unique_ptr<ui::UiNode> m_uiRoot = nullptr;
 };
 
 }

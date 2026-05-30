@@ -69,6 +69,65 @@ SharedRenderingResources::SharedRenderingResources() {
         )
         .build();
 
+    m_uiRectRendererLayout = VulkanPipelineLayout::builder()
+        .addPushConstantRange(0, 32, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+        .build();
+    auto uiRectRendererShader = *SpirvShaderCode::loadFromFile("./spirv/ui_rect.spv");
+    m_uiRectRendererPipeline = VulkanGraphicsPipeline::builder()
+        .setPipelineLayout(m_uiRectRendererLayout)
+        .addShader(uiRectRendererShader, vk::ShaderStageFlagBits::eVertex)
+        .addShader(uiRectRendererShader, vk::ShaderStageFlagBits::eFragment)
+        .setInputTopology(vk::PrimitiveTopology::eTriangleStrip)
+        .setRastPolygonMode(vk::PolygonMode::eFill)
+        .setRastCulling(vk::CullModeFlagBits::eNone, vk::FrontFace::eCounterClockwise)
+        .setRastLineWidth(1.0f)
+        .disableMultisampling()
+        .disableDepthTest()
+        .setDepthAttachmentFormat(vk::Format::eD32Sfloat)
+        .pushRenderingAttachment(
+        vk::PipelineColorBlendAttachmentState{}
+                    .setBlendEnable(true)
+                    .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
+                    .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
+                    .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+                    .setColorBlendOp(vk::BlendOp::eAdd)
+                    .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
+                    .setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+                    .setAlphaBlendOp(vk::BlendOp::eAdd),
+            vk::Format::eR16G16B16A16Sfloat
+        )
+    .build();
+
+    m_uiTextureRendererLayout = VulkanPipelineLayout::builder()
+        .addPushConstantRange(0, 40, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+        .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout().vkDescriptorSetLayout())
+        .build();
+    auto uiTextureRendererShader = *SpirvShaderCode::loadFromFile("./spirv/ui_texture.spv");
+    m_uiTextureRendererPipeline = VulkanGraphicsPipeline::builder()
+        .setPipelineLayout(m_uiTextureRendererLayout)
+        .addShader(uiTextureRendererShader, vk::ShaderStageFlagBits::eVertex)
+        .addShader(uiTextureRendererShader, vk::ShaderStageFlagBits::eFragment)
+        .setInputTopology(vk::PrimitiveTopology::eTriangleStrip)
+        .setRastPolygonMode(vk::PolygonMode::eFill)
+        .setRastCulling(vk::CullModeFlagBits::eNone, vk::FrontFace::eCounterClockwise)
+        .setRastLineWidth(1.0f)
+        .disableMultisampling()
+        .disableDepthTest()
+        .setDepthAttachmentFormat(vk::Format::eD32Sfloat)
+        .pushRenderingAttachment(
+        vk::PipelineColorBlendAttachmentState{}
+                    .setBlendEnable(true)
+                    .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
+                    .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
+                    .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+                    .setColorBlendOp(vk::BlendOp::eAdd)
+                    .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
+                    .setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+                    .setAlphaBlendOp(vk::BlendOp::eAdd),
+            vk::Format::eR16G16B16A16Sfloat
+        )
+        .build();
+
     m_tmStart = std::chrono::steady_clock::now();
 
     m_fontFace = fonts::FontManager::get().loadFont("/usr/share/fonts/noto/NotoSans-Regular.ttf");

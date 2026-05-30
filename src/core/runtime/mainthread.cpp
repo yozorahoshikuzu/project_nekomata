@@ -19,10 +19,36 @@ MainThread::MainThread(std::shared_ptr<MRThreadsSharedData> mrSharedData, std::u
 
     cmdalloc::VulkanCommandPoolsList::initThreadLocalCommandPools();
 
+    auto windowLogicalSize = m_sdlWindow.getLogicalSize();
+    auto windowDisplayScale = m_sdlWindow.getDisplayScale();
+    log::info("Window logical size: {}x{}", windowLogicalSize.x(), windowLogicalSize.y());
+    log::info("Window display scale: {}", windowDisplayScale);
+
     m_currentWorld = std::make_unique<ecs::World>();
     m_meshAssetStorage = meshsystem::MeshAssetStorage::create();
     m_textureManager = graphics::texturesystem::TextureManager::create();
     m_fontManager = graphics::fonts::FontManager::create();
+
+    auto moyaiTexture = graphics::texturesystem::TextureManager::get().loadKtx2TextureAsync(
+        "../Assets/ui_test.ktx2",
+        graphics::texturesystem::SamplerParams::defaultValues()
+            .setMinFilter(vk::Filter::eLinear)
+            .setMagFilter(vk::Filter::eLinear)
+            .setMipmapMode(vk::SamplerMipmapMode::eLinear)
+    );
+
+
+    m_uiRoot = ui::UiNode::create();
+    m_uiRoot->boundsBegin = math::Vector2f(0.0f, 0.0f);
+    m_uiRoot->boundsEnd = math::Vector2f(m_sdlWindow.getLogicalSize().x(), m_sdlWindow.getLogicalSize().y());
+    m_uiRoot->element = ui::UiRect(Vector4f(0.0f, 0.0f, 0.0f, 0.0f));
+
+    auto texElement = ui::UiNode::create();
+    texElement->boundsBegin = math::Vector2f(16.0f, 300.0f);
+    texElement->boundsEnd = math::Vector2f(16.0f + 250.0f, 300.0f + 249.0f);
+    texElement->element = ui::UiTexture(moyaiTexture);
+
+    m_uiRoot->addChild(std::move(texElement));
 }
 
 auto MainThread::runMainLoop(const std::function<void(std::unique_ptr<ecs::World>&)>& initFn) -> void {
@@ -74,6 +100,11 @@ auto MainThread::loop(float dt) -> void {
         m_mrSharedData->m_leafs.getPrimary().m_textureToImageShaderIndexSnapshot,
         m_mrSharedData->m_leafs.getPrimary().m_textureToSamplerShaderIndexSnapshot
     );
+    m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds.clear();
+    auto logicalSize = m_sdlWindow.getLogicalSize();
+    auto logicalSizeFloat = Vector2f(logicalSize.x(), logicalSize.y());
+    m_uiRoot->boundsEnd = logicalSizeFloat;
+    m_uiRoot->buildDrawCmds(m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds, logicalSizeFloat, Vector2f(0.0f), logicalSizeFloat);
 
 }
 

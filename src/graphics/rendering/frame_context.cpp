@@ -2,6 +2,7 @@
 
 #include "core/log/log.hpp"
 #include "core/math/transform3d.hpp"
+#include "core/overloaded/overloaded.hpp"
 #include "graphics/fontsystem/font_manager.hpp"
 #include "graphics/vulkan/vk_commands_barriers.hpp"
 #include "graphics/vulkan/vk_queue.hpp"
@@ -316,6 +317,44 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
     cb.pushConstants<unsigned char>(sharedRenderingResources.m_bitmapFontRendererLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, fontPushConstantData);
     cb.draw(4, shapedText.size(), 0, 0);
+
+    // Draw UI
+
+    for (const auto& uiDrawCmd : renderingData.m_uiDrawCmds) {
+        std::visit(overloaded{
+            [&](const ui::UiRectDrawCmd& drawCmd) {
+                cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.m_uiRectRendererPipeline.vkPipeline());
+                cb.pushConstants<ui::UiRectDrawCmd>(sharedRenderingResources.m_uiRectRendererLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, drawCmd);
+                cb.draw(4, 1, 0, 0);
+            },
+            [&](const ui::UiTextureDrawCmd& drawCmd) {
+                struct PushConstants {
+                    Vector2f ndcBegin, ndcEnd, texcoordBegin, texcoordEnd;
+                    uint32_t textureIndex;
+                    uint32_t samplerIndex;
+                };
+
+                uint32_t textureIndex = renderingData.m_textureToImageShaderIndexSnapshot[drawCmd.texture.index];
+                uint32_t samplerIndex = renderingData.m_textureToSamplerShaderIndexSnapshot[drawCmd.texture.index];
+
+                PushConstants pushConstants = {
+                    .ndcBegin = drawCmd.ndcBegin,
+                    .ndcEnd = drawCmd.ndcEnd,
+                    .texcoordBegin = drawCmd.texcoordBegin,
+                    .texcoordEnd = drawCmd.texcoordEnd,
+                    .textureIndex = textureIndex,
+                    .samplerIndex = samplerIndex
+                };
+                cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.m_uiTextureRendererPipeline.vkPipeline());
+                texturesystem::TextureManager::get().shaderResourceTable().bindToCommandBuffer(m_frameRenderingResources.commandBuffer(), sharedRenderingResources.m_uiTextureRendererLayout, vk::PipelineBindPoint::eGraphics);
+                cb.pushConstants<PushConstants>(sharedRenderingResources.m_uiTextureRendererLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, pushConstants);
+                cb.draw(4, 1, 0, 0);
+            },
+            [&](auto&) {
+                log::warn("Unsupported UI draw command in UI draw command list!");
+            }
+        }, uiDrawCmd);
+    }
 
     cb.endRendering();
 

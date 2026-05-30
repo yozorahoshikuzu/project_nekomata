@@ -69,5 +69,15 @@ auto SdlWindow::vulkanGetDrawableSize() const -> vk::Extent2D {
     return extents;
 }
 
+auto SdlWindow::getLogicalSize() const -> math::Vector2i {
+    math::Vector2i size;
+    SDL_GetWindowSize(m_window, &size.x(), &size.y());
+    return size;
+}
+
+auto SdlWindow::getDisplayScale() const -> float {
+    return SDL_GetWindowDisplayScale(m_window);
+}
+
 } // namespace nekomata2
 
