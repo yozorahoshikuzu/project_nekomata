@@ -104,6 +104,42 @@ auto VulkanContext::create(nekomata2::SdlWindow& sdlWindow) -> std::unique_ptr<V
     return vkContext;
 }
 
+auto VulkanContext::antiLagPaceInput(u64 frameIndex, u32 targetFps) -> void {
+    switch (m_vkPhysicalDeviceProperties.m_antiLagMethod) {
+    case PhysicalDeviceAntiLagMethod::None: return;
+    case PhysicalDeviceAntiLagMethod::AMDAntiLag2:
+        auto antilagPresentInfo = vk::AntiLagPresentationInfoAMD{}
+            .setFrameIndex(frameIndex)
+            .setStage(vk::AntiLagStageAMD::eInput);
+
+        auto antilagData = vk::AntiLagDataAMD{}
+            .setMode(m_antilagEnable ? vk::AntiLagModeAMD::eOn : vk::AntiLagModeAMD::eOff)
+            .setMaxFPS(targetFps)
+            .setPPresentationInfo(&antilagPresentInfo);
+
+        m_vkDevice.antiLagUpdateAMD(antilagData);
+        break;
+    }
+}
+
+auto VulkanContext::antiLagPacePresent(u64 frameIndex, u32 targetFps) -> void {
+    switch (m_vkPhysicalDeviceProperties.m_antiLagMethod) {
+    case PhysicalDeviceAntiLagMethod::None: return;
+    case PhysicalDeviceAntiLagMethod::AMDAntiLag2:
+        auto antilagPresentInfo = vk::AntiLagPresentationInfoAMD{}
+            .setFrameIndex(frameIndex)
+            .setStage(vk::AntiLagStageAMD::ePresent);
+
+        auto antilagData = vk::AntiLagDataAMD{}
+            .setMode(m_antilagEnable ? vk::AntiLagModeAMD::eOn : vk::AntiLagModeAMD::eOff)
+            .setMaxFPS(targetFps)
+            .setPPresentationInfo(&antilagPresentInfo);
+
+        m_vkDevice.antiLagUpdateAMD(antilagData);
+        break;
+    }
+}
+
 auto VulkanContext::initVkRaiiContext() -> vk::raii::Context {
     return {};
 }
@@ -117,6 +153,9 @@ auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debu
         .setApiVersion(vk::ApiVersion14);
     
     // TODO: Extension and layer availability check
+    auto availableInstanceLayers = vk::enumerateInstanceLayerProperties()
+        | std::views::transform([](const auto& cstr) { return std::string(cstr.layerName); })
+        | std::ranges::to<std::vector>();
     auto instanceExtensions = nekomata2::SdlWindow::vulkanInstanceExtensions();
     
     auto instanceExtensionsC = instanceExtensions
@@ -127,6 +166,9 @@ auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debu
 
     if (debugEnable)
         instanceLayersC.emplace_back("VK_LAYER_KHRONOS_validation");
+
+    if (std::ranges::contains(availableInstanceLayers, "VK_LAYER_MESA_anti_lag"))
+        instanceLayersC.emplace_back("VK_LAYER_MESA_anti_lag");
 
     auto instanceInfo = vk::InstanceCreateInfo{}
         .setPApplicationInfo(&appInfo)
@@ -180,6 +222,14 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
         log::info("  has_ray_tracing: {}", prop->m_hasRayTracing);
         log::info("  has_ext_descriptor_heap: {}", prop->m_hasExtDescriptorHeap);
         log::info("  has_khr_pipeline_binary: {}", prop->m_hasKhrPipelineBinary);
+        switch (prop->m_antiLagMethod) {
+        case PhysicalDeviceAntiLagMethod::AMDAntiLag2:
+            log::info("  anti_lag_method: AMD Anti-Lag 2");
+            break;
+        case PhysicalDeviceAntiLagMethod::None:
+            log::info("  anti_lag_method: None");
+            break;
+        }
         if (prop->m_hasRayTracing) {
             log::info("    Max AS bound per shader stage: {}", prop->m_accelerationStructureProperties.maxPerStageDescriptorAccelerationStructures);
             log::info("    AS min scratch buffer offset alignment: {} bytes", prop->m_accelerationStructureProperties.minAccelerationStructureScratchOffsetAlignment);
@@ -230,12 +280,17 @@ auto VulkanContext::createVkDevice(const vk::raii::PhysicalDevice& vkPhysicalDev
         vkPhysicalDeviceProps.m_enabledVk14Features,
         vk::PhysicalDeviceImageViewMinLodFeaturesEXT{}.setMinLod(true),
         vk::PhysicalDeviceAccelerationStructureFeaturesKHR{}.setAccelerationStructure(true),
-        vk::PhysicalDeviceRayTracingPipelineFeaturesKHR{}.setRayTracingPipeline(true)
+        vk::PhysicalDeviceRayTracingPipelineFeaturesKHR{}.setRayTracingPipeline(true),
+        vk::PhysicalDeviceAntiLagFeaturesAMD{}.setAntiLag(true),
     };
 
     if (!vkPhysicalDeviceProps.m_hasRayTracing) {
         chain.unlink<vk::PhysicalDeviceAccelerationStructureFeaturesKHR>();
         chain.unlink<vk::PhysicalDeviceRayTracingPipelineFeaturesKHR>();
+    }
+
+    if (vkPhysicalDeviceProps.m_antiLagMethod != PhysicalDeviceAntiLagMethod::AMDAntiLag2) {
+        chain.unlink<vk::PhysicalDeviceAntiLagFeaturesAMD>();
     }
 
     auto device = vkPhysicalDevice.createDevice(chain.get<vk::DeviceCreateInfo>());

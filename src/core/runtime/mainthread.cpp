@@ -79,6 +79,7 @@ auto MainThread::runMainLoop(const std::function<void(std::unique_ptr<ecs::World
 }
 
 auto MainThread::loop(float dt) -> void {
+    VulkanContext::get().antiLagPaceInput(m_frameIndex, 0);
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_EVENT_QUIT) {
@@ -90,7 +91,7 @@ auto MainThread::loop(float dt) -> void {
     m_currentWorld->scriptsUpdate(dt);
 
     m_mrSharedData->m_leafs.getPrimary().m_currentWindowExtent = m_sdlWindow.vulkanGetDrawableSize();
-
+    m_mrSharedData->m_leafs.getPrimary().m_frameIndex = m_frameIndex;
     if (m_currentWorld) {
         m_currentWorld->components<ecs::components::Renderable>().copyTo(m_mrSharedData->m_leafs.getPrimary().m_renderables);
         m_currentWorld->components<ecs::components::Transform>().copyTo(m_mrSharedData->m_leafs.getPrimary().m_transforms);
@@ -106,6 +107,7 @@ auto MainThread::loop(float dt) -> void {
     m_uiRoot->boundsEnd = logicalSizeFloat;
     m_uiRoot->buildDrawCmds(m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds, logicalSizeFloat, Vector2f(0.0f), logicalSizeFloat);
 
+    m_frameIndex++;
 }
 
 }

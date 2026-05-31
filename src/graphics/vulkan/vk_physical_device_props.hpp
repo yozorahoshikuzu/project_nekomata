@@ -30,6 +30,11 @@ struct PhysicalDevicePropertyQueryError {
     PhysicalDevicePropertyQueryErrorKind m_kind;
 };
 
+enum class PhysicalDeviceAntiLagMethod {
+    None,
+    AMDAntiLag2,
+};
+
 consteval auto defaultEnabledVk10Features() -> vk::PhysicalDeviceFeatures;
 consteval auto defaultEnabledVk11Features() -> vk::PhysicalDeviceVulkan11Features;
 consteval auto defaultEnabledVk12Features() -> vk::PhysicalDeviceVulkan12Features;
@@ -62,9 +67,9 @@ public:
     u32 m_presentQueueIndex{};
     u32 m_asyncComputeQueueIndex{};
 
-    
-
     VulkanQueueFamilySwizzling m_queueFamilies = nullptr;
+
+    PhysicalDeviceAntiLagMethod m_antiLagMethod = PhysicalDeviceAntiLagMethod::None;
 
     // Passed to Vulkan device creation
 

@@ -31,6 +31,8 @@ private:
     std::unique_ptr<graphics::fonts::FontManager> m_fontManager = nullptr;
 
     std::unique_ptr<ui::UiNode> m_uiRoot = nullptr;
+
+    u64 m_frameIndex = 0;
 };
 
 }

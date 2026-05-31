@@ -110,8 +110,9 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
         return std::unexpected(PhysicalDevicePropertyQueryError{.m_kind = PhysicalDevicePropertyQueryErrorKind::MissingKhrSwapchain});
     }
 
+
     auto featuresQuery = vkPhysicalDevice.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan11Features, vk::PhysicalDeviceVulkan12Features,
-                                                          vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceVulkan14Features, vk::PhysicalDeviceImageViewMinLodFeaturesEXT>();
+        vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceVulkan14Features, vk::PhysicalDeviceImageViewMinLodFeaturesEXT, vk::PhysicalDeviceAntiLagFeaturesAMD>();
     auto supportedVk10Features = featuresQuery.get<vk::PhysicalDeviceFeatures2>();
     auto supportedVk11Features = featuresQuery.get<vk::PhysicalDeviceVulkan11Features>();
     auto supportedVk12Features = featuresQuery.get<vk::PhysicalDeviceVulkan12Features>();
@@ -156,6 +157,12 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     bool hasExtDescriptorHeap = std::ranges::contains(supportedExtensionNames, vk::EXTDescriptorHeapExtensionName);
     bool hasKhrPipelineBinary = std::ranges::contains(supportedExtensionNames, vk::KHRPipelineBinaryExtensionName);
 
+    auto antiLagMethod = PhysicalDeviceAntiLagMethod::None;
+
+    if (std::ranges::contains(supportedExtensionNames, vk::AMDAntiLagExtensionName) && featuresQuery.get<vk::PhysicalDeviceAntiLagFeaturesAMD>().antiLag) {
+        antiLagMethod = PhysicalDeviceAntiLagMethod::AMDAntiLag2;
+    }
+
     std::vector<std::string> enabledExtensions;
 
     enabledExtensions.emplace_back(vk::KHRSwapchainExtensionName);
@@ -177,6 +184,13 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
 
     if (hasKhrPipelineBinary) {
         enabledExtensions.emplace_back(vk::KHRPipelineBinaryExtensionName);
+    }
+
+    switch (antiLagMethod) {
+    case PhysicalDeviceAntiLagMethod::AMDAntiLag2:
+        enabledExtensions.emplace_back(vk::AMDAntiLagExtensionName);
+        break;
+    default: break;
     }
 
     auto propertiesQuery = vkPhysicalDevice.getProperties2<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceAccelerationStructurePropertiesKHR,
@@ -240,6 +254,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     props.m_presentQueueIndex = presentQueueIndex;
     props.m_asyncComputeQueueIndex = asyncComputeQueueIndex;
     props.m_queueFamilies = VulkanQueueFamilySwizzling(graphicsQueueIndex, presentQueueIndex, asyncComputeQueueIndex);
+    props.m_antiLagMethod = antiLagMethod;
 
     return props;
 }

@@ -15,6 +15,7 @@
 namespace nekomata2 {
 
 struct MRThreadsSharedDataLeaf {
+    u64 m_frameIndex;
     vk::Extent2D m_currentWindowExtent;
     ecs::ComponentSetSnapshot<ecs::components::Renderable> m_renderables;
     ecs::ComponentSetSnapshot<ecs::components::Transform> m_transforms;

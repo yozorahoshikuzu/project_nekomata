@@ -291,7 +291,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         auto vboDeviceAddr = lod.meshSuballocation.vertexBuffer.deviceAddress;
         memcpy((void*)(pushConstantData.data() + 8), &vboDeviceAddr, 8);
 
-        cb.pushConstants<unsigned char>(sharedRenderingResources.simpleLayout().vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, pushConstantData);
+        cb.pushConstants<unsigned char>(sharedRenderingResources.simpleLayout().vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation, 0, pushConstantData);
         cb.drawIndexed(lod.meshSuballocation.indexBuffer.size / sizeof(u32), 1, 0, 0, 0);
         verticesThisDraw += lod.meshSuballocation.indexBuffer.size / sizeof(u32);
 
@@ -410,6 +410,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         m_frameRenderingResources.frameDoneFence()
     );
 
+    VulkanContext::get().antiLagPacePresent(renderingData.m_frameIndex, 0);
     auto presentResult = VulkanContext::get().vkQueuePresent().submitPresent(swapchain, swapchainImage.vkSemaphoreImagePresent(), *imageAcquire.first);
 
     if (presentResult == vk::Result::eErrorOutOfDateKHR || presentResult == vk::Result::eSuboptimalKHR) {
