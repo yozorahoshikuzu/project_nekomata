@@ -167,8 +167,8 @@ auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debu
     if (debugEnable)
         instanceLayersC.emplace_back("VK_LAYER_KHRONOS_validation");
 
-    if (std::ranges::contains(availableInstanceLayers, "VK_LAYER_MESA_anti_lag"))
-        instanceLayersC.emplace_back("VK_LAYER_MESA_anti_lag");
+    if (std::ranges::contains(availableInstanceLayers, "VK_LAYER_KORTHOS_low_latency"))
+        instanceLayersC.emplace_back("VK_LAYER_KORTHOS_low_latency");
 
     auto instanceInfo = vk::InstanceCreateInfo{}
         .setPApplicationInfo(&appInfo)
