@@ -25,8 +25,8 @@ struct UiNode {
     static auto create() -> std::unique_ptr<UiNode> {
         return std::make_unique<UiNode>();
     }
-    math::Vector2f boundsBegin;
-    math::Vector2f boundsEnd;
+    math::Vector2f position;
+    math::Vector2f extent;
 
     bool visible = true;
 
@@ -41,23 +41,26 @@ struct UiNode {
         return *children.back();
     }
 
-    void buildDrawCmds(std::vector<UiDrawCmd>& list, Vector2f screenLogicalSize, Vector2f parentBoundsBegin, Vector2f parentBoundsEnd) {
+    void buildDrawCmds(std::vector<UiDrawCmd>& list, Vector2f screenLogicalSize, Vector2f parentPosition, Vector2f parentExtent) {
         if (!visible)
             return;
+
+        auto position = this->position + parentPosition;
+        auto endPos = position + this->extent;
 
         std::visit(overloaded{
             [&](const UiRect& rect) {
                 auto drawCmd = UiRectDrawCmd{
-                    .ndcBegin = unormToNdc(boundsBegin.componentWiseDivide(screenLogicalSize)),
-                    .ndcEnd   = unormToNdc(boundsEnd.componentWiseDivide(screenLogicalSize)),
+                    .ndcBegin = unormToNdc(position.componentWiseDivide(screenLogicalSize)),
+                    .ndcEnd   = unormToNdc(endPos.componentWiseDivide(screenLogicalSize)),
                     .color    = rect.color
                 };
                 list.emplace_back(drawCmd);
             },
             [&](const UiTexture& texture) {
                 auto drawCmd = UiTextureDrawCmd{
-                    .ndcBegin      = unormToNdc(boundsBegin.componentWiseDivide(screenLogicalSize)),
-                    .ndcEnd        = unormToNdc(boundsEnd.componentWiseDivide(screenLogicalSize)),
+                    .ndcBegin      = unormToNdc(position.componentWiseDivide(screenLogicalSize)),
+                    .ndcEnd        = unormToNdc(endPos.componentWiseDivide(screenLogicalSize)),
                     .texcoordBegin = texture.texcoordStart,
                     .texcoordEnd = texture.texcoordEnd,
                     .texture = texture.texture
@@ -70,7 +73,7 @@ struct UiNode {
         }, element);
 
         for (auto& child : children)
-            child->buildDrawCmds(list, screenLogicalSize, boundsBegin, boundsEnd);
+            child->buildDrawCmds(list, screenLogicalSize, this->position, this->extent);
     }
 };
 
