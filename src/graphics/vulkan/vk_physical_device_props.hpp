@@ -24,6 +24,7 @@ enum class PhysicalDevicePropertyQueryErrorKind {
     MissingVk12TimelineSemaphore,
     MissingVk10SamplerAnisotropy,
     MissingExtImageViewMinLod,
+    MissingKhrPipelineBinary,
 };
 
 struct PhysicalDevicePropertyQueryError {
@@ -50,6 +51,7 @@ public:
 
     std::string m_deviceName;
     vk::PhysicalDeviceType m_deviceType;
+    vk::DriverId m_driverId;
     u64 m_vramSize{};
 
     bool m_hasExtMemoryBudget{};

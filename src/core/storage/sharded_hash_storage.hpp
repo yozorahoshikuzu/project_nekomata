@@ -25,6 +25,8 @@ public:
     auto store(const std::span<const u8>& hash, const std::span<const u8>& data) -> std::expected<std::monostate, HashStorageWriteError>;
     auto load(const std::span<const u8>& hash, std::vector<u8>& dst)             -> std::expected<std::monostate, HashStorageLoadError>;
 
+    auto invalidate() -> void;
+
 private:
     std::filesystem::path m_directory;
     u32 m_nibblesPerLevel;

@@ -157,6 +157,11 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     bool hasExtDescriptorHeap = std::ranges::contains(supportedExtensionNames, vk::EXTDescriptorHeapExtensionName);
     bool hasKhrPipelineBinary = std::ranges::contains(supportedExtensionNames, vk::KHRPipelineBinaryExtensionName);
 
+    if (!hasKhrPipelineBinary) {
+        // TODO: require pipeline binaries for now, add a vk::PipelineCache fallback later
+        return std::unexpected(PhysicalDevicePropertyQueryError{.m_kind = PhysicalDevicePropertyQueryErrorKind::MissingKhrPipelineBinary});
+    }
+
     auto antiLagMethod = PhysicalDeviceAntiLagMethod::None;
 
     if (std::ranges::contains(supportedExtensionNames, vk::AMDAntiLagExtensionName) && featuresQuery.get<vk::PhysicalDeviceAntiLagFeaturesAMD>().antiLag) {
@@ -193,8 +198,8 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     default: break;
     }
 
-    auto propertiesQuery = vkPhysicalDevice.getProperties2<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceAccelerationStructurePropertiesKHR,
-                                                              vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
+    auto propertiesQuery = vkPhysicalDevice.getProperties2<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceVulkan12Properties,
+        vk::PhysicalDeviceAccelerationStructurePropertiesKHR, vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
     auto coreProperties = propertiesQuery.get<vk::PhysicalDeviceProperties2>().properties;
     auto accelerationStructureProperties = propertiesQuery.get<vk::PhysicalDeviceAccelerationStructurePropertiesKHR>();
     auto rayTracingPipelineProperties = propertiesQuery.get<vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
@@ -234,6 +239,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     VulkanPhysicalDeviceProperties props{};
     props.m_deviceName = deviceName;
     props.m_deviceType = deviceType;
+    props.m_driverId = propertiesQuery.get<vk::PhysicalDeviceVulkan12Properties>().driverID;
     props.m_vramSize = vramSize;
     props.m_hasExtMemoryBudget = hasExtMemoryBudget;
     props.m_hasExtMemoryPriority = hasExtMemoryPriority;

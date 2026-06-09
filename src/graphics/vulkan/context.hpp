@@ -6,6 +6,7 @@
 #include <memory>
 
 namespace nekomata2 {
+class ShaderCache;
 
 class VulkanQueue;
 class VulkanResourceDeletionQueue;
@@ -35,6 +36,7 @@ public:
     [[nodiscard]] auto vkQueuePresent() const -> VulkanQueue& { return *m_vkPresentQueue; }
 
     [[nodiscard]] auto vkDeletionQueue() -> std::unique_ptr<VulkanResourceDeletionQueue>& { return m_vkResourceDeletionQueue; }
+    [[nodiscard]] auto shaderCache() -> std::unique_ptr<ShaderCache>& { return m_shaderCache; }
 
     auto antiLagPaceInput(u64 frameIndex, u32 targetFps) -> void;
     auto antiLagPacePresent(u64 frameIndex, u32 targetFps) -> void;
@@ -71,6 +73,7 @@ private:
     vma::raii::Allocator m_vmaAllocator = nullptr;
 
     std::unique_ptr<VulkanResourceDeletionQueue> m_vkResourceDeletionQueue;
+    std::unique_ptr<ShaderCache> m_shaderCache;
 
     bool m_antilagEnable = true;
 };

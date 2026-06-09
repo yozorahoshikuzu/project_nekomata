@@ -34,13 +34,18 @@ auto ShardedHashStorage::load(const std::span<const u8>& hash, std::vector<u8>& 
     if (!std::filesystem::exists(fullpath))
         return std::unexpected(HashStorageLoadError::ObjectMissing);
 
-    auto file = std::ifstream(fullpath, std::ios::binary);
+    auto file = std::ifstream(fullpath, std::ios::binary | std::ios::ate);
     if (!file) return std::unexpected(HashStorageLoadError::FileOpenError);
+    dst.resize(file.tellg());
+    file.seekg(0);
 
     file.read(reinterpret_cast<char*>(dst.data()), dst.size());
     if (!file) return std::unexpected(HashStorageLoadError::FileReadError);
 
     return std::monostate{};
+}
+auto ShardedHashStorage::invalidate() -> void {
+    std::filesystem::remove_all(m_directory);
 }
 
 auto ShardedHashStorage::buildPathFromHash(const std::span<const u8>& hash) const -> std::filesystem::path {

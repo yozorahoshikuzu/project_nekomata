@@ -3,8 +3,9 @@
 #include "graphics/vulkan/spv_shader_code.hpp"
 #include "graphics/vulkan/vk_gpu_obrm.hpp"
 #include "graphics/vulkan/vk_pipeline_layout.hpp"
-#include "vulkan/vulkan.hpp"
+#include "shadercache/shadercache.hpp"
 #include "vulkan_prelude.hpp"
+
 #include <algorithm>
 #include <fstream>
 #include <ranges>
@@ -146,57 +147,13 @@ public:
             pipelineInfo.pTessellationState = &m_tessellationState.value();
         }
 
-        auto sc = vk::StructureChain<vk::GraphicsPipelineCreateInfo, vk::PipelineRenderingCreateInfo, vk::PipelineCreateFlags2CreateInfo>{
+        auto sc = vk::StructureChain{
             pipelineInfo,
             m_renderingCreateInfo,
+            vk::PipelineBinaryInfoKHR{},
             vk::PipelineCreateFlags2CreateInfo{}
         };
-
-        auto pb_pipeline_create_info = vk::PipelineCreateInfoKHR{}
-            .setPNext(&sc.get<vk::GraphicsPipelineCreateInfo>());
-
-        std::string binaryKeyHex = "";
-
-        if (VulkanContext::get().vkPhysicalDeviceProps().m_hasKhrPipelineBinary) {
-            sc.get<vk::PipelineCreateFlags2CreateInfo>().flags |= vk::PipelineCreateFlagBits2::eCaptureDataKHR;
-            auto globalBinaryKey = VulkanContext::get().vkDevice().getPipelineKeyKHR(pb_pipeline_create_info);
-
-            for (u32 i = 0; i < globalBinaryKey.keySize; i++) {
-                binaryKeyHex += std::format("{:02x}", globalBinaryKey.key[i]);
-            }
-            log::info("Pipeline binary key: {}", binaryKeyHex);
-        } else {
-            sc.unlink<vk::PipelineCreateFlags2CreateInfo>();
-        }
-
-        auto pipeline = VulkanContext::get().vkDevice().createGraphicsPipeline(nullptr, sc.get<vk::GraphicsPipelineCreateInfo>());
-
-        if (VulkanContext::get().vkPhysicalDeviceProps().m_hasKhrPipelineBinary) {
-            auto binaryCreateInfo = vk::PipelineBinaryCreateInfoKHR{}
-                .setPipeline(pipeline);
-
-            auto handles = VulkanContext::get().vkDevice().createPipelineBinariesKHR(binaryCreateInfo);
-            log::info("Binaries count: {}", handles.size());
-
-            for (auto& binary : handles) {
-                auto binaryDataInfo = vk::PipelineBinaryDataInfoKHR{}
-                    .setPipelineBinary(binary);
-                auto [binaryDataKey, binaryData] = VulkanContext::get().vkDevice().getPipelineBinaryDataKHR(binaryDataInfo);
-                std::string binaryDataKeyHex = "";
-                for (u32 i = 0; i < binaryDataKey.keySize; i++) {
-                    binaryDataKeyHex += std::format("{:02x}", binaryDataKey.key[i]);
-                }
-                log::info(" - Binary key: {}, binary data size: {}", binaryDataKeyHex, binaryData.size());
-
-
-                // TODO: caching mechanism
-            }
-
-            auto releaseInfo = vk::ReleaseCapturedPipelineDataInfoKHR{}
-                .setPipeline(pipeline);
-
-            VulkanContext::get().vkDevice().releaseCapturedPipelineDataKHR(releaseInfo);
-        }
+        auto pipeline = VulkanContext::get().shaderCache()->createGraphicsPipeline(sc);
 
         return VulkanGraphicsPipeline(std::move(pipeline));
     }

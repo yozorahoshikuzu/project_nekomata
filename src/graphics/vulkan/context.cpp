@@ -2,6 +2,8 @@
 #include "core/log/log.hpp"
 #include "graphics/vulkan/deletion_queue.hpp"
 #include "graphics/vulkan/vk_queue.hpp"
+#include "shadercache/shadercache.hpp"
+
 #include <SDL3/SDL_video.h>
 #include <algorithm>
 #include <cstddef>
@@ -90,16 +92,7 @@ auto VulkanContext::create(nekomata2::SdlWindow& sdlWindow) -> std::unique_ptr<V
     vkContext->m_vkResourceDeletionQueue = std::make_unique<VulkanResourceDeletionQueue>();
     vkContext->m_vkResourceDeletionQueue->run();
     g_vkResourceDeletionQueue = vkContext->m_vkResourceDeletionQueue.get();
-
-    if (vkContext->m_vkPhysicalDeviceProperties.m_hasKhrPipelineBinary) {
-        auto globalBinaryKey = vkContext->vkDevice().getPipelineKeyKHR();
-
-        std::string binaryKeyHex = "";
-        for (u32 i = 0; i < globalBinaryKey.keySize; i++) {
-            binaryKeyHex += std::format("{:02x}", globalBinaryKey.key[i]);
-        }
-        log::info("Global pipeline binary key: {}", binaryKeyHex);
-    }
+    vkContext->m_shaderCache = std::make_unique<ShaderCache>();
 
     return vkContext;
 }
@@ -214,6 +207,7 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
         
         // TODO: Move somewhere else
         log::info("GPU #{}: {}", i, prop->m_deviceName);
+        log::info("  Driver ID: {}", vk::to_string(prop->m_driverId));
         log::info("  VRAM heap size: {} bytes ({} MiB)", prop->m_vramSize, prop->m_vramSize / 1024 / 1024);
         log::info("  has_ext_memory_budget: {}", prop->m_hasExtMemoryBudget);
         log::info("  has_ext_memory_priority: {}", prop->m_hasExtMemoryPriority);
