@@ -6,6 +6,7 @@ import :graphics.vulkan.vk_image;
 import :graphics.vulkan.vk_sampler;
 import :graphics.vulkan.vk_pipeline_layout;
 import :graphics.vulkan.vk_commands;
+import :graphics.vulkan.vk_descriptor_set_layout;
 
 export namespace nekomata2::graphics::srt {
 

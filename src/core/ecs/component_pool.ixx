@@ -80,12 +80,12 @@ public:
     }
 
     T& get(Entity ent) {
-        debug_assert(containsEntity(ent));
+        debug_assert(containsEntity(ent), "attempted to get component from entity that does not have that component");
         return m_storage[m_sparseToStorage[ent.index()]];
     }
 
     [[nodiscard]] const T& get(Entity ent) const {
-        debug_assert(containsEntity(ent));
+        debug_assert(containsEntity(ent), "attempted to get component from entity that does not have that component");
         return m_storage[m_sparseToStorage[ent.index()]];
     }
 

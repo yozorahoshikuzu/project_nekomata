@@ -1,5 +1,6 @@
 module;
 #include <xxhash.h>
+#include <string.h>
 export module nekomata2:graphics.texturesystem.sampler_cache;
 import std;
 import vulkan;

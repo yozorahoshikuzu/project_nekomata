@@ -22,11 +22,11 @@ public:
     TextureResources(VulkanImage&& image);
 
     [[nodiscard]] auto image() -> VulkanImage& { return m_image; }
+    auto setImage(VulkanImage&& image) -> void { m_image = std::move(image); }
 
 private:
     VulkanImage m_image = nullptr;
 
-    auto setImage(VulkanImage&& image) -> void { m_image = std::move(image); }
 };
 
 class TextureManager {

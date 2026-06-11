@@ -341,12 +341,12 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
             [&](const ui::UiTextureDrawCmd& drawCmd) {
                 struct PushConstants {
                     Vector2f ndcBegin, ndcEnd, texcoordBegin, texcoordEnd;
-                    uint32_t textureIndex;
-                    uint32_t samplerIndex;
+                    u32 textureIndex;
+                    u32 samplerIndex;
                 };
 
-                uint32_t textureIndex = renderingData.m_textureToImageShaderIndexSnapshot[drawCmd.texture.index];
-                uint32_t samplerIndex = renderingData.m_textureToSamplerShaderIndexSnapshot[drawCmd.texture.index];
+                u32 textureIndex = renderingData.m_textureToImageShaderIndexSnapshot[drawCmd.texture.index];
+                u32 samplerIndex = renderingData.m_textureToSamplerShaderIndexSnapshot[drawCmd.texture.index];
 
                 PushConstants pushConstants = {
                     .ndcBegin = drawCmd.ndcBegin,

@@ -1,5 +1,6 @@
 module;
 #include <ktx.h>
+#include <vulkan/vulkan.h>
 #include <ktxvulkan.h>
 #include <cstring>
 module nekomata2;

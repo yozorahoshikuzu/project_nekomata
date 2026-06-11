@@ -4,6 +4,7 @@ import :graphics.rendering.transient_rendering_resources;
 import :graphics.rendering.shared_rendering_resources;
 import :graphics.vulkan.vk_swapchain;
 import :core.runtime.shared_data;
+import :graphics.rendering.frame_rendering_resources;
 
 export namespace nekomata2::graphics {
 

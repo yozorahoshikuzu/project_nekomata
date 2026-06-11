@@ -82,7 +82,7 @@ private:
         usize pageIndex = static_cast<usize>(index) >> ChunkSizePwr;
         usize chunkIndex = static_cast<usize>(index) & kChunkIndexMask;
         Page* page = m_pages[pageIndex].load(std::memory_order_acquire);
-        assert(page != nullptr && "FreelistPool accessed unallocated page");
+        debug_assert(page != nullptr, "FreelistPool accessed unallocated page");
         return page->data[chunkIndex];
     }
 
@@ -90,7 +90,7 @@ private:
         usize pageIndex = static_cast<usize>(index) >> ChunkSizePwr;
         usize chunkIndex = static_cast<usize>(index) & kChunkIndexMask;
         Page* page = m_pages[pageIndex].load(std::memory_order_acquire);
-        assert(page != nullptr && "FreelistPool accessed unallocated page");
+        debug_assert(page != nullptr, "FreelistPool accessed unallocated page");
         return page->data[chunkIndex];
     }
 

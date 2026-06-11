@@ -6,6 +6,7 @@ import :graphics.vulkan.vk_gpu_obrm;
 import :graphics.vulkan.spv_shader_code;
 import :graphics.vulkan.vk_pipeline_layout;
 import :graphics.vulkan.context;
+import :graphics.vulkan.shadercache;
 
 export namespace nekomata2 {
 

@@ -7,6 +7,7 @@ import :core.ecs.world.camera;
 import :core.ecs.world.transform;
 import :core.ecs.world.renderable;
 import :core.containers.double_buffer;
+import :core.ui.ui_drawcmds;
 
 export namespace nekomata2 {
 

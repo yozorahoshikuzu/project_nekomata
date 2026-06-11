@@ -23,6 +23,8 @@ FetchContent_Declare(
         URL_HASH SHA256=8c2a0573babe1f86f3241d12b4c9df40bb944649b7f4239c1c611797f8af6cd5
         SYSTEM
 )
+set(VMA_STATIC_VULKAN_FUNCTIONS OFF CACHE BOOL "" FORCE)
+set(VMA_DYNAMIC_VULKAN_FUNCTIONS OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(vmahpp)
 
 FetchContent_Declare(xxhash
@@ -98,13 +100,13 @@ target_sources(VulkanModule
 
 add_library(VmaModule)
 target_compile_definitions(
-        VmaModule PUBLIC
+        VmaModule PRIVATE
         VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1
         VMA_STATIC_VULKAN_FUNCTIONS=0
         VMA_DYNAMIC_VULKAN_FUNCTIONS=0
 )
 target_link_libraries(VmaModule PRIVATE VulkanModule)
-target_include_directories(VmaModule PRIVATE ${vmahpp_SOURCE_DIR})
+target_include_directories(VmaModule PUBLIC ${vmahpp_SOURCE_DIR})
 target_sources(VmaModule PUBLIC
         FILE_SET CXX_MODULES
         FILES ${vmahpp_SOURCE_DIR}/vk_mem_alloc.cppm)
@@ -227,8 +229,6 @@ target_compile_options(
         -Werror=overloaded-virtual
 
         -Werror=tautological-compare
-
-        -Werror=missing-field-initializers
 )
 
 target_link_options(

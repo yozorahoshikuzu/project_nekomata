@@ -205,7 +205,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
 
     auto memoryProperties = vkPhysicalDevice.getMemoryProperties();
     u64 vramSize = 0;
-    for (size_t i = 0; i < memoryProperties.memoryHeapCount; i++) {
+    for (usize i = 0; i < memoryProperties.memoryHeapCount; i++) {
         auto& heap = memoryProperties.memoryHeaps[i];
         if (heap.flags & vk::MemoryHeapFlagBits::eDeviceLocal) {
             vramSize += heap.size;

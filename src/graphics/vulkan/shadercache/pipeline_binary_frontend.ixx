@@ -1,3 +1,5 @@
+module;
+#include <string.h>
 export module nekomata2:graphics.vulkan.shadercache.pipeline_binary_frontend;
 import std;
 import vulkan;
