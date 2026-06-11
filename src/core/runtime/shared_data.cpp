@@ -1,7 +1,5 @@
-#include "shared_data.hpp"
-#include "core/containers/double_buffer.hpp"
-#include "core/platform/sdl.hpp"
-#include "vulkan/vulkan.hpp"
+module nekomata2;
+import :core.runtime.shared_data;
 
 namespace nekomata2 {
 

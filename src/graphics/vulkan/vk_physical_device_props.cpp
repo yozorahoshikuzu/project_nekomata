@@ -1,12 +1,8 @@
-#include "vk_physical_device_props.hpp"
-
-#include "core/log/log.hpp"
-
-#include <algorithm>
-#include <ranges>
-#include <string>
-#include <unordered_set>
-#include <vector>
+module nekomata2;
+import std;
+import vulkan;
+import vk_mem_alloc;
+import :graphics.vulkan.vk_physical_device_props;
 
 using namespace std::literals;
 
@@ -209,7 +205,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
 
     auto memoryProperties = vkPhysicalDevice.getMemoryProperties();
     u64 vramSize = 0;
-    for (size_t i = 0; i < memoryProperties.memoryHeapCount; i++) {
+    for (usize i = 0; i < memoryProperties.memoryHeapCount; i++) {
         auto& heap = memoryProperties.memoryHeaps[i];
         if (heap.flags & vk::MemoryHeapFlagBits::eDeviceLocal) {
             vramSize += heap.size;

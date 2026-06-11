@@ -1,0 +1,24 @@
+export module nekomata2:core.ui.ui_drawcmds;
+import std;
+import :core.math;
+import :graphics.texturesystem.texture_manager;
+
+export namespace nekomata2::ui {
+
+struct UiRectDrawCmd {
+    math::Vector2f ndcBegin;
+    math::Vector2f ndcEnd;
+    math::Vector4f color;
+};
+
+struct UiTextureDrawCmd {
+    math::Vector2f ndcBegin;
+    math::Vector2f ndcEnd;
+    math::Vector2f texcoordBegin;
+    math::Vector2f texcoordEnd;
+    graphics::texturesystem::Texture texture;
+};
+
+using UiDrawCmd = std::variant<UiRectDrawCmd, UiTextureDrawCmd>;
+
+}

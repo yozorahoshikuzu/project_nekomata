@@ -1,20 +1,16 @@
-#include "entry.hpp"
-
-#include "core/log/log.hpp"
-#include "core/platform/sdl.hpp"
-#include "core/platform/thread.hpp"
-#include "core/runtime/graphicsthread.hpp"
-#include "core/runtime/mainthread.hpp"
-#include "core/runtime/shared_data.hpp"
-#include "graphics/vulkan/context.hpp"
+module;
+#include <SDL3/SDL_messagebox.h>
+module nekomata2;
+import std;
+import :core.log;
+import :core.platform.sdl;
+import :core.platform.thread;
+import :graphics.vulkan.context;
+import :core.runtime.shared_data;
+import :core.runtime.mainthread;
+import :core.runtime.graphicsthread;
 
 namespace nekomata2 {
-
-auto entry(const std::function<void(std::unique_ptr<ecs::World>&)>& initFn) -> void {
-    sdlPlatformInit();
-    entryAfterSdlInit(initFn);
-    sdlPlatformDeinit();
-}
 
 auto entryAfterSdlInit(const std::function<void(std::unique_ptr<ecs::World>&)>& initFn) -> void {
     // TODO: A system to remember player preferences to use here instead.
@@ -49,6 +45,12 @@ auto entryAfterSdlInit(const std::function<void(std::unique_ptr<ecs::World>&)>& 
 
     mainthread.runMainLoop(initFn);
     renderThreadHandle.join();
+}
+
+auto entry(const std::function<void(std::unique_ptr<ecs::World>&)>& initFn) -> void {
+    sdlPlatformInit();
+    entryAfterSdlInit(initFn);
+    sdlPlatformDeinit();
 }
 
 }

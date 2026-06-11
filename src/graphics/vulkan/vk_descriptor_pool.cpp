@@ -1,7 +1,6 @@
-#include "vk_descriptor_pool.hpp"
-
-#include "vk_descriptor_set.hpp"
-#include "vk_descriptor_set_layout.hpp"
+module nekomata2;
+import :graphics.vulkan.context;
+import :graphics.vulkan.vk_descriptor_pool;
 
 namespace nekomata2 {
 

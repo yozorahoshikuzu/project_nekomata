@@ -1,11 +1,11 @@
-#include "frame_rendering_resources.hpp"
-
-#include "graphics/vulkan/context.hpp"
-
-#include <ranges>
-
-#include "core/log/log.hpp"
-
+module;
+#include <string.h>
+module nekomata2;
+import vulkan;
+import vk_mem_alloc;
+import :graphics.vulkan.context;
+import :graphics.vulkan.vk_queue_family_swizzling;
+import :graphics.rendering.frame_rendering_resources;
 
 namespace nekomata2::graphics {
 
@@ -27,12 +27,12 @@ FrameRenderingResources::FrameRenderingResources(u32 initialMaxObjects) {
 auto FrameRenderingResources::prepareTransformsBuffer(MRThreadsSharedDataLeaf& renderingData, ecs::components::Camera camera, const ecs::components::Transform& cameraTransform, float renderAspectRatio) -> void {
     auto projectionMatrix = camera.computeProjectionMatrix(renderAspectRatio);
     auto cameraModelMatrix = cameraTransform.m_transform3d.computeModelMatrix();
-    auto viewMatrix = cameraModelMatrix.inverse().value_or(Matrix4x4f::identity());
+    auto viewMatrix = cameraModelMatrix.inverse().value_or(math::Matrix4x4f::identity());
 
     for (auto [i, rend] : renderingData.m_renderables.m_storage | std::ranges::views::enumerate) {
         auto entSparseIndex = renderingData.m_renderables.m_storageToEntity[i];
 
-        auto modelMatrix = Matrix4x4f::identity();
+        auto modelMatrix = math::Matrix4x4f::identity();
         if (renderingData.m_transforms.containsEntity(entSparseIndex)) {
             modelMatrix = renderingData.m_transforms.get(entSparseIndex).m_transform3d.computeModelMatrix();
         }

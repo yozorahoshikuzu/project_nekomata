@@ -1,16 +1,27 @@
-#include "frame_context.hpp"
-
-#include "core/log/log.hpp"
-#include "core/math/transform3d.hpp"
-#include "core/overloaded/overloaded.hpp"
-#include "graphics/fontsystem/font_manager.hpp"
-#include "graphics/vulkan/vk_commands_barriers.hpp"
-#include "graphics/vulkan/vk_queue.hpp"
-
-#include <format>
-#include <random>
+module;
+#include <string.h>
+module nekomata2;
+import vulkan;
+import vk_mem_alloc;
+import :core.log;
+import :core.platform.int_def;
+import :graphics.rendering.frame_rendering_resources;
+import :core.ecs.world.camera;
+import :core.ecs.world.transform;
+import :graphics.fontsystem.font_manager;
+import :graphics.vulkan.vk_buffer;
+import :graphics.meshsystem.mesh_asset_storage;
+import :core.ui.ui_drawcmds;
+import :graphics.vulkan.context;
+import :graphics.texturesystem.texture_manager;
+import :graphics.vulkan.vk_commands_barriers;
+import :core.ecs.entity;
+import :core.overloaded;
+import :graphics.rendering.frame_context;
 
 namespace nekomata2::graphics {
+
+using namespace nekomata2::math;
 
 FrameContext::FrameContext(std::nullptr_t) {  }
 FrameContext::FrameContext() {
@@ -19,16 +30,16 @@ FrameContext::FrameContext() {
 
 inline vk::Offset3D toOffset3D(const vk::Extent3D& extent) {
     return vk::Offset3D{
-        static_cast<int32_t>(extent.width),
-        static_cast<int32_t>(extent.height),
-        static_cast<int32_t>(extent.depth)
+        static_cast<i32>(extent.width),
+        static_cast<i32>(extent.height),
+        static_cast<i32>(extent.depth)
     };
 }
 
 auto FrameContext::execute(TransientRenderingResources& transientRenderingResources, SharedRenderingResources& sharedRenderingResources, VulkanSwapchain& swapchain, MRThreadsSharedDataLeaf& renderingData, float timeSinceStart) -> FrameResult {
-    m_frameRenderingResources.frameDoneFence().waitForSignal(UINT64_MAX);
+    m_frameRenderingResources.frameDoneFence().waitForSignal(std::numeric_limits<u64>::max());
 
-    auto imageAcquire = swapchain.acquireNextImage(UINT64_MAX, m_frameRenderingResources.imageAcquiredSemaphore());
+    auto imageAcquire = swapchain.acquireNextImage(std::numeric_limits<u64>::max(), m_frameRenderingResources.imageAcquiredSemaphore());
 
     if (!imageAcquire.first.has_value() || imageAcquire.second) {
         return { .shouldRecreateSwapchain = true, .stepPerFrameResources = false };
@@ -52,7 +63,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
             firstCameraTransform = renderingData.m_transforms.get(cameraEntitySparseIndex);
         } else {
             firstCameraTransform = ecs::components::Transform{};
-            firstCameraTransform.m_transform3d = Transform3D::identity();
+            firstCameraTransform.m_transform3d = math::Transform3D::identity();
             log::warn("Camera #{} has no transform!", i);
         }
         firstCameraFound = true;
@@ -67,11 +78,11 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         firstCamera.fov = 75.0f;
         firstCamera.renderingEnable = true;
         firstCameraTransform = ecs::components::Transform{};
-        firstCameraTransform.m_transform3d = Transform3D::identity();
-        firstCameraTransform.m_transform3d.m_position = Vector3f(0.0f, 0.0f, 1.2f);
+        firstCameraTransform.m_transform3d = math::Transform3D::identity();
+        firstCameraTransform.m_transform3d.m_position = math::Vector3f(0.0f, 0.0f, 1.2f);
     }
 
-    Vector2f renderingArea = Vector2f(static_cast<f32>(transientRenderingResources.finalDrawBuffer().extent().width), static_cast<f32>(transientRenderingResources.finalDrawBuffer().extent().height));
+    math::Vector2f renderingArea = Vector2f(static_cast<f32>(transientRenderingResources.finalDrawBuffer().extent().width), static_cast<f32>(transientRenderingResources.finalDrawBuffer().extent().height));
 
     float aspectRatio = static_cast<float>(transientRenderingResources.finalDrawBuffer().extent().width) / static_cast<float>(transientRenderingResources.finalDrawBuffer().extent().height);
     float perspFocalLength = renderingArea.y() / (2.0f * std::tan(0.5f * degreesToRadians(firstCamera.fov)));
@@ -330,12 +341,12 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
             [&](const ui::UiTextureDrawCmd& drawCmd) {
                 struct PushConstants {
                     Vector2f ndcBegin, ndcEnd, texcoordBegin, texcoordEnd;
-                    uint32_t textureIndex;
-                    uint32_t samplerIndex;
+                    u32 textureIndex;
+                    u32 samplerIndex;
                 };
 
-                uint32_t textureIndex = renderingData.m_textureToImageShaderIndexSnapshot[drawCmd.texture.index];
-                uint32_t samplerIndex = renderingData.m_textureToSamplerShaderIndexSnapshot[drawCmd.texture.index];
+                u32 textureIndex = renderingData.m_textureToImageShaderIndexSnapshot[drawCmd.texture.index];
+                u32 samplerIndex = renderingData.m_textureToSamplerShaderIndexSnapshot[drawCmd.texture.index];
 
                 PushConstants pushConstants = {
                     .ndcBegin = drawCmd.ndcBegin,

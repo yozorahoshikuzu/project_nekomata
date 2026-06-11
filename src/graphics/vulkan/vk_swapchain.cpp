@@ -1,15 +1,8 @@
-#include "vk_swapchain.hpp"
-#include <algorithm>
-#include <array>
-#include <cstddef>
-#include <limits>
-#include <optional>
-#include <print>
-#include <ranges>
-#include <utility>
-#include "core/log/log.hpp"
-#include "vk_physical_device_props.hpp"
-#include "context.hpp"
+module nekomata2;
+import :core.log;
+import :graphics.vulkan.vk_physical_device_props;
+import :graphics.vulkan.context;
+import :graphics.vulkan.vk_queue_family_swizzling;
 
 namespace nekomata2 {
 
@@ -88,7 +81,7 @@ auto VulkanSwapchain::create(vk::Extent2D windowDrawableExtent, std::optional<Vu
     return VulkanSwapchain(std::move(swapchain), imageExtent, std::move(swapchainImages));
 }
 
-auto VulkanSwapchain::  acquireNextImage(u64 timeoutNanos, const VulkanBinarySemaphore& imageAcquireSemaphore) -> std::pair<std::optional<u32>, bool> {
+auto VulkanSwapchain::acquireNextImage(u64 timeoutNanos, const VulkanBinarySemaphore& imageAcquireSemaphore) -> std::pair<std::optional<u32>, bool> {
     auto index = m_vkSwapchain.vkHandle().acquireNextImage(timeoutNanos, imageAcquireSemaphore.vkSemaphore());
     if (index.result == vk::Result::eSuccess) {
         return { *index, false };

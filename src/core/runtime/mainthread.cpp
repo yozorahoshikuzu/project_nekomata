@@ -1,16 +1,15 @@
-#include "mainthread.hpp"
-#include "../log/log.hpp"
-#include "core/ecs/ecs.hpp"
-#include "core/ecs/world/transform.hpp"
-#include "core/math/matrix_types.hpp"
-#include "core/math/transform3d.hpp"
-#include "graphics/cmd_alloc/cmd_alloc.hpp"
-
-#include <atomic>
-#include <chrono>
-#include <cmath>
-#include <memory>
-#include <utility>
+module;
+#include <SDL3/SDL_events.h>
+module nekomata2;
+import vulkan;
+import :core.log;
+import :graphics.cmd_alloc;
+import :core.ui.components.ui_rect;
+import :core.ui.components.ui_texture;
+import :core.ecs.world.renderable;
+import :core.ecs.world.transform;
+import :core.ecs.world.camera;
+import :core.runtime.mainthread;
 
 namespace nekomata2 {
 
@@ -41,12 +40,12 @@ MainThread::MainThread(std::shared_ptr<MRThreadsSharedData> mrSharedData, std::u
     m_uiRoot = ui::UiNode::create();
     m_uiRoot->position = math::Vector2f(0.0f, 0.0f);
     m_uiRoot->extent = math::Vector2f(m_sdlWindow.getLogicalSize().x(), m_sdlWindow.getLogicalSize().y());
-    m_uiRoot->element = ui::UiRect(Vector4f(0.0f, 0.0f, 0.0f, 0.0f));
+    m_uiRoot->element = ui::UiRect(math::Vector4f(0.0f, 0.0f, 0.0f, 0.0f));
 
     auto rectElement = ui::UiNode::create();
     rectElement->position = math::Vector2f(16.0f, 300.0f);
     rectElement->extent = math::Vector2f(270.0f, 269.0f);
-    rectElement->element = ui::UiRect(Vector4f(255.0f / 255.0f, 147.0f / 255.0f, 0.0f, 0.5f));
+    rectElement->element = ui::UiRect(math::Vector4f(255.0f / 255.0f, 147.0f / 255.0f, 0.0f, 0.5f));
 
     auto texElement = ui::UiNode::create();
     texElement->position = math::Vector2f(10.0f, 10.0f);
@@ -110,9 +109,9 @@ auto MainThread::loop(float dt) -> void {
     );
     m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds.clear();
     auto logicalSize = m_sdlWindow.getLogicalSize();
-    auto logicalSizeFloat = Vector2f(logicalSize.x(), logicalSize.y());
+    auto logicalSizeFloat = math::Vector2f(logicalSize.x(), logicalSize.y());
     m_uiRoot->extent = logicalSizeFloat;
-    m_uiRoot->buildDrawCmds(m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds, logicalSizeFloat, Vector2f(0.0f), logicalSizeFloat);
+    m_uiRoot->buildDrawCmds(m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds, logicalSizeFloat, math::Vector2f(0.0f), logicalSizeFloat);
 
     m_mrSharedData->m_leafs.getPrimary().m_hasValidFrame = true;
 

@@ -1,19 +1,9 @@
-#include "context.hpp"
-#include "core/log/log.hpp"
-#include "graphics/vulkan/deletion_queue.hpp"
-#include "graphics/vulkan/vk_queue.hpp"
-#include "shadercache/shadercache.hpp"
-
-#include <SDL3/SDL_video.h>
-#include <algorithm>
-#include <cstddef>
-#include <memory>
-#include <print>
-#include <ranges>
-#include <stdexcept>
-#include <tuple>
-#include <unordered_map>
-#include <vector>
+module nekomata2;
+import :core.log;
+import :graphics.vulkan.deletion_queue;
+import :graphics.vulkan.vk_queue;
+import :core.platform.assert;
+import :graphics.vulkan.shadercache;
 
 namespace nekomata2 {
 
@@ -33,20 +23,20 @@ auto VulkanContext::get() -> VulkanContext& {
 }
 
 auto VulkanContext::create(nekomata2::SdlWindow& sdlWindow) -> std::unique_ptr<VulkanContext> {
-    assert(g_vkContext == nullptr && "only one VulkanContext may live at any given time");
+    debug_assert(g_vkContext == nullptr, "only one VulkanContext may live at any given time");
     auto vkContext = std::make_unique<VulkanContext>(nullptr);
     g_vkContext = vkContext.get();
 
     // We're dynamically loading Vulkan, and this requires extra work with the vk::detail::DynamicLoader and to initialize the vulkan.hpp dispatcher.
     vkContext->m_vkDynamicLoader = vk::detail::DynamicLoader{};
     auto vkGetInstanceProcAddr = vkContext->m_vkDynamicLoader.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
-    VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
+    vk::detail::defaultDispatchLoaderDynamic.init(vkGetInstanceProcAddr);
 
     vkContext->m_vkRaiiContext = initVkRaiiContext();
     vkContext->m_vkInstance = createVkInstance(vkContext->m_vkRaiiContext, false, sdlWindow);
 
     // To access vkInstance* functions, the vulkan.hpp dispatcher must be made aware of the instance.
-    VULKAN_HPP_DEFAULT_DISPATCHER.init(*vkContext->m_vkInstance);
+    vk::detail::defaultDispatchLoaderDynamic.init(*vkContext->m_vkInstance);
 
     vkContext->m_vkSurface = createVkSurface(vkContext->m_vkInstance, sdlWindow);
     auto [vk_physical_device, vk_physical_device_props] = pickVkPhysicalDevice(vkContext->m_vkInstance, vkContext->m_vkSurface);
@@ -55,7 +45,7 @@ auto VulkanContext::create(nekomata2::SdlWindow& sdlWindow) -> std::unique_ptr<V
     vkContext->m_vkPhysicalDeviceProperties = vk_physical_device_props;
 
     // To access vkDevice* functions, the vulkan.hpp dispatcher must be made aware of the device.
-    VULKAN_HPP_DEFAULT_DISPATCHER.init(*vkContext->m_vkDevice);
+    vk::detail::defaultDispatchLoaderDynamic.init(*vkContext->m_vkDevice);
 
     if (vkContext->m_vkPhysicalDeviceProperties.m_hasExtDescriptorHeap) {
         log::warn("VK_EXT_descriptor_heap support is very experimental and not implemented everywhere!");
@@ -266,7 +256,7 @@ auto VulkanContext::createVkDevice(const vk::raii::PhysicalDevice& vkPhysicalDev
         .setQueueCreateInfos(queueCreateInfos)
         .setPEnabledFeatures(&vkPhysicalDeviceProps.m_enabledVk10Features);
 
-    vk::StructureChain chain = {
+    auto chain = vk::StructureChain{
         deviceCreateInfo,
         vkPhysicalDeviceProps.m_enabledVk11Features,
         vkPhysicalDeviceProps.m_enabledVk12Features,

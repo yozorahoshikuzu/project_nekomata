@@ -1,12 +1,9 @@
-#include "graphicsthread.hpp"
-#include "../log/log.hpp"
-#include "core/ecs/world/transform.hpp"
-#include "graphics/cmd_alloc/cmd_alloc.hpp"
-#include "graphics/texturesystem/loader/ktx_loader.hpp"
-
-#include <atomic>
-#include <optional>
-#include <chrono>
+module nekomata2;
+import :core.log;
+import :graphics.cmd_alloc;
+import :graphics.vulkan.context;
+import :graphics.meshsystem.mesh_asset_storage;
+import :core.runtime.graphicsthread;
 
 namespace nekomata2 {
 

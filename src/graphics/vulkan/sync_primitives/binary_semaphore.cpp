@@ -1,6 +1,5 @@
-#include "binary_semaphore.hpp"
-#include "graphics/vulkan/context.hpp"
-#include <cstddef>
+module nekomata2;
+import :graphics.vulkan.context;
 
 namespace nekomata2 {
 

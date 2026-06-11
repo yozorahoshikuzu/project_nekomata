@@ -1,0 +1,12 @@
+export module nekomata2;
+export import :core.platform.int_def;
+export import :core.math;
+export import :core.log;
+export import :core.ecs;
+export import :core.ecs.world.transform;
+export import :core.ecs.world.renderable;
+export import :core.runtime.entry;
+export import :core.ecs.world.camera;
+export import :graphics.texturesystem.texture_manager;
+export import :graphics.meshsystem.mesh_asset_storage;
+export import :graphics.texturesystem.sampler_cache;

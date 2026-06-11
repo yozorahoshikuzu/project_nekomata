@@ -1,8 +1,6 @@
-#include "context.hpp"
-#include "vk_image.hpp"
-#include <cstddef>
-#include <span>
-#include <unordered_map>
+module nekomata2;
+import :graphics.vulkan.context;
+import :graphics.vulkan.vk_image;
 
 namespace nekomata2 {
 

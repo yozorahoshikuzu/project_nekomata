@@ -1,4 +1,8 @@
-#include "mesh_asset_storage.hpp"
+module nekomata2;
+import :graphics.vulkan.context;
+import :graphics.vulkan.vk_queue_family_swizzling;
+import :core.platform.assert;
+import :graphics.meshsystem.mesh_asset_storage;
 
 namespace nekomata2::meshsystem {
 
@@ -15,7 +19,7 @@ auto MeshAssetStorage::makeMeshPoolConfig() -> MeshPoolConfig {
 MeshAssetStorage::MeshAssetStorage() : m_meshPool(makeMeshPoolConfig()) {}
 
 auto MeshAssetStorage::create() -> std::unique_ptr<MeshAssetStorage> {
-    assert(g_meshAssetStorage == nullptr && "only one MeshAssetStorage may live at any given time");
+    debug_assert(g_meshAssetStorage == nullptr, "only one MeshAssetStorage may live at any given time");
     auto meshAssetStorage = std::make_unique<MeshAssetStorage>();
     g_meshAssetStorage = meshAssetStorage.get();
     return meshAssetStorage;

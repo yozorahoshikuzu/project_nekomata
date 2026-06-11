@@ -1,11 +1,16 @@
-cmake_minimum_required(VERSION 4.0)
+cmake_minimum_required(VERSION 4.3)
+set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
+
 include(FetchContent)
 project(nekomata2 VERSION 0.1.0 LANGUAGES CXX C)
 
+set(CMAKE_CXX_MODULE_STD ON)
 set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ----------------------------------------------------------------------------------------------------------------------
+#     Dependencies
 
 find_package(Vulkan REQUIRED)
 find_package(SDL3 REQUIRED)
@@ -16,12 +21,16 @@ FetchContent_Declare(
         vmahpp
         URL      https://github.com/YaaZ/VulkanMemoryAllocator-Hpp/releases/download/v3.3.0+3/VulkanMemoryAllocator-Hpp-3.3.0.tar.gz
         URL_HASH SHA256=8c2a0573babe1f86f3241d12b4c9df40bb944649b7f4239c1c611797f8af6cd5
+        SYSTEM
 )
+set(VMA_STATIC_VULKAN_FUNCTIONS OFF CACHE BOOL "" FORCE)
+set(VMA_DYNAMIC_VULKAN_FUNCTIONS OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(vmahpp)
 
 FetchContent_Declare(xxhash
         GIT_REPOSITORY https://github.com/Cyan4973/xxHash.git
         GIT_TAG v0.8.3
+        SYSTEM
 )
 FetchContent_MakeAvailable(xxhash)
 
@@ -30,6 +39,7 @@ FetchContent_Declare(
         simdjson
         GIT_REPOSITORY https://github.com/simdjson/simdjson.git
         GIT_TAG        v4.6.1
+        SYSTEM
 )
 FetchContent_MakeAvailable(simdjson)
 
@@ -37,6 +47,7 @@ FetchContent_Declare(
         fastgltf
         GIT_REPOSITORY https://github.com/spnda/fastgltf.git
         GIT_TAG        v0.9.0
+        SYSTEM
 )
 
 # Work around fastgltf transiently including simdjson.
@@ -48,6 +59,7 @@ FetchContent_Declare(
         ktx
         GIT_REPOSITORY https://github.com/KhronosGroup/KTX-Software.git
         GIT_TAG        v4.4.2
+        SYSTEM
 )
 
 set(KTX_FEATURE_STATIC_LIBRARY ON CACHE BOOL "" FORCE)
@@ -70,7 +82,24 @@ else()
 endif()
 
 # ----------------------------------------------------------------------------------------------------------------------
-# Building Slang shaders
+#     Vulkan and VMA Modules
+
+add_library(VulkanModule STATIC)
+target_compile_definitions(
+        VulkanModule PUBLIC
+        VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1
+)
+target_link_libraries(VulkanModule PUBLIC Vulkan::Headers)
+target_sources(VulkanModule
+        PUBLIC
+        FILE_SET CXX_MODULES
+        BASE_DIRS ${Vulkan_INCLUDE_DIRS}
+        FILES
+        ${Vulkan_INCLUDE_DIRS}/vulkan/vulkan.cppm
+)
+
+# ----------------------------------------------------------------------------------------------------------------------
+#     Slang Setup
 
 find_program(SLANGC_EXECUTABLE slangc
         HINTS $ENV{VULKAN_SDK}/bin
@@ -125,21 +154,27 @@ function(add_slang_shaders TARGET)
         add_custom_target(${TARGET} DEPENDS ${OUTPUT_FILES})
 endfunction()
 
+# ----------------------------------------------------------------------------------------------------------------------
+#     Sources
+
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
         ${CMAKE_SOURCE_DIR}/src/*.cpp
+)
+file(GLOB_RECURSE MODULE_SOURCES CONFIGURE_DEPENDS
+        ${CMAKE_SOURCE_DIR}/src/*.ixx
 )
 
 file(GLOB_RECURSE SHADER_SOURCES CONFIGURE_DEPENDS
         ${CMAKE_SOURCE_DIR}/src/graphics/shaders/*.slang
 )
 
-file(GLOB_RECURSE PRECOMPILE_HEADERS CONFIGURE_DEPENDS
-        ${CMAKE_SOURCE_DIR}/src/*_prelude.hpp
+add_executable(nekomata2)
+target_sources(nekomata2
+        PRIVATE ${SOURCES}
+        PUBLIC
+        FILE_SET CXX_MODULES FILES
+        ${MODULE_SOURCES}
 )
-
-
-
-add_executable(nekomata2 ${SOURCES})
 add_slang_shaders(nekomata2_spv TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR}/spirv SOURCES ${SHADER_SOURCES})
 add_dependencies(nekomata2 nekomata2_spv)
 
@@ -149,40 +184,18 @@ target_link_libraries(
         nekomata2
         PRIVATE
         ${TCMALLOC_LIB}
-        Vulkan::Headers
+        VulkanModule
+        VulkanMemoryAllocator-Hpp::VulkanMemoryAllocator-Hpp
         Freetype::Freetype
         SDL3::SDL3
         ktx
-        VulkanMemoryAllocator-Hpp::VulkanMemoryAllocator-Hpp
         fastgltf::fastgltf
         xxhash
         utf8::cpp
 )
 
-target_precompile_headers(
-        nekomata2
-        PRIVATE
-        ${PRECOMPILE_HEADERS}
-        <vector> <print> <memory>
-)
-set_target_properties(nekomata2 PROPERTIES UNITY_BUILD ON)
 target_compile_options(
         nekomata2 PRIVATE
-
-        -flto=thin
-        -fvisibility=hidden
-        -fvisibility-inlines-hidden
-        -fno-semantic-interposition
-        -fno-plt
-        -g
-
-        -ftls-model=local-exec
-
-        -fno-math-errno
-        -fno-trapping-math
-        -ffp-contract=fast
-
-        -fwrapv
 
         -Wall
         -Wextra
@@ -203,8 +216,6 @@ target_compile_options(
         -Werror=overloaded-virtual
 
         -Werror=tautological-compare
-
-        -Werror=missing-field-initializers
 )
 
 target_link_options(

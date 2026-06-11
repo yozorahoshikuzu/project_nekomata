@@ -1,7 +1,5 @@
-#include "vk_gpu_obrm_structs.hpp"
-
-#include "context.hpp"
-#include "vk_queue.hpp"
+module nekomata2;
+import :graphics.vulkan.context;
 
 namespace nekomata2 {
 

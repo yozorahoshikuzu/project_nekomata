@@ -1,6 +1,6 @@
-#include "texture_to_shader_index_table.hpp"
-
-#include <assert.h>
+module nekomata2;
+import :core.platform.assert;
+import :graphics.texturesystem.texture_to_shader_index_table;
 
 namespace nekomata2::graphics::texturesystem {
 
@@ -23,8 +23,8 @@ auto TextureToShaderIndexTable::setTextureShaderSamplerIndex(usize textureId, u3
 
 auto TextureToShaderIndexTable::snapshotTables(std::vector<u32>& dstTextureToShaderImageIndexTable, std::vector<u32>& dstTextureToShaderSamplerIndexTable) const
     -> void {
-    assert(dstTextureToShaderImageIndexTable.size() >= m_textureToShaderImageIndexTable.size() && "the texture to shader image index table must have enough capacity for a snapshot");
-    assert(dstTextureToShaderSamplerIndexTable.size() >= m_textureToShaderSamplerIndexTable.size() && "the texture to shader sampler index table must have enough capacity for a snapshot");
+    debug_assert(dstTextureToShaderImageIndexTable.size() >= m_textureToShaderImageIndexTable.size(), "the texture to shader image index table must have enough capacity for a snapshot");
+    debug_assert(dstTextureToShaderSamplerIndexTable.size() >= m_textureToShaderSamplerIndexTable.size(), "the texture to shader sampler index table must have enough capacity for a snapshot");
 
     // It is possible a thread might update one of the indices during the loops. However, we want the latest state anyway for rendering, so it's not an issue.
     for (usize i = 0; i < m_textureToShaderImageIndexTable.size(); i++) {

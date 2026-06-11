@@ -1,5 +1,5 @@
-#include "vk_pipeline_graphics.hpp"
-#include <vulkan/vulkan_raii.hpp>
+module nekomata2;
+import :graphics.vulkan.vk_pipeline_graphics;
 
 namespace nekomata2 {
 

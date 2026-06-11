@@ -1,6 +1,9 @@
-#include "transient_rendering_resources.hpp"
-
-#include "graphics/vulkan/context.hpp"
+module nekomata2;
+import vulkan;
+import vk_mem_alloc;
+import :core.platform.int_def;
+import :graphics.vulkan.context;
+import :graphics.rendering.transient_rendering_resources;
 
 namespace nekomata2::graphics {
 

@@ -1,6 +1,6 @@
-#include "timeline_semaphore.hpp"
-#include "graphics/vulkan/context.hpp"
-#include <cstddef>
+module nekomata2;
+import :graphics.vulkan.context;
+import :graphics.vulkan.sync_primitives.timeline_semaphore;
 
 namespace nekomata2 {
 
@@ -22,4 +22,3 @@ auto VulkanTimelineSemaphore::create(u64 initialValue) -> VulkanTimelineSemaphor
 }
 
 }
-

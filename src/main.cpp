@@ -1,13 +1,8 @@
-#include "core/ecs/ecs.hpp"
-#include "core/ecs/script_base.hpp"
-#include "core/ecs/world/camera.hpp"
-#include "core/ecs/world/renderable.hpp"
-#include "core/ecs/world/transform.hpp"
-#include "core/log/log.hpp"
-#include "core/runtime/entry.hpp"
-#include "graphics/texturesystem/loader/ktx_loader.hpp"
+import std;
+import nekomata2;
+#include <string.h>
 
-#include <random>
+using namespace nekomata2::math;
 
 class MovingScript : public nekomata2::ecs::ScriptBase {
 public:
@@ -199,3 +194,4 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+

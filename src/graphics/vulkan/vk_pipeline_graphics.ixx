@@ -1,0 +1,173 @@
+export module nekomata2:graphics.vulkan.vk_pipeline_graphics;
+import std;
+import vulkan;
+import :core.platform.int_def;
+import :graphics.vulkan.vk_gpu_obrm;
+import :graphics.vulkan.spv_shader_code;
+import :graphics.vulkan.vk_pipeline_layout;
+import :graphics.vulkan.context;
+import :graphics.vulkan.shadercache;
+
+export namespace nekomata2 {
+
+class VulkanGraphicsPipelineBuilder;
+class VulkanGraphicsPipeline {
+public:
+    VulkanGraphicsPipeline(std::nullptr_t);
+    VulkanGraphicsPipeline(vk::raii::Pipeline&& vkPipeline);
+
+    static auto builder() -> VulkanGraphicsPipelineBuilder;
+
+    [[nodiscard]] auto vkPipeline() const -> const vk::raii::Pipeline& { return m_vkPipeline.vkHandle(); }
+
+private:
+    VulkanAsyncRaiiWrapper<vk::raii::Pipeline> m_vkPipeline = nullptr;
+};
+
+class VulkanGraphicsPipelineBuilder {
+public:
+    VulkanGraphicsPipelineBuilder();
+    VulkanGraphicsPipelineBuilder(std::nullptr_t);
+
+    VulkanGraphicsPipelineBuilder(const VulkanGraphicsPipelineBuilder&) = delete;
+    VulkanGraphicsPipelineBuilder(VulkanGraphicsPipelineBuilder&&) = default;
+    VulkanGraphicsPipelineBuilder& operator=(const VulkanGraphicsPipelineBuilder&) = delete;
+    VulkanGraphicsPipelineBuilder& operator=(VulkanGraphicsPipelineBuilder&&) = default;
+
+    [[nodiscard]] constexpr auto addShader(const SpirvShaderCode& shader, vk::ShaderStageFlagBits stage) noexcept -> VulkanGraphicsPipelineBuilder& {
+        auto stageTuple = vk::StructureChain<vk::PipelineShaderStageCreateInfo, vk::ShaderModuleCreateInfo>{
+            vk::PipelineShaderStageCreateInfo{}
+                .setStage(stage)
+                .setPName("main"),
+            shader.shaderModuleCreateInfo()
+        };
+        m_shaderStages.emplace_back(stageTuple);
+        return *this;
+    }
+    [[nodiscard]] constexpr auto setPipelineLayout(const VulkanPipelineLayout& layout) noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_pipelineLayout = layout.vkPipelineLayout();
+        return *this;
+    }
+    [[nodiscard]] constexpr auto setInputTopology(vk::PrimitiveTopology topology) noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_inputAssemblyState.topology = topology;
+        return *this;
+    }
+    [[nodiscard]] constexpr auto setRastLineWidth(f32 lineWidth) noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_rasterizationState.lineWidth = lineWidth;
+        return *this;
+    }
+    [[nodiscard]] constexpr auto setRastPolygonMode(vk::PolygonMode polygonMode) noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_rasterizationState.polygonMode = polygonMode;
+        return *this;
+    }
+    [[nodiscard]] constexpr auto setRastCulling(vk::CullModeFlags cullModeFlags, vk::FrontFace frontFace) noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_rasterizationState.cullMode = cullModeFlags;
+        m_rasterizationState.frontFace = frontFace;
+        return *this;
+    }
+    [[nodiscard]] constexpr auto disableMultisampling() noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_multisampleState.sampleShadingEnable = false;
+        m_multisampleState.rasterizationSamples = vk::SampleCountFlagBits::e1;
+        m_multisampleState.minSampleShading = 1.0;
+        m_multisampleState.alphaToCoverageEnable = false;
+        m_multisampleState.alphaToOneEnable = false;   
+        return *this;
+    }
+    [[nodiscard]] constexpr auto pushRenderingAttachment(vk::PipelineColorBlendAttachmentState blending, vk::Format attachmentFormat) noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_renderingColorAttachmentBlendStates.emplace_back(blending);
+        m_renderingColorAttachmentFormats.emplace_back(attachmentFormat);
+        return *this;
+    }
+    [[nodiscard]] constexpr auto disableDepthTest() noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_depthStencilState.depthTestEnable = false;
+        m_depthStencilState.depthWriteEnable = false;
+        m_depthStencilState.depthCompareOp = vk::CompareOp::eNever;
+        m_depthStencilState.depthBoundsTestEnable = false;
+        m_depthStencilState.stencilTestEnable = false;
+        m_depthStencilState.minDepthBounds = 0.0;
+        m_depthStencilState.maxDepthBounds = 1.0;
+        return *this;
+    }
+    [[nodiscard]] constexpr auto enableDepthTest(bool write) noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_depthStencilState.depthTestEnable = true;
+        m_depthStencilState.depthWriteEnable = write;
+        m_depthStencilState.depthCompareOp = vk::CompareOp::eGreater;
+        m_depthStencilState.depthBoundsTestEnable = false;
+        m_depthStencilState.stencilTestEnable = false;
+        m_depthStencilState.minDepthBounds = 0.0;
+        m_depthStencilState.maxDepthBounds = 1.0;
+        return *this;
+    }
+    [[nodiscard]] constexpr auto setDepthAttachmentFormat(vk::Format format) noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_renderingCreateInfo.depthAttachmentFormat = format;
+        return *this;
+    }
+    [[nodiscard]] constexpr auto setTessellationPatchControlPoints(u32 patchControlPoints) noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_tessellationState = vk::PipelineTessellationStateCreateInfo{}
+            .setPatchControlPoints(patchControlPoints);
+        return *this;
+    }
+    [[nodiscard]] constexpr auto build() -> VulkanGraphicsPipeline {
+        auto viewportState = vk::PipelineViewportStateCreateInfo{}
+            .setViewportCount(1)
+            .setScissorCount(1);
+
+        auto vertexInputState = vk::PipelineVertexInputStateCreateInfo{};
+        
+        auto colorBlendState = vk::PipelineColorBlendStateCreateInfo{}
+            .setLogicOpEnable(false)
+            .setAttachments(m_renderingColorAttachmentBlendStates);
+        
+        auto dynamicStateList = std::array<vk::DynamicState, 2>{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+        auto dynamicState = vk::PipelineDynamicStateCreateInfo{}
+            .setDynamicStates(dynamicStateList);
+
+        m_renderingCreateInfo = m_renderingCreateInfo.setColorAttachmentFormats(m_renderingColorAttachmentFormats);
+
+        auto stagesRaw = m_shaderStages
+            | std::views::transform([](const vk::StructureChain<vk::PipelineShaderStageCreateInfo, vk::ShaderModuleCreateInfo>& chain) -> vk::PipelineShaderStageCreateInfo { return chain.get<vk::PipelineShaderStageCreateInfo>(); })
+            | std::ranges::to<std::vector>();
+
+        auto pipelineInfo = vk::GraphicsPipelineCreateInfo{}
+            .setStages(stagesRaw)
+            .setPVertexInputState(&vertexInputState)
+            .setPInputAssemblyState(&m_inputAssemblyState)
+            .setPViewportState(&viewportState)
+            .setPRasterizationState(&m_rasterizationState)
+            .setPMultisampleState(&m_multisampleState)
+            .setPColorBlendState(&colorBlendState)
+            .setPDepthStencilState(&m_depthStencilState)
+            .setPDynamicState(&dynamicState)
+            .setLayout(m_pipelineLayout);
+
+        if (m_tessellationState) {
+            pipelineInfo.pTessellationState = &m_tessellationState.value();
+        }
+
+        auto sc = vk::StructureChain{
+            pipelineInfo,
+            m_renderingCreateInfo,
+            vk::PipelineBinaryInfoKHR{},
+            vk::PipelineCreateFlags2CreateInfo{}
+        };
+        auto pipeline = VulkanContext::get().shaderCache()->createGraphicsPipeline(sc);
+
+        return VulkanGraphicsPipeline(std::move(pipeline));
+    }
+
+private:
+    vk::PipelineLayout m_pipelineLayout = nullptr;
+    vk::PipelineInputAssemblyStateCreateInfo m_inputAssemblyState = {};
+    vk::PipelineRasterizationStateCreateInfo m_rasterizationState = {};
+    vk::PipelineMultisampleStateCreateInfo m_multisampleState = {};
+    vk::PipelineDepthStencilStateCreateInfo m_depthStencilState = {};
+    vk::PipelineRenderingCreateInfo m_renderingCreateInfo = {};
+    std::optional<vk::PipelineTessellationStateCreateInfo> m_tessellationState = std::nullopt;
+    std::vector<vk::PipelineColorBlendAttachmentState> m_renderingColorAttachmentBlendStates;
+    std::vector<vk::Format> m_renderingColorAttachmentFormats;
+
+    std::vector<vk::StructureChain<vk::PipelineShaderStageCreateInfo, vk::ShaderModuleCreateInfo>> m_shaderStages;
+
+};
+
+}

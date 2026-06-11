@@ -1,15 +1,12 @@
-#include "sdl.hpp"
-#include "../log/log.hpp"
-#include "../platform/int_def.hpp"
-#include "vulkan/vulkan.hpp"
-#include <SDL3/SDL_error.h>
+module;
 #include <SDL3/SDL_init.h>
-#include <SDL3/SDL_video.h>
 #include <SDL3/SDL_vulkan.h>
-#include <cstddef>
-#include <stdexcept>
-#include <system_error>
-#include <vector>
+module nekomata2;
+import std;
+import :core.log;
+import :core.math;
+import vulkan;
+import :core.platform.sdl;
 
 namespace nekomata2 {
 

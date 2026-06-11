@@ -1,10 +1,6 @@
-#include "deletion_queue.hpp"
-#include "context.hpp"
-#include "core/platform/thread.hpp"
-#include "vk_queue.hpp"
-
-#include <print>
-
+module nekomata2;
+import :graphics.vulkan.context;
+import :core.platform.thread;
 
 namespace nekomata2 {
 
@@ -20,7 +16,7 @@ VulkanResourceDeletionQueue::~VulkanResourceDeletionQueue() {
 
     auto signalInfo = vk::SemaphoreSignalInfo{}
         .setSemaphore(graphicsQueueSemaphore)
-        .setValue(UINT64_MAX);
+        .setValue(std::numeric_limits<u64>::max());
 
     VulkanContext::get().vkDevice().signalSemaphore(signalInfo);
 
@@ -70,7 +66,7 @@ auto VulkanResourceDeletionQueue::workerRoutine() -> void {
                     .setValues(values);
 
                 // log::info(" ** Vulkan OBRM thread waiting:    current graphics = {}, async compute = {}, expected graphics = {}, async compute = {}", current_graphics_queue_retire_value, current_async_compute_queue_retire_value, obj->graphics_queue_retire_value, obj->async_compute_queue_retire_value);
-                VulkanContext::get().vkDevice().waitSemaphores(waitInfo, UINT64_MAX);
+                VulkanContext::get().vkDevice().waitSemaphores(waitInfo, std::numeric_limits<u64>::max());
 
 
                 currentGraphicsQueueRetireValue = graphicsQueueSemaphore.getCounterValue();

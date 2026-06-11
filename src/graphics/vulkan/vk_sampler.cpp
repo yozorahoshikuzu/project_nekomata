@@ -1,4 +1,6 @@
-#include "vk_sampler.hpp"
+module nekomata2;
+import :graphics.vulkan.context;
+import :graphics.vulkan.vk_sampler;
 
 namespace nekomata2 {
 

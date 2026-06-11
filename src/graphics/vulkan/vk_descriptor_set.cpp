@@ -1,4 +1,5 @@
-#include "vk_descriptor_set.hpp"
+module nekomata2;
+import :graphics.vulkan.vk_descriptor_set;
 
 namespace nekomata2 {
 

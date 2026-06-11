@@ -1,4 +1,5 @@
-#include "vk_image_view.hpp"
+module nekomata2;
+import :graphics.vulkan.vk_image_view;
 
 namespace nekomata2 {
 

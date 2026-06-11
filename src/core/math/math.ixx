@@ -1,0 +1,7 @@
+export module nekomata2:core.math;
+export import :core.math.consts;
+export import :core.math.matrix_types;
+export import :core.math.quaternion;
+export import :core.math.transform3d;
+export import :core.math.base_matrix;
+export import :core.math.raddeg;

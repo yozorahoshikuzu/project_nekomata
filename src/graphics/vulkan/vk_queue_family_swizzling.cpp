@@ -1,7 +1,5 @@
-#include "vk_queue_family_swizzling.hpp"
-
-#include <cstring>
-#include <stdexcept>
+module nekomata2;
+import :graphics.vulkan.vk_queue_family_swizzling;
 
 namespace nekomata2 {
 
