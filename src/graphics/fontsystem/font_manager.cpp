@@ -1,11 +1,10 @@
-#include "font_manager.hpp"
-
-#include "core/log/log.hpp"
-#include "font_face.hpp"
-
-#include <mutex>
-#include <unordered_set>
+module;
+#include <freetype/freetype.h>
 #include <utf8cpp/utf8.h>
+module nekomata2.graphics.fontsystem.font_manager;
+import nekomata2.core.log;
+import nekomata2.core.platform.assert;
+import nekomata2.graphics.fontsystem.dynamic_font_atlas;
 
 namespace nekomata2::graphics::fonts {
 
@@ -22,7 +21,7 @@ FontManager::~FontManager() {
 }
 
 auto FontManager::create() -> std::unique_ptr<FontManager> {
-    assert(g_fontManager == nullptr && "only one FontManager may live at any given time");
+    debug_assert(g_fontManager == nullptr, "only one FontManager may live at any given time");
     auto fontManager = std::make_unique<FontManager>();
     g_fontManager = fontManager.get();
     return fontManager;

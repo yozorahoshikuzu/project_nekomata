@@ -1,5 +1,5 @@
-#include "context.hpp"
-#include "vk_commands.hpp"
+module nekomata2.graphics.vulkan.vk_commands;
+import nekomata2.graphics.vulkan.context;
 
 namespace nekomata2 {
 

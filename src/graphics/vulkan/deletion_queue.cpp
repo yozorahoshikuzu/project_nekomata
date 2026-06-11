@@ -1,10 +1,6 @@
-#include "deletion_queue.hpp"
-#include "context.hpp"
-#include "core/platform/thread.hpp"
-#include "vk_queue.hpp"
-
-#include <print>
-
+module nekomata2.graphics.vulkan.deletion_queue;
+import nekomata2.graphics.vulkan.context;
+import nekomata2.core.platform.thread;
 
 namespace nekomata2 {
 
@@ -20,7 +16,7 @@ VulkanResourceDeletionQueue::~VulkanResourceDeletionQueue() {
 
     auto signalInfo = vk::SemaphoreSignalInfo{}
         .setSemaphore(graphicsQueueSemaphore)
-        .setValue(UINT64_MAX);
+        .setValue(std::numeric_limits<u64>::max());
 
     VulkanContext::get().vkDevice().signalSemaphore(signalInfo);
 

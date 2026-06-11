@@ -1,4 +1,4 @@
-#include "dynamic_font_atlas.hpp"
+module nekomata2.graphics.fontsystem.dynamic_font_atlas;
 
 namespace nekomata2::graphics::rendering {
 

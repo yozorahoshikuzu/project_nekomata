@@ -1,0 +1,16 @@
+export module nekomata2.core.ui.components.ui_text;
+import nekomata2.graphics.fontsystem.font_face;
+
+export namespace nekomata2::ui {
+
+struct UiText {
+    UiText() = default;
+    explicit UiText(std::string_view text, float size, graphics::fonts::FontFace&& fontFace)
+        : size(size), fontFace(std::move(fontFace)), text(text) {}
+
+    float size;
+    graphics::fonts::FontFace fontFace;
+    std::string text;
+};
+
+}

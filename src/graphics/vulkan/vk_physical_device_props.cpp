@@ -1,12 +1,4 @@
-#include "vk_physical_device_props.hpp"
-
-#include "core/log/log.hpp"
-
-#include <algorithm>
-#include <ranges>
-#include <string>
-#include <unordered_set>
-#include <vector>
+module nekomata2.graphics.vulkan.vk_physical_device_props;
 
 using namespace std::literals;
 

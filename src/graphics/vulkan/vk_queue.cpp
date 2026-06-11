@@ -1,15 +1,7 @@
-#include "vk_queue.hpp"
-
-#include "graphics/vulkan/sync_primitives/fence.hpp"
-#include "sync_primitives/binary_semaphore.hpp"
-#include "vk_swapchain.hpp"
-#include <bit>
-#include <cstddef>
-#include <memory>
-#include <mutex>
-#include <print>
-#include <ranges>
-#include <utility>
+module nekomata2.graphics.vulkan.vk_queue;
+import std;
+import vulkan;
+import nekomata2.graphics.vulkan.context;
 
 namespace nekomata2 {
 

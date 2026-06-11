@@ -1,4 +1,4 @@
-#include "shadercache.hpp"
+module nekomata2.graphics.vulkan.shadercache;
 
 namespace nekomata2 {
 

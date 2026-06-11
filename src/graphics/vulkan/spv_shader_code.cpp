@@ -1,11 +1,5 @@
-#include "spv_shader_code.hpp"
-#include "core/log/log.hpp"
-#include "core/platform/int_def.hpp"
-#include "vulkan/vulkan.hpp"
-#include <expected>
-#include <filesystem>
-#include <fstream>
-#include <vector>
+module nekomata2.graphics.vulkan.spv_shader_code;
+import nekomata2.core.log;
 
 namespace nekomata2 {
 

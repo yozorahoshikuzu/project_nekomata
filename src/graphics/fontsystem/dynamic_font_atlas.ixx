@@ -1,0 +1,88 @@
+module;
+#include <xxhash.h>
+export module nekomata2.graphics.fontsystem.dynamic_font_atlas;
+import std;
+import vulkan;
+import vk_mem_alloc;
+import nekomata2.core.platform.int_def;
+import nekomata2.core.math;
+import nekomata2.graphics.fontsystem.font_face;
+import nekomata2.graphics.vulkan.vk_image;
+import nekomata2.graphics.texturesystem.texture_manager;
+import nekomata2.graphics.vulkan.vk_queue_family_swizzling;
+import nekomata2.graphics.vulkan.context;
+
+export namespace nekomata2::graphics::rendering {
+
+class AtlasShelfPacker {
+public:
+    AtlasShelfPacker(std::nullptr_t);
+    AtlasShelfPacker(i32 width, i32 height);
+
+    std::optional<math::Vector2i> pack(i32 width, i32 height);
+
+private:
+    struct Shelf {
+        i32 height;
+        i32 writerX, writerY;
+    };
+
+    std::vector<Shelf> m_shelves;
+    i32 m_atlasWidth, m_atlasHeight;
+};
+
+struct AtlasGlyphKey {
+    fonts::FontFace fontFace;
+    u32 pixelSize;
+    u32 glyphIndex;
+
+    bool operator==(const AtlasGlyphKey&) const = default;
+};
+
+struct AtlasGlyphKeyHash {
+    std::size_t operator()(const AtlasGlyphKey& key) const noexcept {
+        return XXH3_64bits(&key, sizeof(key));
+    }
+};
+
+struct AtlasGlyphParams {
+    math::Vector2f texcoordStart;
+    math::Vector2f texcoordEnd;
+    u32 imageShaderIndex;
+    math::Vector2f bearing;
+    math::Vector2f size;
+    float advance;
+};
+
+struct DynamicBitmapFontAtlas {
+    struct AtlasTexture {
+        VulkanImage image;
+        u32 imageShaderIndex;
+
+        AtlasShelfPacker imagePacker;
+    };
+
+    std::vector<AtlasTexture> m_atlasTextures;
+    std::unordered_map<AtlasGlyphKey, AtlasGlyphParams, AtlasGlyphKeyHash> m_glyphParams;
+
+    auto insertGlyphParam(fonts::FontFace fontFace, u32 pixelSize, u32 glyphIndex, math::Vector2f texcoordStart, math::Vector2f texcoordEnd, u32 imageShaderIndex, math::Vector2f bearing, math::Vector2f size, float advance) -> void {
+        m_glyphParams.emplace(AtlasGlyphKey { fontFace, pixelSize, glyphIndex }, AtlasGlyphParams { texcoordStart, texcoordEnd, imageShaderIndex, bearing, size, advance });
+    }
+
+    auto hasGlyphParam(fonts::FontFace fontFace, u32 pixelSize, u32 glyphIndex) -> bool {
+        return m_glyphParams.contains(AtlasGlyphKey { fontFace, pixelSize, glyphIndex });
+    }
+
+    auto getGlyphParams(fonts::FontFace fontFace, u32 pixelSize, u32 glyphIndex) -> AtlasGlyphParams& {
+        return m_glyphParams.at(AtlasGlyphKey { fontFace, pixelSize, glyphIndex });
+    }
+
+    auto pushNewImage(u32 width, u32 height) -> void {
+        auto image = VulkanImage::create(vk::ImageType::e2D, {width, height, 1}, 1, 1, vk::Format::eR8Unorm, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAuto, {}, VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics], vk::ImageLayout::eUndefined);
+        auto imageShaderIndex = texturesystem::TextureManager::get().shaderResourceTable().allocateImageIndex();
+        texturesystem::TextureManager::get().shaderResourceTable().bindImage(image, imageShaderIndex);
+        m_atlasTextures.emplace_back(AtlasTexture { std::move(image), imageShaderIndex.imageIndex, AtlasShelfPacker(width, height) });
+    }
+};
+
+}

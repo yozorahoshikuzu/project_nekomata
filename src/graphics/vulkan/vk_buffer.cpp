@@ -1,7 +1,5 @@
-#include "vk_buffer.hpp"
-#include "core/log/log.hpp"
-#include "graphics/vulkan/context.hpp"
-#include <print>
+module nekomata2.graphics.vulkan.vk_buffer;
+import nekomata2.graphics.vulkan.context;
 
 namespace nekomata2 {
 

@@ -1,12 +1,13 @@
-#include "entry.hpp"
+module nekomata2.core.runtime.entry;
+import std;
+import nekomata2.core.log;
+import nekomata2.core.platform.sdl;
+import nekomata2.core.platform.thread;
 
-#include "core/log/log.hpp"
-#include "core/platform/sdl.hpp"
-#include "core/platform/thread.hpp"
-#include "core/runtime/graphicsthread.hpp"
-#include "core/runtime/mainthread.hpp"
-#include "core/runtime/shared_data.hpp"
-#include "graphics/vulkan/context.hpp"
+#include "core/runtime/graphicsthread.ixx"
+#include "core/runtime/mainthread.ixx"
+#include "core/runtime/shared_data.ixx"
+#include "graphics/vulkan/context.ixx"
 
 namespace nekomata2 {
 

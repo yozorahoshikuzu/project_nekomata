@@ -1,8 +1,6 @@
-#include "sharded_hash_storage.hpp"
-
-#include "core/log/log.hpp"
-
-#include <fstream>
+module nekomata2.core.storage.sharded_hash_storage;
+import std;
+import nekomata2.core.log;
 
 namespace nekomata2::storage {
 

@@ -1,10 +1,5 @@
-//
-// Created by yorha2b on 2026/04/25.
-//
-
-#include "sampler_cache.hpp"
-
-#include "texture_manager.hpp"
+module nekomata2.graphics.texturesystem.sampler_cache;
+import nekomata2.graphics.texturesystem.texture_manager;
 
 namespace nekomata2::graphics::texturesystem {
 

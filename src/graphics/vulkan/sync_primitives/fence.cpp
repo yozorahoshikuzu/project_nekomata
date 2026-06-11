@@ -1,7 +1,5 @@
-#include "fence.hpp"
-#include "graphics/vulkan/context.hpp"
-#include <cstddef>
-#include "core/platform/int_def.hpp"
+module nekomata2.graphics.vulkan.sync_primitives.fence;
+import nekomata2.graphics.vulkan.context;
 
 namespace nekomata2 {
 

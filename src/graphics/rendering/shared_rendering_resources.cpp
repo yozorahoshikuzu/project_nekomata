@@ -1,14 +1,8 @@
-#include "shared_rendering_resources.hpp"
-
-#include "core/log/log.hpp"
-#include "core/math/matrix_types.hpp"
-#include "graphics/fontsystem/font_manager.hpp"
-#include "graphics/meshsystem/pool/mesh_pool.hpp"
-#include "graphics/texturesystem/loader/ktx_loader.hpp"
-#include "graphics/vulkan/vk_descriptor_pool.hpp"
-#include "graphics/vulkan/vk_descriptor_set.hpp"
-#include "graphics/vulkan/vk_descriptor_set_layout.hpp"
-#include "graphics/vulkan/vk_sampler.hpp"
+module nekomata2.graphics.rendering.shared_rendering_resources;
+import vulkan;
+import nekomata2.graphics.texturesystem.texture_manager;
+import nekomata2.graphics.vulkan.spv_shader_code;
+import nekomata2.graphics.fontsystem.font_manager;
 
 namespace nekomata2::graphics {
 

@@ -1,15 +1,17 @@
-//
-// Created by yorha2b on 2026/04/23.
-//
-
-#include "texture_manager.hpp"
-
-#include "../../../cmake-build-debug/_deps/ktx-src/include/ktx.h"
-#include "graphics/cmd_alloc/cmd_alloc.hpp"
-#include "graphics/srt/bindless_descriptor_set_srt.hpp"
-#include "graphics/vulkan/vk_buffer.hpp"
-#include "graphics/vulkan/vk_commands_barriers.hpp"
-#include "ktxvulkan.h"
+module;
+#include <ktx.h>
+#include <ktxvulkan.h>
+#include <cstring>
+module nekomata2.graphics.texturesystem.texture_manager;
+import vk_mem_alloc;
+import nekomata2.core.platform.assert;
+import nekomata2.core.log;
+import nekomata2.graphics.cmd_alloc;
+import nekomata2.graphics.vulkan.vk_queue_family_swizzling;
+import nekomata2.graphics.vulkan.vk_buffer;
+import nekomata2.graphics.vulkan.vk_commands_barriers;
+import nekomata2.graphics.srt.bindless_descriptor_set_srt;
+import nekomata2.graphics.vulkan.context;
 
 namespace nekomata2::graphics::texturesystem {
 
@@ -22,7 +24,7 @@ TextureManager::TextureManager(std::unique_ptr<srt::IShaderResourceTable>&& srt)
     :   m_srt(std::move(srt)), m_textureToShaderIndexTable(2048) {}
 
 auto TextureManager::create() -> std::unique_ptr<TextureManager> {
-    assert(g_textureManager == nullptr && "only one TextureManager may live at any given time");
+    debug_assert(g_textureManager == nullptr, "only one TextureManager may live at any given time");
 
     auto srt = srt::BindlessDescriptorSetShaderResourceTable::create(2048, 2048);
 
@@ -31,9 +33,9 @@ auto TextureManager::create() -> std::unique_ptr<TextureManager> {
     std::vector<u8> pxData = {0x39, 0x43, 0x52, 0xff};
     // loadTextureFromMemoryInternal depends on the sampler!!!
     u32 defaultSamplerIndex = g_textureManager->m_samplerCache.acquireSampler(SamplerParams::defaultValues());
-    assert(defaultSamplerIndex == 0 && "the default sampler didn't have index 0");
+    debug_assert(defaultSamplerIndex == 0, "the default sampler didn't have index 0");
     g_textureManager->m_defaultTexture = g_textureManager->loadTextureFromMemoryInternal(1, 1, 1, 1, 1, vk::Format::eR8G8B8A8Srgb, pxData, SamplerParams::defaultValues());
-    assert(g_textureManager->m_defaultTexture.index == 0 && "the default texture didn't have index 0");
+    debug_assert(g_textureManager->m_defaultTexture.index == 0, "the default texture didn't have index 0");
     return textureManager;
 }
 

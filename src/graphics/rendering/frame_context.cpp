@@ -1,16 +1,24 @@
-#include "frame_context.hpp"
-
-#include "core/log/log.hpp"
-#include "core/math/transform3d.hpp"
-#include "core/overloaded/overloaded.hpp"
-#include "graphics/fontsystem/font_manager.hpp"
-#include "graphics/vulkan/vk_commands_barriers.hpp"
-#include "graphics/vulkan/vk_queue.hpp"
-
-#include <format>
-#include <random>
+module nekomata2.graphics.rendering.frame_context;
+import vulkan;
+import vk_mem_alloc;
+import nekomata2.core.log;
+import nekomata2.core.platform.int_def;
+import nekomata2.graphics.rendering.frame_rendering_resources;
+import nekomata2.core.ecs.world.camera;
+import nekomata2.core.ecs.world.transform;
+import nekomata2.graphics.fontsystem.font_manager;
+import nekomata2.graphics.vulkan.vk_buffer;
+import nekomata2.graphics.meshsystem.mesh_asset_storage;
+import nekomata2.core.ui.ui_drawcmds;
+import nekomata2.graphics.vulkan.context;
+import nekomata2.graphics.texturesystem.texture_manager;
+import nekomata2.graphics.vulkan.vk_commands_barriers;
+import nekomata2.core.ecs.entity;
+import nekomata2.core.overloaded;
 
 namespace nekomata2::graphics {
+
+using namespace nekomata2::math;
 
 FrameContext::FrameContext(std::nullptr_t) {  }
 FrameContext::FrameContext() {
@@ -52,7 +60,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
             firstCameraTransform = renderingData.m_transforms.get(cameraEntitySparseIndex);
         } else {
             firstCameraTransform = ecs::components::Transform{};
-            firstCameraTransform.m_transform3d = Transform3D::identity();
+            firstCameraTransform.m_transform3d = math::Transform3D::identity();
             log::warn("Camera #{} has no transform!", i);
         }
         firstCameraFound = true;
@@ -67,11 +75,11 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         firstCamera.fov = 75.0f;
         firstCamera.renderingEnable = true;
         firstCameraTransform = ecs::components::Transform{};
-        firstCameraTransform.m_transform3d = Transform3D::identity();
-        firstCameraTransform.m_transform3d.m_position = Vector3f(0.0f, 0.0f, 1.2f);
+        firstCameraTransform.m_transform3d = math::Transform3D::identity();
+        firstCameraTransform.m_transform3d.m_position = math::Vector3f(0.0f, 0.0f, 1.2f);
     }
 
-    Vector2f renderingArea = Vector2f(static_cast<f32>(transientRenderingResources.finalDrawBuffer().extent().width), static_cast<f32>(transientRenderingResources.finalDrawBuffer().extent().height));
+    math::Vector2f renderingArea = Vector2f(static_cast<f32>(transientRenderingResources.finalDrawBuffer().extent().width), static_cast<f32>(transientRenderingResources.finalDrawBuffer().extent().height));
 
     float aspectRatio = static_cast<float>(transientRenderingResources.finalDrawBuffer().extent().width) / static_cast<float>(transientRenderingResources.finalDrawBuffer().extent().height);
     float perspFocalLength = renderingArea.y() / (2.0f * std::tan(0.5f * degreesToRadians(firstCamera.fov)));

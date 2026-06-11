@@ -1,8 +1,5 @@
-#include "bindless_descriptor_set_srt.hpp"
-
-#include "graphics/vulkan/vk_descriptor_set.hpp"
-#include "graphics/vulkan/vk_pipeline_layout.hpp"
-#include "srt_consts.hpp"
+module nekomata2.graphics.srt.bindless_descriptor_set_srt;
+import nekomata2.core.log;
 
 namespace nekomata2::graphics::srt {
 

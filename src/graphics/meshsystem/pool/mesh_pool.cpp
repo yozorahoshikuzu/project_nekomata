@@ -1,6 +1,4 @@
-#include "mesh_pool.hpp"
-
-#include <mutex>
+module nekomata2.graphics.meshsystem.pool.mesh_pool;
 
 namespace nekomata2 {
 

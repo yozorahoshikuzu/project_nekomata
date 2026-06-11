@@ -1,4 +1,4 @@
-#include "cmd_alloc.hpp"
+module nekomata2.graphics.cmd_alloc;
 
 namespace nekomata2::cmdalloc {
 

@@ -1,0 +1,31 @@
+export module nekomata2.graphics.texturesystem.texture_to_sader_index_table;
+import std;
+import nekomata2.core.platform.int_def;
+
+export namespace nekomata2::graphics::texturesystem {
+
+/// The reason why we need to translate texture indices to shader indices is as follows:
+///  - Amendments of images/image views (necessary for mip streaming).
+///  - It's easier to bring up a GPU-driven pipeline based on this rather than twiddling with ready-flags and whatnot.
+///
+/// Snapshots of the tables must be made instead of consuming live values to avoid the next main loop iteration messing with values during the current render loop iteration.
+class TextureToShaderIndexTable {
+public:
+    TextureToShaderIndexTable(std::nullptr_t);
+    TextureToShaderIndexTable(usize maxTextureCount);
+
+    TextureToShaderIndexTable(const TextureToShaderIndexTable&) = delete;
+    TextureToShaderIndexTable(TextureToShaderIndexTable&&) = delete;
+    TextureToShaderIndexTable& operator=(const TextureToShaderIndexTable&) = delete;
+    TextureToShaderIndexTable& operator=(TextureToShaderIndexTable&&) = delete;
+
+    auto setTextureShaderImageIndex(usize textureId, u32 shaderImageIndex) -> void;
+    auto setTextureShaderSamplerIndex(usize textureId, u32 shaderSamplerIndex) -> void;
+
+    auto snapshotTables(std::vector<u32>& dstTextureToShaderImageIndexTable, std::vector<u32>& dstTextureToShaderSamplerIndexTable) const -> void;
+private:
+    std::vector<std::atomic<u32>> m_textureToShaderImageIndexTable;
+    std::vector<std::atomic<u32>> m_textureToShaderSamplerIndexTable;
+};
+
+}

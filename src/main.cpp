@@ -1,13 +1,16 @@
-#include "core/ecs/ecs.hpp"
-#include "core/ecs/script_base.hpp"
-#include "core/ecs/world/camera.hpp"
-#include "core/ecs/world/renderable.hpp"
-#include "core/ecs/world/transform.hpp"
-#include "core/log/log.hpp"
-#include "core/runtime/entry.hpp"
-#include "graphics/texturesystem/loader/ktx_loader.hpp"
+import std;
+import nekomata2.core.platform.int_def;
+import nekomata2.core.math;
+import nekomata2.core.log;
+import nekomata2.core.ecs;
+import nekomata2.core.ecs.world.transform;
+import nekomata2.core.ecs.world.renderable;
+import nekomata2.core.runtime.entry;
+import nekomata2.core.ecs.world.camera;
+import nekomata2.graphics.texturesystem.texture_manager;
+import nekomata2.graphics.meshsystem.mesh_asset_storage;
 
-#include <random>
+using namespace nekomata2::math;
 
 class MovingScript : public nekomata2::ecs::ScriptBase {
 public:
