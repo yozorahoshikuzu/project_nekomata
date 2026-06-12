@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 4.3)
 set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
 
+add_compile_options(
+        -flto=thin
+        -fno-plt
+
+        -fno-math-errno
+        -fno-trapping-math
+        -ffp-contract=fast
+        -fwrapv
+)
+add_link_options(-fuse-ld=lld -flto=thin)
+
 include(FetchContent)
 project(nekomata2 VERSION 0.1.0 LANGUAGES CXX C)
 
@@ -199,6 +210,10 @@ target_link_libraries(
 
 target_compile_options(
         nekomata2 PRIVATE
+        -ftls-model=local-exec
+        -fvisibility=hidden
+        -fvisibility-inlines-hidden
+        -fno-semantic-interposition
 
         -Wall
         -Wextra
@@ -224,8 +239,6 @@ target_compile_options(
 target_link_options(
         nekomata2 PRIVATE
 
-        -fuse-ld=lld
-        -flto=thin
 
         -Wl,--gc-sections
         -Wl,-z,now
