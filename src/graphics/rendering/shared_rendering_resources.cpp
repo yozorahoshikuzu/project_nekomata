@@ -23,7 +23,7 @@ SharedRenderingResources::SharedRenderingResources() {
         .addShader(shader, vk::ShaderStageFlagBits::eFragment)
         .setInputTopology(vk::PrimitiveTopology::ePatchList)
         .setRastPolygonMode(vk::PolygonMode::eFill)
-        .setRastCulling(vk::CullModeFlagBits::eNone, vk::FrontFace::eCounterClockwise)
+        .setRastCulling(vk::CullModeFlagBits::eBack, vk::FrontFace::eCounterClockwise)
         .setRastLineWidth(1.0)
         .disableMultisampling()
         .enableDepthTest(true)

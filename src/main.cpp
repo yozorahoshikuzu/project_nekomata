@@ -202,7 +202,7 @@ void onGameInit(std::unique_ptr<nekomata2::ecs::World>& world) {
     mas.perpareLodSpace(mesh, 0, l0verts.size() * sizeof(Vertex), l0inds.size() * sizeof(u32), alignof(Vertex), 4);
     memcpy(mas.getLodList(mesh).lods[0].meshSuballocation.vertexBuffer.hostAddress, l0verts.data(), l0verts.size() * sizeof(Vertex));
     memcpy(mas.getLodList(mesh).lods[0].meshSuballocation.indexBuffer.hostAddress, l0inds.data(), l0inds.size() * sizeof(u32));
-    mas.getLodList(mesh).bestLodIndex.store(3, std::memory_order_release);
+    mas.getLodList(mesh).bestLodIndex.store(0, std::memory_order_release);
     mas.getLodList(mesh).lods[0].screenSizeThreshold = 200.0f;
 
     std::random_device rd;
