@@ -34,6 +34,8 @@ public:
     auto getLogicalSize() const -> math::Vector2i;
     auto getDisplayScale() const -> float;
 
+    auto handle() const -> SDL_Window* { return m_window; }
+
 private:
     SDL_Window* m_window = nullptr;
 };

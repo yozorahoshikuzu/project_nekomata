@@ -24,6 +24,7 @@ MainThread::MainThread(std::shared_ptr<MRThreadsSharedData> mrSharedData, std::u
     log::info("Window display scale: {}", windowDisplayScale);
 
     m_currentWorld = std::make_unique<ecs::World>();
+    m_inputManager = core::input::Input::create();
     m_meshAssetStorage = meshsystem::MeshAssetStorage::create();
     m_textureManager = graphics::texturesystem::TextureManager::create();
     m_fontManager = graphics::fonts::FontManager::create();
@@ -85,14 +86,45 @@ auto MainThread::runMainLoop(const std::function<void(std::unique_ptr<ecs::World
 }
 
 auto MainThread::loop(float dt) -> void {
+    m_inputManager->handleNewFrame(m_sdlWindow);
     VulkanContext::get().antiLagPaceInput(m_frameIndex, 0);
     SDL_Event event;
+    auto totalMouseDelta = math::Vector2f(0.0f);
     while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_EVENT_QUIT) {
+        switch (event.type) {
+        case SDL_EVENT_QUIT: {
             m_mrSharedData->m_shouldQuit.store(true, std::memory_order_release);
             return;
         }
+        case SDL_EVENT_KEY_DOWN: {
+            auto code = core::input::mapSdlKeyToKey(event.key.key);
+            m_inputManager->setKeyState(code, true);
+            break;
+        }
+        case SDL_EVENT_KEY_UP: {
+            auto code = core::input::mapSdlKeyToKey(event.key.key);
+            m_inputManager->setKeyState(code, false);
+            break;
+        }
+        case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+            auto code = core::input::mapSdlMouseButtonToKey(event.button.button);
+            m_inputManager->setKeyState(code, true);
+            break;
+        }
+        case SDL_EVENT_MOUSE_BUTTON_UP: {
+            auto code = core::input::mapSdlMouseButtonToKey(event.button.button);
+            m_inputManager->setKeyState(code, false);
+            break;
+        }
+        case SDL_EVENT_MOUSE_MOTION: {
+            auto position = math::Vector2f(event.motion.x, event.motion.y);
+            totalMouseDelta += math::Vector2f(event.motion.xrel, event.motion.yrel);
+            m_inputManager->setMousePosition(position);
+            break;
+        }
+        }
     }
+    m_inputManager->setMouseDelta(totalMouseDelta);
 
     m_currentWorld->scriptsUpdate(dt);
 

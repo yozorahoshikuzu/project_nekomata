@@ -3,6 +3,7 @@ import nekomata2;
 #include <string.h>
 
 using namespace nekomata2::math;
+using namespace nekomata2::core::input;
 
 class MovingScript : public nekomata2::ecs::ScriptBase {
 public:
@@ -15,7 +16,7 @@ public:
     }
     void onDestroy() override {}
     void onUpdate(float dt) override {
-        m_time += dt;
+        m_time = 0.0f;
 
         m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position =
             Vector3f(
@@ -38,35 +39,75 @@ public:
     float m_rotationConstY;
 };
 
-class DistanceScript : public nekomata2::ecs::ScriptBase {
+class CameraScript : public nekomata2::ecs::ScriptBase {
     public:
     void onCreate() override {
 
         m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity)
             .m_transform3d = Transform3D::identity();
         m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity)
-            .m_transform3d.m_position = { 1.0f, 0.5f, 10.0f };
-        m_clk = std::chrono::steady_clock::now();
-        m_clk2 = std::chrono::steady_clock::now();
+            .m_transform3d.m_position = { 2.0f, 1.0f, 1.0f };
     }
 
     void onDestroy() override {}
 
     void onUpdate(float dt) override {
+        if (m_handleMouseMovement) {
+            auto mousedelta = Input::get().mouseDelta();
+            m_rotationYaw += mousedelta.x() * 0.1f;
+            m_rotationPitch -= mousedelta.y() * 0.1f;
 
-        //if (time2 > 1.0f) {
-        //    auto ent2 = m_workingWorld->createEntity();
-        //    m_workingWorld->emplace<nekomata2::ecs::components::Transform>(ent2);
-        //    m_workingWorld->emplace<nekomata2::ecs::components::Renderable>(ent2);
-        //    m_workingWorld->addScript<MovingScript>(ent2);
-        //    m_workingWorld->getScript<MovingScript>(ent2)->m_spinoffset = time2;
-        //    m_clk2 = std::chrono::steady_clock::now();
-        //}
+            m_rotationYaw = std::fmod(m_rotationYaw, 360.0f);
+            if (m_rotationYaw < 0.0f) m_rotationYaw += 360.0f;
+            m_rotationPitch = std::clamp(m_rotationPitch, -90.0f, 90.0f);
+
+
+            auto yawQuat = Quaternion::fromAxisAngle(Vector3f(0.0f, 1.0f, 0.0f), degreesToRadians(m_rotationYaw));
+            auto pitchQuat = Quaternion::fromAxisAngle(Vector3f(1.0f, 0.0f, 0.0f), degreesToRadians(m_rotationPitch));
+
+            m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity).m_transform3d.m_rotation = yawQuat * pitchQuat;
+        }
+
+        float forwardVel = 0.0f;
+        float sidewaysVel = 0.0f;
+        float upVel = 0.0f;
+
+        if (Input::get().isKeyDown(Key::W)) forwardVel -= 1.0f;
+        if (Input::get().isKeyDown(Key::S)) forwardVel += 1.0f;
+        if (Input::get().isKeyDown(Key::A)) sidewaysVel += 1.0f;
+        if (Input::get().isKeyDown(Key::D)) sidewaysVel -= 1.0f;
+        if (Input::get().isKeyDown(Key::Space)) upVel += 1.0f;
+        if (Input::get().isKeyDown(Key::C)) upVel -= 1.0f;
+
+
+        auto dp = Vector3f(sidewaysVel, upVel, forwardVel);
+
+        if (dp != Vector3f(0.0f)) {
+            auto factor = 5.0f;
+            if (Input::get().isKeyDown(Key::LShift)) factor = 25.0f;
+
+            auto rotation = m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity).m_transform3d.m_rotation;
+            auto delta = dp.normalize() * dt * factor;
+            delta = rotation.rotateVector3f(delta);
+
+            m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position += delta;
+        }
+
+        if (Input::get().isKeyDown(Key::Escape)) {
+            Input::get().setMouseMode(MouseMode::Normal);
+            m_handleMouseMovement = false;
+        }
+
+        if (Input::get().isKeyDown(Key::MouseLeft)) {
+            Input::get().setMouseMode(MouseMode::Captured);
+            m_handleMouseMovement = true;
+        }
+
     }
 
-
-    std::chrono::time_point<std::chrono::steady_clock> m_clk;
-    std::chrono::time_point<std::chrono::steady_clock> m_clk2;
+    bool m_handleMouseMovement = true;
+    float m_rotationPitch = 0.0f;
+    float m_rotationYaw = 0.0f;
 };
 
 
@@ -161,7 +202,7 @@ void onGameInit(std::unique_ptr<nekomata2::ecs::World>& world) {
     mas.perpareLodSpace(mesh, 0, l0verts.size() * sizeof(Vertex), l0inds.size() * sizeof(u32), alignof(Vertex), 4);
     memcpy(mas.getLodList(mesh).lods[0].meshSuballocation.vertexBuffer.hostAddress, l0verts.data(), l0verts.size() * sizeof(Vertex));
     memcpy(mas.getLodList(mesh).lods[0].meshSuballocation.indexBuffer.hostAddress, l0inds.data(), l0inds.size() * sizeof(u32));
-    mas.getLodList(mesh).bestLodIndex.store(0, std::memory_order_release);
+    mas.getLodList(mesh).bestLodIndex.store(3, std::memory_order_release);
     mas.getLodList(mesh).lods[0].screenSizeThreshold = 200.0f;
 
     std::random_device rd;
@@ -183,8 +224,9 @@ void onGameInit(std::unique_ptr<nekomata2::ecs::World>& world) {
     auto cameraEnt = world->createEntity();
     world->emplace<nekomata2::ecs::components::Camera>(cameraEnt, 0.01f, 1000.0f, 60.0f, true);
     world->emplace<nekomata2::ecs::components::Transform>(cameraEnt);
-    world->get<nekomata2::ecs::components::Transform>(cameraEnt).m_transform3d.m_position = { 2.0f, 1.0f, 1.0f };
-    world->addScript<DistanceScript>(cameraEnt);
+    world->addScript<CameraScript>(cameraEnt);
+
+    Input::get().setMouseMode(MouseMode::Captured);
 }
 
 int main(int argc, char* argv[]) {
