@@ -16,13 +16,13 @@ public:
     }
     void onDestroy() override {}
     void onUpdate(float dt) override {
-        m_time = 0.0f;
+        m_time += dt;
 
         m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position =
             Vector3f(
                 m_spinRadius * std::cos(m_spinInitialTheta + m_spinThetaSpeed * m_time),
                 m_spinRadius * std::sin(m_spinInitialTheta + m_spinThetaSpeed * m_time),
-                -10.0f * std::cos(m_spinInitialPhi + m_spinPhiSpeed * m_time)
+                -100.0f * std::cos(m_spinInitialPhi + m_spinPhiSpeed * m_time)
             );
         m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity)
             .m_transform3d.m_rotation = Quaternion::fromEulerAngles(0.8f * m_time * m_rotationConstX, 0.8f * m_time * m_rotationConstY, 0.4f * m_time * m_rotationConstX);
@@ -103,6 +103,7 @@ class CameraScript : public nekomata2::ecs::ScriptBase {
             m_handleMouseMovement = true;
         }
 
+        auto camPos = m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position;
     }
 
     bool m_handleMouseMovement = true;
@@ -174,12 +175,12 @@ void onGameInit(std::unique_ptr<nekomata2::ecs::World>& world) {
     // initially bestLodIndex = ~0 => no LODs are ready (rendering thread will skip rendering).
 
     // LOD 3
-    auto [l3verts, l3inds] = generateSphere(7, 7, 1.0f);
+    auto [l3verts, l3inds] = generateSphere(10, 10, 1.0f);
     mas.perpareLodSpace(mesh, 3, l3verts.size() * sizeof(Vertex), l3inds.size() * sizeof(u32), alignof(Vertex), 4);
     memcpy(mas.getLodList(mesh).lods[3].meshSuballocation.vertexBuffer.hostAddress, l3verts.data(), l3verts.size() * sizeof(Vertex));
     memcpy(mas.getLodList(mesh).lods[3].meshSuballocation.indexBuffer.hostAddress, l3inds.data(), l3inds.size() * sizeof(u32));
     mas.getLodList(mesh).bestLodIndex.store(3, std::memory_order_release);
-    mas.getLodList(mesh).lods[3].screenSizeThreshold = 15.0f;
+    mas.getLodList(mesh).lods[3].screenSizeThreshold = 8.0f;
 
     // LOD 2
     auto [l2verts, l2inds] = generateSphere(16, 16, 1.0f);
@@ -187,7 +188,7 @@ void onGameInit(std::unique_ptr<nekomata2::ecs::World>& world) {
     memcpy(mas.getLodList(mesh).lods[2].meshSuballocation.vertexBuffer.hostAddress, l2verts.data(), l2verts.size() * sizeof(Vertex));
     memcpy(mas.getLodList(mesh).lods[2].meshSuballocation.indexBuffer.hostAddress, l2inds.data(), l2inds.size() * sizeof(u32));
     mas.getLodList(mesh).bestLodIndex.store(2, std::memory_order_release);
-    mas.getLodList(mesh).lods[2].screenSizeThreshold = 30.0f;
+    mas.getLodList(mesh).lods[2].screenSizeThreshold = 20.0f;
 
     // LOD 1
     auto [l1verts, l1inds] = generateSphere(30, 30, 1.0f);
@@ -195,7 +196,7 @@ void onGameInit(std::unique_ptr<nekomata2::ecs::World>& world) {
     memcpy(mas.getLodList(mesh).lods[1].meshSuballocation.vertexBuffer.hostAddress, l1verts.data(), l1verts.size() * sizeof(Vertex));
     memcpy(mas.getLodList(mesh).lods[1].meshSuballocation.indexBuffer.hostAddress, l1inds.data(), l1inds.size() * sizeof(u32));
     mas.getLodList(mesh).bestLodIndex.store(1, std::memory_order_release);
-    mas.getLodList(mesh).lods[1].screenSizeThreshold = 100.0f;
+    mas.getLodList(mesh).lods[1].screenSizeThreshold = 80.0f;
 
     // LOD 0
     auto [l0verts, l0inds] = generateSphere(100, 100, 1.0f);
@@ -208,13 +209,13 @@ void onGameInit(std::unique_ptr<nekomata2::ecs::World>& world) {
     std::random_device rd;
     std::mt19937 gen(rd());
 
-    std::uniform_real_distribution<float> radiusDist(3.0f, 12.0f);
+    std::uniform_real_distribution<float> radiusDist(3.0f, 120.0f);
     std::uniform_real_distribution<float> thetaDist(0.0f, 2.0f * consts::PI);
     std::uniform_real_distribution<float> phiDist(0.1f, consts::PI - 1.0f);
     std::uniform_real_distribution<float> thetaSpeedDist(0.04f, 0.16f);
     std::uniform_real_distribution<float> phiSpeedDist(0.01f, 0.07f);
     std::uniform_real_distribution<float> rotationConstDist(0.05f, 0.15f);
-    for (usize i = 0; i < 50; i++) {
+    for (usize i = 0; i < 2000; i++) {
         auto ent = world->createEntity();
         world->emplace<nekomata2::ecs::components::Transform>(ent);
         world->emplace<nekomata2::ecs::components::Renderable>(ent, mesh, ts1);
