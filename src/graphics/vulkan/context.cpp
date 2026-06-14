@@ -134,8 +134,7 @@ auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debu
         .setApplicationVersion(vk::makeApiVersion(0, 0, 1, 0))
         .setEngineVersion(vk::makeApiVersion(0, 0, 1, 0))
         .setApiVersion(vk::ApiVersion14);
-    
-    // TODO: Extension and layer availability check
+
     auto availableInstanceLayers = vk::enumerateInstanceLayerProperties()
         | std::views::transform([](const auto& cstr) { return std::string(cstr.layerName); })
         | std::ranges::to<std::vector>();
@@ -147,11 +146,8 @@ auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debu
     
     std::vector<const char*> instanceLayersC;
 
-    if (debugEnable)
+    if (debugEnable && std::ranges::any_of(availableInstanceLayers, [](const auto& layer) { return layer == "VK_LAYER_KHRONOS_validation"; }))
         instanceLayersC.emplace_back("VK_LAYER_KHRONOS_validation");
-
-    if (std::ranges::contains(availableInstanceLayers, "VK_LAYER_KORTHOS_low_latency"))
-        instanceLayersC.emplace_back("VK_LAYER_KORTHOS_low_latency");
 
     auto instanceInfo = vk::InstanceCreateInfo{}
         .setPApplicationInfo(&appInfo)
