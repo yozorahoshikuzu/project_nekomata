@@ -36,6 +36,33 @@ inline vk::Offset3D toOffset3D(const vk::Extent3D& extent) {
     };
 }
 
+inline bool isObjectVisible(
+    Vector3f objectPos, float objectBoundingSphereRadius,
+    Vector3f cameraPos, Quaternion cameraRotation,
+    float perspectiveFov, float perspectiveAspectRatio, float perspectiveNear, float perspectiveFar
+) {
+    auto objectToCamera = cameraPos - objectPos;
+    auto cameraRotationConj = cameraRotation.conjugate();
+    auto camspaceObjectPos = cameraRotationConj.rotateVector3f(objectToCamera);
+
+    // Near/far planes test
+    if (camspaceObjectPos.z() + objectBoundingSphereRadius < perspectiveNear) return false;
+    if (camspaceObjectPos.z() - objectBoundingSphereRadius > perspectiveFar) return false;
+
+    // Left/right/top/bottom planes test
+    float hy = perspectiveFov * 0.5f;
+    float hx = std::atanf(std::tanf(hy) * perspectiveAspectRatio);
+    float sx = std::sin(hx), sy = std::sin(hy);
+    float cx = std::cos(hx), cy = std::cos(hy);
+
+    if ( camspaceObjectPos.x() * cx + camspaceObjectPos.z() * sx < -objectBoundingSphereRadius) return false; // left
+    if (-camspaceObjectPos.x() * cx + camspaceObjectPos.z() * sx < -objectBoundingSphereRadius) return false; // right
+    if ( camspaceObjectPos.y() * cy + camspaceObjectPos.z() * sy < -objectBoundingSphereRadius) return false; // top
+    if (-camspaceObjectPos.y() * cy + camspaceObjectPos.z() * sy < -objectBoundingSphereRadius) return false; // bottom
+
+    return true;
+}
+
 auto FrameContext::execute(TransientRenderingResources& transientRenderingResources, SharedRenderingResources& sharedRenderingResources, VulkanSwapchain& swapchain, MRThreadsSharedDataLeaf& renderingData, float timeSinceStart) -> FrameResult {
     m_frameRenderingResources.frameDoneFence().waitForSignal(std::numeric_limits<u64>::max());
 
@@ -254,6 +281,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         memcpy((void*)(pushConstantData.data() + 24), &textureSamplerId, 4);
         memcpy((pushConstantData.data() + 28), &shouldInvertColors, 4);
 
+
         // Pick an LOD
         Vector3f objectPos = Vector3f(0.0f);
         float objectUniformScale = 1.0f;
@@ -265,6 +293,11 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
             float sy = Vector3f(transformMatrix[0, 1], transformMatrix[1, 1], transformMatrix[2, 1]).length();
             float sz = Vector3f(transformMatrix[0, 2], transformMatrix[1, 2], transformMatrix[2, 2]).length();
             objectUniformScale = std::max({sx, sy, sz});
+        }
+
+        // See if the object is visible
+        if (!isObjectVisible(objectPos, objectUniformScale * lodList.boundingSphereRadius, firstCameraTransform.m_transform3d.m_position, firstCameraTransform.m_transform3d.m_rotation, degreesToRadians(firstCamera.fov), aspectRatio, firstCamera.nearPlane, firstCamera.farPlane)) {
+            continue;
         }
 
         float screenPixels = lodList.computeScreenSpaceError(objectPos, firstCameraTransform.m_transform3d.m_position, perspFocalLength, objectUniformScale);
