@@ -98,6 +98,7 @@ endif()
 add_library(VulkanModule STATIC)
 target_compile_definitions(
         VulkanModule PUBLIC
+        VK_NO_PROTOTYPES
         VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1
 )
 target_link_libraries(VulkanModule PUBLIC Vulkan::Headers)
