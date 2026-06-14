@@ -153,11 +153,6 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     bool hasExtDescriptorHeap = std::ranges::contains(supportedExtensionNames, vk::EXTDescriptorHeapExtensionName);
     bool hasKhrPipelineBinary = std::ranges::contains(supportedExtensionNames, vk::KHRPipelineBinaryExtensionName);
 
-    if (!hasKhrPipelineBinary) {
-        // TODO: require pipeline binaries for now, add a vk::PipelineCache fallback later
-        return std::unexpected(PhysicalDevicePropertyQueryError{.m_kind = PhysicalDevicePropertyQueryErrorKind::MissingKhrPipelineBinary});
-    }
-
     auto antiLagMethod = PhysicalDeviceAntiLagMethod::None;
 
     if (std::ranges::contains(supportedExtensionNames, vk::AMDAntiLagExtensionName) && featuresQuery.get<vk::PhysicalDeviceAntiLagFeaturesAMD>().antiLag) {

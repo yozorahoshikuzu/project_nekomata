@@ -82,7 +82,7 @@ auto VulkanContext::create(nekomata2::SdlWindow& sdlWindow) -> std::unique_ptr<V
     vkContext->m_vkResourceDeletionQueue = std::make_unique<VulkanResourceDeletionQueue>();
     vkContext->m_vkResourceDeletionQueue->run();
     g_vkResourceDeletionQueue = vkContext->m_vkResourceDeletionQueue.get();
-    vkContext->m_shaderCache = std::make_unique<ShaderCache>();
+    vkContext->m_shaderCache = std::make_unique<ShaderCache>(vk_physical_device_props.m_hasKhrPipelineBinary);
 
     return vkContext;
 }
@@ -183,6 +183,9 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
 
     if (std::ranges::all_of(props, [](const auto& val) { return !std::get<1>(val).has_value(); })) {
         log::crit("No GPUs shown by loader are supported!");
+        for (auto& [i, prop] : props) {
+            log::crit("  GPU #{}: {}", i, prop.error().toString());
+        }
         throw std::logic_error("no GPUs shown by loader are supported");
     }
 
@@ -190,7 +193,7 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
 
     for (auto& [i, prop] : props) {
         if (!prop.has_value()) {
-            log::warn("GPU #{} is not supported", i);
+            log::warn("GPU #{} is not supported, reason: {}", i, prop.error().toString());
             continue;
         }
         scores[i] = prop->autoselectPriorityScore();

@@ -7,11 +7,11 @@ import :graphics.vulkan.shadercache.pipeline_binary_frontend;
 
 export namespace nekomata2 {
 
-using ShaderCacheFrontend = std::variant<ShaderCachePipelineBinaryFrontend>;
+using ShaderCacheFrontend = std::variant<std::monostate, ShaderCachePipelineBinaryFrontend>;
 
 class ShaderCache {
 public:
-    ShaderCache();
+    ShaderCache(bool usePipelineBinaries);
 
     template <typename... ScElements>
         requires (std::is_same_v<vk::GraphicsPipelineCreateInfo, ScElements> || ...)
@@ -19,7 +19,8 @@ public:
         && (std::is_same_v<vk::PipelineBinaryInfoKHR, ScElements> || ...)
     auto createGraphicsPipeline(vk::StructureChain<ScElements...>& chain) -> vk::raii::Pipeline {
         return std::visit(overloaded{
-            [&](ShaderCachePipelineBinaryFrontend& sc) { return sc.handleCreateGraphicsPipeline(chain); }
+            [&](ShaderCachePipelineBinaryFrontend& sc) { return sc.handleCreateGraphicsPipeline(chain); },
+            [&](auto&) { return VulkanContext::get().vkDevice().createGraphicsPipeline(nullptr, chain.template get<vk::GraphicsPipelineCreateInfo>()); }
         }, m_shaderCacheFrontend);
     }
 private:

@@ -3,10 +3,16 @@ import :graphics.vulkan.shadercache;
 
 namespace nekomata2 {
 
-ShaderCache::ShaderCache()
-    : m_shaderCacheFrontend(ShaderCachePipelineBinaryFrontend(makeShaderCacheDirectoryPath(), 2, 1)) {
+ShaderCache::ShaderCache(bool usePipelineBinaries) {
+    if (usePipelineBinaries) {
+        m_shaderCacheFrontend = ShaderCachePipelineBinaryFrontend(makeShaderCacheDirectoryPath(), 2, 1);
+    } else {
+        m_shaderCacheFrontend = std::monostate{};
+    }
+
     std::visit(overloaded{
-        [&](ShaderCachePipelineBinaryFrontend& sc) { sc.checkGlobalKeyAndInvalidateStale(); }
+        [&](ShaderCachePipelineBinaryFrontend& sc) { sc.checkGlobalKeyAndInvalidateStale(); },
+        [&](auto&) { }
     }, m_shaderCacheFrontend);
 }
 

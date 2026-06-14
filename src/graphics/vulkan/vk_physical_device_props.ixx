@@ -23,11 +23,62 @@ enum class PhysicalDevicePropertyQueryErrorKind {
     MissingVk12TimelineSemaphore,
     MissingVk10SamplerAnisotropy,
     MissingExtImageViewMinLod,
-    MissingKhrPipelineBinary,
 };
 
 struct PhysicalDevicePropertyQueryError {
     PhysicalDevicePropertyQueryErrorKind m_kind;
+
+    std::string toString() const {
+        std::string cause = "";
+        switch (m_kind) {
+            case PhysicalDevicePropertyQueryErrorKind::MissingKhrSwapchain:
+                cause = "Missing Vulkan extension VK_KHR_swapchain";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk14Maintenance5:
+                cause = "Missing Vulkan 1.4 feature maintenance5";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk13Synchronization2:
+                cause = "Missing Vulkan 1.3 feature synchronization2";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk13DynamicRendering:
+                cause = "Missing Vulkan 1.3 feature dynamicRendering";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk12BufferDeviceAddress:
+                cause = "Missing Vulkan 1.2 feature bufferDeviceAddress";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk12DescriptorIndexing:
+                cause = "Missing Vulkan 1.2 feature descriptorIndexing";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk12ShaderSampledImageArrayNonUniformIndexing:
+                cause = "Missing Vulkan 1.2 feature shaderSampledImageArrayNonUniformIndexing";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk12DescriptorBindingPartiallyBound:
+                cause = "Missing Vulkan 1.2 feature descriptorBindingPartiallyBound";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk12DescriptorBindingSampledImageUpdateAfterBind:
+                cause = "Missing Vulkan 1.2 feature descriptorBindingSampledImageUpdateAfterBind";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk12DescriptorBindingUpdateUnusedWhilePending:
+                cause = "Missing Vulkan 1.2 feature descriptorBindingUpdateUnusedWhilePending";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk12RuntimeDescriptorArray:
+                cause = "Missing Vulkan 1.2 feature runtimeDescriptorArray";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk12ScalarBlockLayout:
+                cause = "Missing Vulkan 1.2 feature scalarBlockLayout";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk12TimelineSemaphore:
+                cause = "Missing Vulkan 1.2 feature timelineSemaphore";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk10SamplerAnisotropy:
+                cause = "Missing Vulkan 1.0 feature samplerAnisotropy";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingExtImageViewMinLod:
+                cause = "Missing Vulkan extension VK_EXT_image_view_min_lod";
+                break;
+        }
+        return cause;
+    }
 };
 
 enum class PhysicalDeviceAntiLagMethod {
