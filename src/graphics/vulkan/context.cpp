@@ -88,38 +88,38 @@ auto VulkanContext::create(nekomata2::SdlWindow& sdlWindow) -> std::unique_ptr<V
 }
 
 auto VulkanContext::antiLagPaceInput(u64 frameIndex, u32 targetFps) -> void {
-    switch (m_vkPhysicalDeviceProperties.m_antiLagMethod) {
-    case PhysicalDeviceAntiLagMethod::None: return;
-    case PhysicalDeviceAntiLagMethod::AMDAntiLag2:
+    auto antilagMethod = m_antiLagMethod.load(std::memory_order_relaxed);
+
+    if (m_vkPhysicalDeviceProperties.m_hasAMDAntiLag2) {
+        auto mode = (antilagMethod == AntiLagMethod::AMDAntiLag2) ? vk::AntiLagModeAMD::eOn : vk::AntiLagModeAMD::eOff;
         auto antilagPresentInfo = vk::AntiLagPresentationInfoAMD{}
             .setFrameIndex(frameIndex)
             .setStage(vk::AntiLagStageAMD::eInput);
 
         auto antilagData = vk::AntiLagDataAMD{}
-            .setMode(m_antilagEnable ? vk::AntiLagModeAMD::eOn : vk::AntiLagModeAMD::eOff)
+            .setMode(mode)
             .setMaxFPS(targetFps)
             .setPPresentationInfo(&antilagPresentInfo);
 
         m_vkDevice.antiLagUpdateAMD(antilagData);
-        break;
     }
 }
 
 auto VulkanContext::antiLagPacePresent(u64 frameIndex, u32 targetFps) -> void {
-    switch (m_vkPhysicalDeviceProperties.m_antiLagMethod) {
-    case PhysicalDeviceAntiLagMethod::None: return;
-    case PhysicalDeviceAntiLagMethod::AMDAntiLag2:
+    auto antilagMethod = m_antiLagMethod.load(std::memory_order_relaxed);
+
+    if (m_vkPhysicalDeviceProperties.m_hasAMDAntiLag2) {
+        auto mode = (antilagMethod == AntiLagMethod::AMDAntiLag2) ? vk::AntiLagModeAMD::eOn : vk::AntiLagModeAMD::eOff;
         auto antilagPresentInfo = vk::AntiLagPresentationInfoAMD{}
             .setFrameIndex(frameIndex)
             .setStage(vk::AntiLagStageAMD::ePresent);
 
         auto antilagData = vk::AntiLagDataAMD{}
-            .setMode(m_antilagEnable ? vk::AntiLagModeAMD::eOn : vk::AntiLagModeAMD::eOff)
+            .setMode(mode)
             .setMaxFPS(targetFps)
             .setPPresentationInfo(&antilagPresentInfo);
 
         m_vkDevice.antiLagUpdateAMD(antilagData);
-        break;
     }
 }
 
@@ -201,18 +201,11 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
         log::info("  has_ext_memory_budget: {}", prop->m_hasExtMemoryBudget);
         log::info("  has_ext_memory_priority: {}", prop->m_hasExtMemoryPriority);
         log::info("  has_khr_maintenance4: {}", prop->m_hasKhrMaintenance4);
-        log::info("  has_khr_maintenance5: {}", prop->m_hasKhrMaintenance5);
         log::info("  has_ray_tracing: {}", prop->m_hasRayTracing);
         log::info("  has_ext_descriptor_heap: {}", prop->m_hasExtDescriptorHeap);
         log::info("  has_khr_pipeline_binary: {}", prop->m_hasKhrPipelineBinary);
-        switch (prop->m_antiLagMethod) {
-        case PhysicalDeviceAntiLagMethod::AMDAntiLag2:
-            log::info("  anti_lag_method: AMD Anti-Lag 2");
-            break;
-        case PhysicalDeviceAntiLagMethod::None:
-            log::info("  anti_lag_method: None");
-            break;
-        }
+        log::info("  has_amd_anti_lag_2: {}", prop->m_hasAMDAntiLag2);
+
         if (prop->m_hasRayTracing) {
             log::info("    Max AS bound per shader stage: {}", prop->m_accelerationStructureProperties.maxPerStageDescriptorAccelerationStructures);
             log::info("    AS min scratch buffer offset alignment: {} bytes", prop->m_accelerationStructureProperties.minAccelerationStructureScratchOffsetAlignment);
@@ -272,7 +265,7 @@ auto VulkanContext::createVkDevice(const vk::raii::PhysicalDevice& vkPhysicalDev
         chain.unlink<vk::PhysicalDeviceRayTracingPipelineFeaturesKHR>();
     }
 
-    if (vkPhysicalDeviceProps.m_antiLagMethod != PhysicalDeviceAntiLagMethod::AMDAntiLag2) {
+    if (!vkPhysicalDeviceProps.m_hasAMDAntiLag2) {
         chain.unlink<vk::PhysicalDeviceAntiLagFeaturesAMD>();
     }
 

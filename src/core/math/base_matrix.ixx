@@ -10,6 +10,9 @@ template <typename T, usize NRows> class MatrixStorageVector {
 public:
     using Type = T[NRows];
 
+    MatrixStorageVector() = default;
+    MatrixStorageVector(const MatrixStorageVector&) = default;
+
     Type m_memory;
 
     void broadcast(T x) {

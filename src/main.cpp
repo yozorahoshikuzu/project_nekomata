@@ -40,9 +40,8 @@ public:
 };
 
 class CameraScript : public nekomata2::ecs::ScriptBase {
-    public:
+public:
     void onCreate() override {
-
         m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity)
             .m_transform3d = Transform3D::identity();
         m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity)

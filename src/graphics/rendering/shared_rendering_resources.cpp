@@ -11,8 +11,12 @@ SharedRenderingResources::SharedRenderingResources(std::nullptr_t) {}
 SharedRenderingResources::SharedRenderingResources() {
 
     m_simpleLayout = VulkanPipelineLayout::builder()
-        .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout().vkDescriptorSetLayout())
-        .addPushConstantRange(0, 32, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation)
+        .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
+        .addPushConstantRange(
+            0, 32,
+            vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation
+            | vk::ShaderStageFlagBits::eFragment
+        )
         .build();
     auto shader = *SpirvShaderCode::loadFromFile("./spirv/tess_test.spv");
     m_simplePipeline = VulkanGraphicsPipeline::builder()
@@ -22,23 +26,24 @@ SharedRenderingResources::SharedRenderingResources() {
         .addShader(shader, vk::ShaderStageFlagBits::eTessellationEvaluation)
         .addShader(shader, vk::ShaderStageFlagBits::eFragment)
         .setInputTopology(vk::PrimitiveTopology::ePatchList)
+        .setTessellationPatchControlPoints(3)
         .setRastPolygonMode(vk::PolygonMode::eFill)
         .setRastCulling(vk::CullModeFlagBits::eBack, vk::FrontFace::eCounterClockwise)
         .setRastLineWidth(1.0)
         .disableMultisampling()
-        .enableDepthTest(true)
+        .enableDepthTest()
+        .enableDepthWrite()
         .setDepthAttachmentFormat(vk::Format::eD32Sfloat)
         .pushRenderingAttachment(
             vk::PipelineColorBlendAttachmentState{}
-                         .setBlendEnable(false)
-                         .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
+                 .setBlendEnable(false)
+                 .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
             vk::Format::eR16G16B16A16Sfloat
         )
-        .setTessellationPatchControlPoints(3)
         .build();
 
     m_bitmapFontRendererLayout = VulkanPipelineLayout::builder()
-        .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout().vkDescriptorSetLayout())
+        .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
         .addPushConstantRange(0, 12, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
         .build();
     auto bitmapFontRendererShader = *SpirvShaderCode::loadFromFile("./spirv/bitmap_font.spv");
@@ -98,7 +103,7 @@ SharedRenderingResources::SharedRenderingResources() {
 
     m_uiTextureRendererLayout = VulkanPipelineLayout::builder()
         .addPushConstantRange(0, 40, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
-        .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout().vkDescriptorSetLayout())
+        .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
         .build();
     auto uiTextureRendererShader = *SpirvShaderCode::loadFromFile("./spirv/ui_texture.spv");
     m_uiTextureRendererPipeline = VulkanGraphicsPipeline::builder()

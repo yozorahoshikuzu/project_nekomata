@@ -64,5 +64,4 @@ private:
 };
 static_assert(CVulkanImage<VulkanImage> && "VulkanImage must satisfy CVulkanImage");
 
-
 }

@@ -3,10 +3,24 @@ import std;
 import vulkan;
 import vk_mem_alloc;
 import :graphics.vulkan.vk_physical_device_props;
+import :core.overloaded;
 
 using namespace std::literals;
 
 namespace nekomata2 {
+
+using VulkanFeaturePtr = std::variant<
+    vk::Bool32 vk::PhysicalDeviceFeatures::*,
+    vk::Bool32 vk::PhysicalDeviceVulkan11Features::*,
+    vk::Bool32 vk::PhysicalDeviceVulkan12Features::*,
+    vk::Bool32 vk::PhysicalDeviceVulkan13Features::*,
+    vk::Bool32 vk::PhysicalDeviceVulkan14Features::*,
+    vk::Bool32 vk::PhysicalDeviceDescriptorHeapFeaturesEXT::*,
+    vk::Bool32 vk::PhysicalDevicePipelineBinaryFeaturesKHR::*,
+    vk::Bool32 vk::PhysicalDeviceAntiLagFeaturesAMD::*,
+    vk::Bool32 vk::PhysicalDeviceRayTracingPipelineFeaturesKHR::*,
+    vk::Bool32 vk::PhysicalDeviceAccelerationStructureFeaturesKHR::*
+>;
 
 struct RequiredFeatureRule {
     std::string_view m_name;
@@ -18,8 +32,31 @@ struct RequiredFeatureRule {
     PhysicalDevicePropertyQueryErrorKind m_errorKindIfMissing;
 };
 
+struct RequiredExtensionRule {
+    std::string_view m_extensionName;
+    PhysicalDevicePropertyQueryErrorKind m_errorKindIfMissing;
+};
+
+struct OptFeatureRule {
+    std::string_view m_name;
+    std::span<const std::string_view> m_requiredExtensionNames;
+    std::span<const VulkanFeaturePtr> m_requiredFeatures;
+    bool VulkanPhysicalDeviceProperties::* m_setsIfSupported;
+};
+
+// TODO: move somewhere else
+template <typename T> constexpr auto emptyArray() { return std::array<T, 0>{}; }
+
 // clang-format off
-static constexpr auto REQUIRED_FEATURES = std::array<RequiredFeatureRule, 13>{{
+
+// ---- Required Device Extensions and Features ----------------------------------------------------------------------------------------------------------------
+
+static constexpr auto kRequiredPhysicalDeviceExtensions = std::to_array<RequiredExtensionRule>({
+    { vk::KHRSwapchainExtensionName, PhysicalDevicePropertyQueryErrorKind::MissingKhrSwapchain },
+    { vk::EXTImageViewMinLodExtensionName, PhysicalDevicePropertyQueryErrorKind::MissingExtImageViewMinLod },
+});
+
+static constexpr auto kRequiredPhysicalDeviceFeatures = std::to_array<RequiredFeatureRule>({
     { "maintenance5"sv,                                      {}, {}, {}, {}, &vk::PhysicalDeviceVulkan14Features::maintenance5, PhysicalDevicePropertyQueryErrorKind::MissingVk14Maintenance5 },
     { "synchronization2"sv,                                  {}, {}, {}, &vk::PhysicalDeviceVulkan13Features::synchronization2, {},   PhysicalDevicePropertyQueryErrorKind::MissingVk13Synchronization2 },
     { "dynamicRendering"sv,                                  {}, {}, {}, &vk::PhysicalDeviceVulkan13Features::dynamicRendering, {},   PhysicalDevicePropertyQueryErrorKind::MissingVk13DynamicRendering },
@@ -33,12 +70,53 @@ static constexpr auto REQUIRED_FEATURES = std::array<RequiredFeatureRule, 13>{{
     { "scalarBlockLayout"sv,                                 {}, {}, &vk::PhysicalDeviceVulkan12Features::scalarBlockLayout, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12ScalarBlockLayout },
     { "timelineSemaphore"sv,                                 {}, {}, &vk::PhysicalDeviceVulkan12Features::timelineSemaphore, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12TimelineSemaphore },
     { "samplerAnisotropy"sv,                                 &vk::PhysicalDeviceFeatures::samplerAnisotropy, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10SamplerAnisotropy },
-}};
+});
+
+// ---- Optional Features --------------------------------------------------------------------------------------------------------------------------------------
+
+// for ExtMemoryBudget
+static constexpr auto kOptExtensionsExtMemoryBudget = std::to_array<std::string_view>({ vk::EXTMemoryBudgetExtensionName });
+static constexpr auto kOptFeaturesExtMemoryBudget = emptyArray<VulkanFeaturePtr>();
+
+// for ExtMemoryPriority
+static constexpr auto kOptExtensionsExtMemoryPriority = std::to_array<std::string_view>({ vk::EXTMemoryPriorityExtensionName });
+static constexpr auto kOptFeaturesExtMemoryPriority = emptyArray<VulkanFeaturePtr>();
+
+// for RayTracing
+static constexpr auto kOptExtensionsRayTracing = std::to_array<std::string_view>({ vk::KHRAccelerationStructureExtensionName, vk::KHRRayTracingPipelineExtensionName, vk::KHRDeferredHostOperationsExtensionName });
+static constexpr auto kOptFeaturesRayTracing = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceAccelerationStructureFeaturesKHR::accelerationStructure, &vk::PhysicalDeviceRayTracingPipelineFeaturesKHR::rayTracingPipeline });
+
+// for KhrMaintenance4
+static constexpr auto kOptExtensionsKhrMaintenance4 = emptyArray<std::string_view>();
+static constexpr auto kOptFeaturesKhrMaintenance4 = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceVulkan13Features::maintenance4 });
+
+// for ExtDescriptorHeap
+static constexpr auto kOptExtensionsExtDescriptorHeap = std::to_array<std::string_view>({ vk::EXTDescriptorHeapExtensionName });
+static constexpr auto kOptFeaturesExtDescriptorHeap = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceDescriptorHeapFeaturesEXT::descriptorHeap });
+
+// for KhrPipelineBinary
+static constexpr auto kOptExtensionsKhrPipelineBinary = std::to_array<std::string_view>({ vk::KHRPipelineBinaryExtensionName });
+static constexpr auto kOptFeaturesKhrPipelineBinary = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDevicePipelineBinaryFeaturesKHR::pipelineBinaries });
+
+// for AMDAntiLag2
+static constexpr auto kOptExtensionsAMDAntiLag2 = std::to_array<std::string_view>({ vk::AMDAntiLagExtensionName });
+static constexpr auto kOptFeaturesAMDAntiLag2 = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceAntiLagFeaturesAMD::antiLag });
+
+// Table
+static constexpr auto kOptionalPhysicalDeviceFeatures = std::to_array<OptFeatureRule>({
+    { "Memory Budget Tracking"sv,                            kOptExtensionsExtMemoryBudget, kOptFeaturesExtMemoryBudget, &VulkanPhysicalDeviceProperties::m_hasExtMemoryBudget },
+    { "Memory Priority Tagging"sv,                           kOptExtensionsExtMemoryPriority, kOptFeaturesExtMemoryPriority, &VulkanPhysicalDeviceProperties::m_hasExtMemoryPriority },
+    { "Ray Tracing"sv,                                       kOptExtensionsRayTracing, kOptFeaturesRayTracing, &VulkanPhysicalDeviceProperties::m_hasRayTracing },
+    { "maintenance4"sv,                                      kOptExtensionsKhrMaintenance4, kOptFeaturesKhrMaintenance4, &VulkanPhysicalDeviceProperties::m_hasKhrMaintenance4 },
+    { "Descriptor Heap"sv,                                   kOptExtensionsExtDescriptorHeap, kOptFeaturesExtDescriptorHeap, &VulkanPhysicalDeviceProperties::m_hasExtDescriptorHeap },
+    { "Pipeline Binaries"sv,                                 kOptExtensionsKhrPipelineBinary, kOptFeaturesKhrPipelineBinary, &VulkanPhysicalDeviceProperties::m_hasKhrPipelineBinary },
+    { "AMD Anti-Lag 2"sv,                                    kOptExtensionsAMDAntiLag2, kOptFeaturesAMDAntiLag2, &VulkanPhysicalDeviceProperties::m_hasAMDAntiLag2 },
+});
 // clang-format on
 
 consteval auto defaultEnabledVk10Features() -> vk::PhysicalDeviceFeatures {
     auto features = vk::PhysicalDeviceFeatures{};
-    for (auto& rule : REQUIRED_FEATURES) {
+    for (auto& rule : kRequiredPhysicalDeviceFeatures) {
         if (rule.m_vk10)
             features.*(rule.m_vk10) = true;
     }
@@ -47,7 +125,7 @@ consteval auto defaultEnabledVk10Features() -> vk::PhysicalDeviceFeatures {
 
 consteval auto defaultEnabledVk11Features() -> vk::PhysicalDeviceVulkan11Features {
     auto features = vk::PhysicalDeviceVulkan11Features{};
-    for (auto& rule : REQUIRED_FEATURES) {
+    for (auto& rule : kRequiredPhysicalDeviceFeatures) {
         if (rule.m_vk11)
             features.*(rule.m_vk11) = true;
     }
@@ -56,7 +134,7 @@ consteval auto defaultEnabledVk11Features() -> vk::PhysicalDeviceVulkan11Feature
 
 consteval auto defaultEnabledVk12Features() -> vk::PhysicalDeviceVulkan12Features {
     auto features = vk::PhysicalDeviceVulkan12Features{};
-    for (auto& rule : REQUIRED_FEATURES) {
+    for (auto& rule : kRequiredPhysicalDeviceFeatures) {
         if (rule.m_vk12)
             features.*(rule.m_vk12) = true;
     }
@@ -65,7 +143,7 @@ consteval auto defaultEnabledVk12Features() -> vk::PhysicalDeviceVulkan12Feature
 
 consteval auto defaultEnabledVk13Features() -> vk::PhysicalDeviceVulkan13Features {
     auto features = vk::PhysicalDeviceVulkan13Features{};
-    for (auto& rule : REQUIRED_FEATURES) {
+    for (auto& rule : kRequiredPhysicalDeviceFeatures) {
         if (rule.m_vk13)
             features.*(rule.m_vk13) = true;
     }
@@ -74,7 +152,7 @@ consteval auto defaultEnabledVk13Features() -> vk::PhysicalDeviceVulkan13Feature
 
 consteval auto defaultEnabledVk14Features() -> vk::PhysicalDeviceVulkan14Features {
     auto features = vk::PhysicalDeviceVulkan14Features{};
-    for (auto& rule : REQUIRED_FEATURES) {
+    for (auto& rule : kRequiredPhysicalDeviceFeatures) {
         if (rule.m_vk14)
             features.*(rule.m_vk14) = true;
     }
@@ -101,92 +179,88 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
                                      std::views::transform([](const vk::ExtensionProperties& ext) -> std::string { return std::string(ext.extensionName); }) |
                                      std::ranges::to<std::vector>();
 
-    bool hasKhrSwapchain = std::ranges::contains(supportedExtensionNames, vk::KHRSwapchainExtensionName);
-    if (!hasKhrSwapchain) {
-        return std::unexpected(PhysicalDevicePropertyQueryError{.m_kind = PhysicalDevicePropertyQueryErrorKind::MissingKhrSwapchain});
+    // ---------------------------------------------------------------------------------------------------------------------------------------------------------
+    // Check the physical device for support of required extensions
+
+    for (auto& rule : kRequiredPhysicalDeviceExtensions) {
+        if (!std::ranges::contains(supportedExtensionNames, rule.m_extensionName)) {
+            return std::unexpected(PhysicalDevicePropertyQueryError{.m_kind = rule.m_errorKindIfMissing});
+        }
     }
 
+    // ---------------------------------------------------------------------------------------------------------------------------------------------------------
+    // Check the physical device for support of required features
 
-    auto featuresQuery = vkPhysicalDevice.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan11Features, vk::PhysicalDeviceVulkan12Features,
-        vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceVulkan14Features, vk::PhysicalDeviceImageViewMinLodFeaturesEXT, vk::PhysicalDeviceAntiLagFeaturesAMD>();
-    auto supportedVk10Features = featuresQuery.get<vk::PhysicalDeviceFeatures2>();
-    auto supportedVk11Features = featuresQuery.get<vk::PhysicalDeviceVulkan11Features>();
-    auto supportedVk12Features = featuresQuery.get<vk::PhysicalDeviceVulkan12Features>();
-    auto supportedVk13Features = featuresQuery.get<vk::PhysicalDeviceVulkan13Features>();
-    auto supportedVk14Features = featuresQuery.get<vk::PhysicalDeviceVulkan14Features>();
-    auto supportedExtImageViewMinLodFeatures = featuresQuery.get<vk::PhysicalDeviceImageViewMinLodFeaturesEXT>();
+    auto featuresQuery = vkPhysicalDevice.getFeatures2<
+        vk::PhysicalDeviceFeatures2,
+        vk::PhysicalDeviceVulkan11Features, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceVulkan14Features,
+        vk::PhysicalDeviceDescriptorHeapFeaturesEXT, vk::PhysicalDevicePipelineBinaryFeaturesKHR,
+        vk::PhysicalDeviceRayTracingPipelineFeaturesKHR, vk::PhysicalDeviceAccelerationStructureFeaturesKHR,
+        vk::PhysicalDeviceImageViewMinLodFeaturesEXT, vk::PhysicalDeviceAntiLagFeaturesAMD
+    >();
 
-    for (auto& rule : REQUIRED_FEATURES) {
+    for (auto& rule : kRequiredPhysicalDeviceFeatures) {
         bool satisfied = true;
         if (rule.m_vk10)
-            satisfied &= supportedVk10Features.features.*(rule.m_vk10);
+            satisfied &= featuresQuery.get<vk::PhysicalDeviceFeatures2>().features.*(rule.m_vk10);
         if (rule.m_vk11)
-            satisfied &= supportedVk11Features.*(rule.m_vk11);
+            satisfied &= featuresQuery.get<vk::PhysicalDeviceVulkan11Features>().*(rule.m_vk11);
         if (rule.m_vk12)
-            satisfied &= supportedVk12Features.*(rule.m_vk12);
+            satisfied &= featuresQuery.get<vk::PhysicalDeviceVulkan12Features>().*(rule.m_vk12);
         if (rule.m_vk13)
-            satisfied &= supportedVk13Features.*(rule.m_vk13);
+            satisfied &= featuresQuery.get<vk::PhysicalDeviceVulkan13Features>().*(rule.m_vk13);
         if (rule.m_vk14)
-            satisfied &= supportedVk14Features.*(rule.m_vk14);
+            satisfied &= featuresQuery.get<vk::PhysicalDeviceVulkan14Features>().*(rule.m_vk14);
 
         if (!satisfied)
             return std::unexpected(PhysicalDevicePropertyQueryError{.m_kind = rule.m_errorKindIfMissing});
     }
 
-    if (!supportedExtImageViewMinLodFeatures.minLod) {
+    // TODO: refactor
+    if (!featuresQuery.get<vk::PhysicalDeviceImageViewMinLodFeaturesEXT>().minLod) {
         return std::unexpected(PhysicalDevicePropertyQueryError{.m_kind = PhysicalDevicePropertyQueryErrorKind::MissingExtImageViewMinLod});
     }
 
+    // ---------------------------------------------------------------------------------------------------------------------------------------------------------
+    // Check for availability of optional features
+
+    auto props = VulkanPhysicalDeviceProperties{};
+    std::vector<std::string> enabledExtensions;
+    for (auto& rule : kRequiredPhysicalDeviceExtensions) { enabledExtensions.emplace_back(rule.m_extensionName); }
     auto enabledVk10Features = defaultEnabledVk10Features();
     auto enabledVk11Features = defaultEnabledVk11Features();
     auto enabledVk12Features = defaultEnabledVk12Features();
-    auto enabledVk13Features = defaultEnabledVk13Features().setMaintenance4(supportedVk13Features.maintenance4);
+    auto enabledVk13Features = defaultEnabledVk13Features();
     auto enabledVk14Features = defaultEnabledVk14Features();
 
-    bool hasExtMemoryBudget = std::ranges::contains(supportedExtensionNames, vk::EXTMemoryBudgetExtensionName);
-    bool hasExtMemoryPriority = std::ranges::contains(supportedExtensionNames, vk::EXTMemoryPriorityExtensionName);
-    bool hasKhrRayTracing = std::ranges::contains(supportedExtensionNames, vk::KHRAccelerationStructureExtensionName) &&
-                               std::ranges::contains(supportedExtensionNames, vk::KHRRayTracingPipelineExtensionName) &&
-                               std::ranges::contains(supportedExtensionNames, vk::KHRDeferredHostOperationsExtensionName);
-    bool hasKhrMaintenance4 = supportedVk13Features.maintenance4;
-    bool hasKhrMaintenance5 = supportedVk14Features.maintenance5;
-    bool hasExtDescriptorHeap = std::ranges::contains(supportedExtensionNames, vk::EXTDescriptorHeapExtensionName);
-    bool hasKhrPipelineBinary = std::ranges::contains(supportedExtensionNames, vk::KHRPipelineBinaryExtensionName);
+    for (auto& rule : kOptionalPhysicalDeviceFeatures) {
+        bool satisfied = true;
 
-    auto antiLagMethod = PhysicalDeviceAntiLagMethod::None;
+        for (auto& reqdExtensionName : rule.m_requiredExtensionNames) {
+            satisfied &= std::ranges::contains(supportedExtensionNames, reqdExtensionName);
+        }
 
-    if (std::ranges::contains(supportedExtensionNames, vk::AMDAntiLagExtensionName) && featuresQuery.get<vk::PhysicalDeviceAntiLagFeaturesAMD>().antiLag) {
-        antiLagMethod = PhysicalDeviceAntiLagMethod::AMDAntiLag2;
-    }
+        for (auto& reqdFeature : rule.m_requiredFeatures) {
+            match(reqdFeature,
+                [&](vk::Bool32 vk::PhysicalDeviceFeatures::* ptr) { satisfied &= featuresQuery.get<vk::PhysicalDeviceFeatures2>().features.*(ptr); },
+                [&](vk::Bool32 vk::PhysicalDeviceVulkan11Features::* ptr) { satisfied &= featuresQuery.get<vk::PhysicalDeviceVulkan11Features>().*(ptr); },
+                [&](vk::Bool32 vk::PhysicalDeviceVulkan12Features::* ptr) { satisfied &= featuresQuery.get<vk::PhysicalDeviceVulkan12Features>().*(ptr); },
+                [&](vk::Bool32 vk::PhysicalDeviceVulkan13Features::* ptr) { satisfied &= featuresQuery.get<vk::PhysicalDeviceVulkan13Features>().*(ptr); },
+                [&](vk::Bool32 vk::PhysicalDeviceVulkan14Features::* ptr) { satisfied &= featuresQuery.get<vk::PhysicalDeviceVulkan14Features>().*(ptr); },
+                [&](vk::Bool32 vk::PhysicalDeviceDescriptorHeapFeaturesEXT::* ptr) { satisfied &= featuresQuery.get<vk::PhysicalDeviceDescriptorHeapFeaturesEXT>().*(ptr); },
+                [&](vk::Bool32 vk::PhysicalDevicePipelineBinaryFeaturesKHR::* ptr) { satisfied &= featuresQuery.get<vk::PhysicalDevicePipelineBinaryFeaturesKHR>().*(ptr); },
+                [&](vk::Bool32 vk::PhysicalDeviceAntiLagFeaturesAMD::* ptr) { satisfied &= featuresQuery.get<vk::PhysicalDeviceAntiLagFeaturesAMD>().*(ptr); },
+                [&](vk::Bool32 vk::PhysicalDeviceRayTracingPipelineFeaturesKHR::* ptr) { satisfied &= featuresQuery.get<vk::PhysicalDeviceRayTracingPipelineFeaturesKHR>().*(ptr); },
+                [&](vk::Bool32 vk::PhysicalDeviceAccelerationStructureFeaturesKHR::* ptr) { satisfied &= featuresQuery.get<vk::PhysicalDeviceAccelerationStructureFeaturesKHR>().*(ptr); }
+            );
+        }
 
-    std::vector<std::string> enabledExtensions;
-
-    enabledExtensions.emplace_back(vk::KHRSwapchainExtensionName);
-    enabledExtensions.emplace_back(vk::EXTImageViewMinLodExtensionName);
-
-    if (hasExtMemoryBudget) {
-        enabledExtensions.emplace_back(vk::EXTMemoryBudgetExtensionName);
-    }
-
-    if (hasKhrRayTracing) {
-        enabledExtensions.emplace_back(vk::KHRAccelerationStructureExtensionName);
-        enabledExtensions.emplace_back(vk::KHRRayTracingPipelineExtensionName);
-        enabledExtensions.emplace_back(vk::KHRDeferredHostOperationsExtensionName);
-    }
-
-    if (hasExtDescriptorHeap) {
-        enabledExtensions.emplace_back(vk::EXTDescriptorHeapExtensionName);
-    }
-
-    if (hasKhrPipelineBinary) {
-        enabledExtensions.emplace_back(vk::KHRPipelineBinaryExtensionName);
-    }
-
-    switch (antiLagMethod) {
-    case PhysicalDeviceAntiLagMethod::AMDAntiLag2:
-        enabledExtensions.emplace_back(vk::AMDAntiLagExtensionName);
-        break;
-    default: break;
+        props.*(rule.m_setsIfSupported) = satisfied;
+        if (satisfied) {
+            for (auto& extName : rule.m_requiredExtensionNames) {
+                enabledExtensions.emplace_back(extName);
+            }
+        }
     }
 
     auto propertiesQuery = vkPhysicalDevice.getProperties2<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceVulkan12Properties,
@@ -227,18 +301,10 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     std::vector<u32> swapchainImageQueueIndices = { graphicsQueueIndex, presentQueueIndex };
     dedupQueueIndices(swapchainImageQueueIndices);
 
-    VulkanPhysicalDeviceProperties props{};
     props.m_deviceName = deviceName;
     props.m_deviceType = deviceType;
     props.m_driverId = propertiesQuery.get<vk::PhysicalDeviceVulkan12Properties>().driverID;
     props.m_vramSize = vramSize;
-    props.m_hasExtMemoryBudget = hasExtMemoryBudget;
-    props.m_hasExtMemoryPriority = hasExtMemoryPriority;
-    props.m_hasKhrMaintenance4 = hasKhrMaintenance4;
-    props.m_hasKhrMaintenance5 = hasKhrMaintenance5;
-    props.m_hasRayTracing = hasKhrRayTracing;
-    props.m_hasExtDescriptorHeap = hasExtDescriptorHeap;
-    props.m_hasKhrPipelineBinary = hasKhrPipelineBinary;
     props.m_accelerationStructureProperties = accelerationStructureProperties;
     props.m_rayTracingPipelineProperties = rayTracingPipelineProperties;
     props.m_enabledVk10Features = enabledVk10Features;
@@ -251,7 +317,6 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     props.m_presentQueueIndex = presentQueueIndex;
     props.m_asyncComputeQueueIndex = asyncComputeQueueIndex;
     props.m_queueFamilies = VulkanQueueFamilySwizzling(graphicsQueueIndex, presentQueueIndex, asyncComputeQueueIndex);
-    props.m_antiLagMethod = antiLagMethod;
 
     return props;
 }
@@ -274,10 +339,11 @@ auto VulkanPhysicalDeviceProperties::autoselectPriorityScore() const -> u64 {
 
 auto VulkanPhysicalDeviceProperties::vmaAllocatorCreateFlags() const -> vma::AllocatorCreateFlags {
     vma::AllocatorCreateFlags flags = vma::AllocatorCreateFlagBits::eBufferDeviceAddress;
+    flags |= vma::AllocatorCreateFlagBits::eKhrMaintenance5;
     if (m_hasExtMemoryBudget) flags |= vma::AllocatorCreateFlagBits::eExtMemoryBudget;
     if (m_hasExtMemoryPriority) flags |= vma::AllocatorCreateFlagBits::eExtMemoryPriority;
     if (m_hasKhrMaintenance4) flags |= vma::AllocatorCreateFlagBits::eKhrMaintenance4;
-    if (m_hasKhrMaintenance5) flags |= vma::AllocatorCreateFlagBits::eKhrMaintenance5;
+
     return flags;
 }
 

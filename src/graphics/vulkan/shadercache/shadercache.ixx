@@ -14,14 +14,12 @@ public:
     ShaderCache(bool usePipelineBinaries);
 
     template <typename... ScElements>
-        requires (std::is_same_v<vk::GraphicsPipelineCreateInfo, ScElements> || ...)
-        && (std::is_same_v<vk::PipelineCreateFlags2CreateInfo, ScElements> || ...)
-        && (std::is_same_v<vk::PipelineBinaryInfoKHR, ScElements> || ...)
+        requires PipelineBinaryCacheableGraphicsPipelineCreateStructChain<ScElements...>
     auto createGraphicsPipeline(vk::StructureChain<ScElements...>& chain) -> vk::raii::Pipeline {
-        return std::visit(overloaded{
+        return match(m_shaderCacheFrontend,
             [&](ShaderCachePipelineBinaryFrontend& sc) { return sc.handleCreateGraphicsPipeline(chain); },
             [&](auto&) { return VulkanContext::get().vkDevice().createGraphicsPipeline(nullptr, chain.template get<vk::GraphicsPipelineCreateInfo>()); }
-        }, m_shaderCacheFrontend);
+        );
     }
 private:
     ShaderCacheFrontend m_shaderCacheFrontend;

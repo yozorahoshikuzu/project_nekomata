@@ -7,6 +7,7 @@ import :core.log;
 import :core.platform.int_def;
 import :core.storage.sharded_hash_storage;
 import :graphics.vulkan.context;
+import :graphics.vulkan.shadercache.pipeline_sc_concept;
 
 export namespace nekomata2 {
 
@@ -86,12 +87,11 @@ public:
     }
 
     template <typename... ScElements>
-        requires (std::is_same_v<vk::GraphicsPipelineCreateInfo, ScElements> || ...)
-        && (std::is_same_v<vk::PipelineCreateFlags2CreateInfo, ScElements> || ...)
-        && (std::is_same_v<vk::PipelineBinaryInfoKHR, ScElements> || ...)
+        requires PipelineBinaryCacheableGraphicsPipelineCreateStructChain<ScElements...>
     auto handleCreateGraphicsPipeline(vk::StructureChain<ScElements...>& chain) -> vk::raii::Pipeline {
         auto pipelineCreateInfo = vk::PipelineCreateInfoKHR{}
             .setPNext(&chain.template get<vk::GraphicsPipelineCreateInfo>());
+
 
         auto pipelineKey = VulkanContext::get().vkDevice().getPipelineKeyKHR(pipelineCreateInfo);
         std::vector<vk::PipelineBinaryKeyKHR> binaryKeys;
@@ -223,9 +223,7 @@ private:
     // Cache Miss Paths
 
     template <typename... ScElements>
-        requires (std::is_same_v<vk::GraphicsPipelineCreateInfo, ScElements> || ...)
-        && (std::is_same_v<vk::PipelineCreateFlags2CreateInfo, ScElements> || ...)
-        && (std::is_same_v<vk::PipelineBinaryInfoKHR, ScElements> || ...)
+        requires PipelineBinaryCacheableGraphicsPipelineCreateStructChain<ScElements...>
     auto handleCreateGraphicsPipelineUncached(vk::StructureChain<ScElements...>& chain, vk::PipelineBinaryKeyKHR pipelineKey) -> vk::raii::Pipeline {
         chain.template get<vk::PipelineCreateFlags2CreateInfo>().flags |= vk::PipelineCreateFlagBits2::eCaptureDataKHR;
 

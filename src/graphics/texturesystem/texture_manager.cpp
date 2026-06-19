@@ -23,7 +23,7 @@ TextureResources::TextureResources(VulkanImage&& image)
 
 TextureManager::TextureManager(std::nullptr_t) {}
 TextureManager::TextureManager(std::unique_ptr<srt::IShaderResourceTable>&& srt)
-    :   m_srt(std::move(srt)), m_textureToShaderIndexTable(2048) {}
+    : m_textureToShaderIndexTable(2048), m_srt(std::move(srt)) {}
 
 auto TextureManager::create() -> std::unique_ptr<TextureManager> {
     debug_assert(g_textureManager == nullptr, "only one TextureManager may live at any given time");

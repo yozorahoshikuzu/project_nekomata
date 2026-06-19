@@ -88,14 +88,17 @@ public:
         m_depthStencilState.maxDepthBounds = 1.0;
         return *this;
     }
-    [[nodiscard]] constexpr auto enableDepthTest(bool write) noexcept -> VulkanGraphicsPipelineBuilder& {
+    [[nodiscard]] constexpr auto enableDepthTest() noexcept -> VulkanGraphicsPipelineBuilder& {
         m_depthStencilState.depthTestEnable = true;
-        m_depthStencilState.depthWriteEnable = write;
         m_depthStencilState.depthCompareOp = vk::CompareOp::eGreater;
         m_depthStencilState.depthBoundsTestEnable = false;
         m_depthStencilState.stencilTestEnable = false;
         m_depthStencilState.minDepthBounds = 0.0;
         m_depthStencilState.maxDepthBounds = 1.0;
+        return *this;
+    }
+    [[nodiscard]] constexpr auto enableDepthWrite() noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_depthStencilState.depthWriteEnable = true;
         return *this;
     }
     [[nodiscard]] constexpr auto setDepthAttachmentFormat(vk::Format format) noexcept -> VulkanGraphicsPipelineBuilder& {
@@ -167,7 +170,6 @@ private:
     std::vector<vk::Format> m_renderingColorAttachmentFormats;
 
     std::vector<vk::StructureChain<vk::PipelineShaderStageCreateInfo, vk::ShaderModuleCreateInfo>> m_shaderStages;
-
 };
 
 }

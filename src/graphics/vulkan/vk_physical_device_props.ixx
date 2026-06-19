@@ -81,11 +81,6 @@ struct PhysicalDevicePropertyQueryError {
     }
 };
 
-enum class PhysicalDeviceAntiLagMethod {
-    None,
-    AMDAntiLag2,
-};
-
 consteval auto defaultEnabledVk10Features() -> vk::PhysicalDeviceFeatures;
 consteval auto defaultEnabledVk11Features() -> vk::PhysicalDeviceVulkan11Features;
 consteval auto defaultEnabledVk12Features() -> vk::PhysicalDeviceVulkan12Features;
@@ -99,38 +94,36 @@ public:
     [[nodiscard]] auto queueCreateInfos() const -> std::vector<vk::DeviceQueueCreateInfo>;
     [[nodiscard]] auto vmaAllocatorCreateFlags() const -> vma::AllocatorCreateFlags;
 
-    std::string m_deviceName;
-    vk::PhysicalDeviceType m_deviceType;
-    vk::DriverId m_driverId;
-    u64 m_vramSize{};
+    std::string m_deviceName            = "(unknown)";
+    vk::PhysicalDeviceType m_deviceType = vk::PhysicalDeviceType::eOther;
+    vk::DriverId m_driverId             = {};
+    u64 m_vramSize                      = 0_u64;
 
-    bool m_hasExtMemoryBudget{};
-    bool m_hasExtMemoryPriority{};
-    bool m_hasKhrMaintenance4{};
-    bool m_hasKhrMaintenance5{};
-    bool m_hasRayTracing{};
-    bool m_hasExtDescriptorHeap{};
-    bool m_hasKhrPipelineBinary{};
+    bool m_hasExtMemoryBudget   = false;
+    bool m_hasExtMemoryPriority = false;
+    bool m_hasKhrMaintenance4   = false;
+    bool m_hasRayTracing        = false;
+    bool m_hasExtDescriptorHeap = false;
+    bool m_hasKhrPipelineBinary = false;
+    bool m_hasAMDAntiLag2       = false;
 
-    vk::PhysicalDeviceAccelerationStructurePropertiesKHR m_accelerationStructureProperties;
-    vk::PhysicalDeviceRayTracingPipelinePropertiesKHR m_rayTracingPipelineProperties;
+    vk::PhysicalDeviceAccelerationStructurePropertiesKHR m_accelerationStructureProperties = {};
+    vk::PhysicalDeviceRayTracingPipelinePropertiesKHR    m_rayTracingPipelineProperties    = {};
 
-    u32 m_graphicsQueueIndex{};
-    u32 m_presentQueueIndex{};
-    u32 m_asyncComputeQueueIndex{};
+    u32 m_graphicsQueueIndex     = 0_u32;
+    u32 m_presentQueueIndex      = 0_u32;
+    u32 m_asyncComputeQueueIndex = 0_u32;
 
     VulkanQueueFamilySwizzling m_queueFamilies = nullptr;
 
-    PhysicalDeviceAntiLagMethod m_antiLagMethod = PhysicalDeviceAntiLagMethod::None;
-
     // Passed to Vulkan device creation
 
-    std::vector<std::string> m_enabledExtensions;
-    vk::PhysicalDeviceFeatures m_enabledVk10Features;
-    vk::PhysicalDeviceVulkan11Features m_enabledVk11Features;
-    vk::PhysicalDeviceVulkan12Features m_enabledVk12Features;
-    vk::PhysicalDeviceVulkan13Features m_enabledVk13Features;
-    vk::PhysicalDeviceVulkan14Features m_enabledVk14Features;
+    std::vector<std::string> m_enabledExtensions             = {};
+    vk::PhysicalDeviceFeatures m_enabledVk10Features         = {};
+    vk::PhysicalDeviceVulkan11Features m_enabledVk11Features = {};
+    vk::PhysicalDeviceVulkan12Features m_enabledVk12Features = {};
+    vk::PhysicalDeviceVulkan13Features m_enabledVk13Features = {};
+    vk::PhysicalDeviceVulkan14Features m_enabledVk14Features = {};
 };
 
 class VulkanPhysicalDeviceSurfaceProperties {

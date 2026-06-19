@@ -4,6 +4,9 @@ import vulkan;
 import :core.platform.int_def;
 import :graphics.vulkan.context;
 import :graphics.vulkan.vk_gpu_obrm;
+import :graphics.vulkan.vk_descriptor_set_layout;
+
+using namespace std::string_view_literals;
 
 export namespace nekomata2 {
 
@@ -37,9 +40,8 @@ public:
     VulkanPipelineLayoutBuilder& operator=(const VulkanPipelineLayoutBuilder&) = delete;
     VulkanPipelineLayoutBuilder& operator=(VulkanPipelineLayoutBuilder&&) = default;
 
-    // TODO: change to VulkanDescriptorSetLayout type
-    [[nodiscard]] constexpr auto addDescriptorSetLayout(vk::DescriptorSetLayout layout) noexcept -> VulkanPipelineLayoutBuilder& {
-        m_descriptorSetLayouts.emplace_back(layout);
+    [[nodiscard]] constexpr auto addDescriptorSetLayout(const VulkanDescriptorSetLayout& layout) noexcept -> VulkanPipelineLayoutBuilder& {
+        m_descriptorSetLayouts.emplace_back(layout.vkDescriptorSetLayout());
         return *this;
     }
     [[nodiscard]] constexpr auto addPushConstantRange(u32 offset, u32 size, vk::ShaderStageFlags stageFlags) noexcept -> VulkanPipelineLayoutBuilder& {

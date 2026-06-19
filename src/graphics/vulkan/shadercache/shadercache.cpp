@@ -10,10 +10,10 @@ ShaderCache::ShaderCache(bool usePipelineBinaries) {
         m_shaderCacheFrontend = std::monostate{};
     }
 
-    std::visit(overloaded{
+    match(m_shaderCacheFrontend,
         [&](ShaderCachePipelineBinaryFrontend& sc) { sc.checkGlobalKeyAndInvalidateStale(); },
         [&](auto&) { }
-    }, m_shaderCacheFrontend);
+    );
 }
 
 auto ShaderCache::makeShaderCacheDirectoryPath() -> std::filesystem::path {

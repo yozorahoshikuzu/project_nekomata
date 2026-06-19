@@ -365,7 +365,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     // Draw UI
 
     for (const auto& uiDrawCmd : renderingData.m_uiDrawCmds) {
-        std::visit(overloaded{
+        match(uiDrawCmd,
             [&](const ui::UiRectDrawCmd& drawCmd) {
                 cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.m_uiRectRendererPipeline.vkPipeline());
                 cb.pushConstants<ui::UiRectDrawCmd>(sharedRenderingResources.m_uiRectRendererLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, drawCmd);
@@ -397,7 +397,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
             [&](auto&) {
                 log::warn("Unsupported UI draw command in UI draw command list!");
             }
-        }, uiDrawCmd);
+        );
     }
 
     cb.endRendering();

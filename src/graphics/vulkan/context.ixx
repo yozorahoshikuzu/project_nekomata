@@ -9,6 +9,11 @@ import :graphics.vulkan.vk_queue;
 
 export namespace nekomata2 {
 
+enum class AntiLagMethod {
+    None,
+    AMDAntiLag2,
+};
+
 class VulkanContext {
 public:
     VulkanContext(std::nullptr_t);
@@ -73,7 +78,7 @@ private:
     std::unique_ptr<class VulkanResourceDeletionQueue> m_vkResourceDeletionQueue;
     std::unique_ptr<class ShaderCache> m_shaderCache;
 
-    bool m_antilagEnable = true;
+    std::atomic<AntiLagMethod> m_antiLagMethod = AntiLagMethod::AMDAntiLag2;
 };
 
 inline VulkanContext* g_vkContext = nullptr;

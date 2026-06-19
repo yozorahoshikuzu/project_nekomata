@@ -46,7 +46,7 @@ struct UiNode {
         auto position = this->position + parentPosition;
         auto endPos = position + this->extent;
 
-        std::visit(overloaded{
+        match(element,
             [&](const UiRect& rect) {
                 auto drawCmd = UiRectDrawCmd{
                     .ndcBegin = unormToNdc(position.componentWiseDivide(screenLogicalSize)),
@@ -68,7 +68,7 @@ struct UiNode {
             [&](const UiText& text) {
                 log::warn("Text not implemented");
             }
-        }, element);
+        );
 
         for (auto& child : children)
             child->buildDrawCmds(list, screenLogicalSize, this->position, this->extent);
