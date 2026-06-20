@@ -4,6 +4,7 @@ import vulkan;
 import vk_mem_alloc;
 import :graphics.vulkan.vk_queue_family_swizzling;
 import :core.platform.int_def;
+import :core.containers.vec;
 
 export namespace nekomata2 {
 
@@ -118,12 +119,14 @@ public:
 
     // Passed to Vulkan device creation
 
-    std::vector<std::string> m_enabledExtensions             = {};
+    Vec<std::string> m_enabledExtensions                     = Vec<std::string>::create();
     vk::PhysicalDeviceFeatures m_enabledVk10Features         = {};
     vk::PhysicalDeviceVulkan11Features m_enabledVk11Features = {};
     vk::PhysicalDeviceVulkan12Features m_enabledVk12Features = {};
     vk::PhysicalDeviceVulkan13Features m_enabledVk13Features = {};
     vk::PhysicalDeviceVulkan14Features m_enabledVk14Features = {};
+
+    auto printInfo() const -> void;
 };
 
 class VulkanPhysicalDeviceSurfaceProperties {

@@ -20,7 +20,6 @@ public:
     ~VulkanAsyncRaiiWrapper() {
         if (m_vkHandle != nullptr) {
             auto raiiUseMarker = GpuResourceRetireTimelineValues::latestSubmitValues();
-            // log::info("Vulkan object dropped; graphics = {}, async compute = {}", raiiUseMarker.m_graphicsQueueRetireValue, raiiUseMarker.m_asyncComputeQueueRetireValue);
             VulkanResourceDeletionQueue::get().pushObject(raiiUseMarker, std::move(m_vkHandle));
         }
     }

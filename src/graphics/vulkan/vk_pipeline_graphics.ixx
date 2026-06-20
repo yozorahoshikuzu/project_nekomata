@@ -41,7 +41,7 @@ public:
                 .setPName("main"),
             shader.shaderModuleCreateInfo()
         };
-        m_shaderStages.emplace_back(stageTuple);
+        m_shaderStages.emplace(stageTuple);
         return *this;
     }
     [[nodiscard]] constexpr auto setPipelineLayout(const VulkanPipelineLayout& layout) noexcept -> VulkanGraphicsPipelineBuilder& {
@@ -127,9 +127,9 @@ public:
 
         m_renderingCreateInfo = m_renderingCreateInfo.setColorAttachmentFormats(m_renderingColorAttachmentFormats);
 
-        auto stagesRaw = m_shaderStages
-            | std::views::transform([](const vk::StructureChain<vk::PipelineShaderStageCreateInfo, vk::ShaderModuleCreateInfo>& chain) -> vk::PipelineShaderStageCreateInfo { return chain.get<vk::PipelineShaderStageCreateInfo>(); })
-            | std::ranges::to<std::vector>();
+        auto stagesRaw = m_shaderStages.iter()
+            .map([](const vk::StructureChain<vk::PipelineShaderStageCreateInfo, vk::ShaderModuleCreateInfo>& chain) -> vk::PipelineShaderStageCreateInfo { return chain.get<vk::PipelineShaderStageCreateInfo>(); })
+            .collect<Vec>();
 
         auto pipelineInfo = vk::GraphicsPipelineCreateInfo{}
             .setStages(stagesRaw)
@@ -169,7 +169,7 @@ private:
     std::vector<vk::PipelineColorBlendAttachmentState> m_renderingColorAttachmentBlendStates;
     std::vector<vk::Format> m_renderingColorAttachmentFormats;
 
-    std::vector<vk::StructureChain<vk::PipelineShaderStageCreateInfo, vk::ShaderModuleCreateInfo>> m_shaderStages;
+    Vec<vk::StructureChain<vk::PipelineShaderStageCreateInfo, vk::ShaderModuleCreateInfo>> m_shaderStages = Vec<vk::StructureChain<vk::PipelineShaderStageCreateInfo, vk::ShaderModuleCreateInfo>>::create();
 };
 
 }

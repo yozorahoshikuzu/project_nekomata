@@ -70,6 +70,8 @@ FetchContent_Declare(
         ktx
         GIT_REPOSITORY https://github.com/KhronosGroup/KTX-Software.git
         GIT_TAG        v4.4.2
+        GIT_SHALLOW    TRUE
+        GIT_SUBMODULES ""
         SYSTEM
 )
 

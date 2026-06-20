@@ -40,7 +40,6 @@ public:
 
     // TODO: Make rest of code compatible to use plain image views for descriptors then replace
     [[nodiscard]] constexpr auto bindImage(u32 binding, u32 dstDescriptorIndex, const VulkanImage& image) -> VulkanDescriptorSetWriter& {
-        log::info("[Descriptor Array] Sampled Image Binding: {} Dst Descriptor Index: {}", binding, dstDescriptorIndex);
         auto imageInfo = vk::DescriptorImageInfo{}
             .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
             .setSampler(nullptr)
@@ -50,7 +49,6 @@ public:
     }
 
     [[nodiscard]] constexpr auto bindSampler(u32 binding, u32 dstDescriptorIndex, const VulkanSampler& sampler) -> VulkanDescriptorSetWriter& {
-        log::info("[Descriptor Array] Sampler Binding: {} Dst Descriptor Index: {}", binding, dstDescriptorIndex);
         auto imageInfo = vk::DescriptorImageInfo{}
             .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
             .setSampler(sampler.vkSampler())

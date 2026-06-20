@@ -29,20 +29,21 @@ auto VulkanQueue::submitOneCommandBuffer(const vk::raii::CommandBuffer& buf, con
     std::scoped_lock lock(m_queueMutex);
     auto signalValue = m_lastTimelineSubmissionValue.fetch_add(1, std::memory_order_relaxed) + 1;
 
-    std::vector<vk::SemaphoreSubmitInfo> semaphoreWaitInfos;
-    semaphoreWaitInfos.reserve(asyncWaits.size());
+    auto semaphoreWaitInfos = Vec<vk::SemaphoreSubmitInfo>::withCapacity(asyncWaits.size());
 
     for (auto [op, flags] : std::views::zip(asyncWaits, asyncWaitStages)) {
-        auto semaphoreSubmit =
-            vk::SemaphoreSubmitInfo{}.setSemaphore(op.timelineSemaphore()).setValue(op.timelineSemaphoreTargetValue()).setStageMask(flags);
+        auto semaphoreSubmit = vk::SemaphoreSubmitInfo{}
+            .setSemaphore(op.timelineSemaphore())
+            .setValue(op.timelineSemaphoreTargetValue())
+            .setStageMask(flags);
 
-        semaphoreWaitInfos.emplace_back(semaphoreSubmit);
+        semaphoreWaitInfos.emplace(semaphoreSubmit);
     }
 
     auto semaphoreSubmitInfo = vk::SemaphoreSubmitInfo{}
-                                     .setSemaphore(m_timelineSemaphore)
-                                     .setValue(signalValue)
-                                     .setStageMask(vk::PipelineStageFlagBits2::eAllCommands);
+        .setSemaphore(m_timelineSemaphore)
+        .setValue(signalValue)
+        .setStageMask(vk::PipelineStageFlagBits2::eAllCommands);
 
     auto commandBuffer = vk::CommandBufferSubmitInfo{}.setCommandBuffer(buf);
 
@@ -67,35 +68,35 @@ auto VulkanQueue::submitOneCommandBufferWithBinarySemaphores(const vk::raii::Com
     std::scoped_lock lock(m_queueMutex);
     auto signalValue = m_lastTimelineSubmissionValue.fetch_add(1, std::memory_order_relaxed) + 1;
 
-    std::vector<vk::SemaphoreSubmitInfo> semaphoreWaitInfos;
-    semaphoreWaitInfos.reserve(asyncWaits.size() + 1);
+    auto semaphoreWaitInfos = Vec<vk::SemaphoreSubmitInfo>::withCapacity(asyncWaits.size() + 1);
 
     for (auto [op, flags] : std::views::zip(asyncWaits, asyncWaitStages)) {
-        auto semaphoreSubmit =
-            vk::SemaphoreSubmitInfo{}.setSemaphore(op.timelineSemaphore()).setValue(op.timelineSemaphoreTargetValue()).setStageMask(flags);
+        auto semaphoreSubmit = vk::SemaphoreSubmitInfo{}
+            .setSemaphore(op.timelineSemaphore())
+            .setValue(op.timelineSemaphoreTargetValue())
+            .setStageMask(flags);
 
-        semaphoreWaitInfos.emplace_back(semaphoreSubmit);
+        semaphoreWaitInfos.emplace(semaphoreSubmit);
     }
 
     auto binarySemaphoreWaitInfo = vk::SemaphoreSubmitInfo{}
         .setSemaphore(binaryWait.vkSemaphore())
         .setStageMask(binaryWaitStage);
-    semaphoreWaitInfos.emplace_back(binarySemaphoreWaitInfo);
-    
 
-    std::vector<vk::SemaphoreSubmitInfo> semaphoreSignalInfos;
-    semaphoreSignalInfos.reserve(2);
+    semaphoreWaitInfos.emplace(binarySemaphoreWaitInfo);
+
+    auto semaphoreSignalInfos = Vec<vk::SemaphoreSubmitInfo>::withCapacity(2);
     auto semaphoreSubmitInfo = vk::SemaphoreSubmitInfo{}
-                                     .setSemaphore(m_timelineSemaphore)
-                                     .setValue(signalValue)
-                                     .setStageMask(vk::PipelineStageFlagBits2::eAllCommands);
+        .setSemaphore(m_timelineSemaphore)
+        .setValue(signalValue)
+        .setStageMask(vk::PipelineStageFlagBits2::eAllCommands);
     
-    semaphoreSignalInfos.emplace_back(semaphoreSubmitInfo);
+    semaphoreSignalInfos.emplace(semaphoreSubmitInfo);
 
     auto binarySemaphoreSignalInfo = vk::SemaphoreSubmitInfo{}
         .setSemaphore(binarySignal.vkSemaphore())
         .setStageMask(binarySignalStage);
-    semaphoreSignalInfos.emplace_back(binarySemaphoreSignalInfo);
+    semaphoreSignalInfos.emplace(binarySemaphoreSignalInfo);
 
     auto commandBuffer = vk::CommandBufferSubmitInfo{}.setCommandBuffer(buf);
 

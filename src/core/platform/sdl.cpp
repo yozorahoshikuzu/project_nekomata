@@ -36,14 +36,13 @@ SdlWindow::SdlWindow(const std::string& title, const uint32_t width, const uint3
 
 SdlWindow::~SdlWindow() { log::info("destroying window..."); SDL_DestroyWindow(m_window); }
 
-auto SdlWindow::vulkanInstanceExtensions() -> std::vector<std::string> {
+auto SdlWindow::vulkanInstanceExtensions() -> Vec<std::string> {
     uint32_t extensionCount;
     const char* const* extensions = SDL_Vulkan_GetInstanceExtensions(&extensionCount);
 
-    std::vector<std::string> result;
-    result.reserve(extensionCount);
+    auto result = Vec<std::string>::withCapacity(extensionCount);
     for (uint32_t i = 0; i < extensionCount; i++) {
-        result.emplace_back(extensions[i]);
+        result.emplace(extensions[i]);
     }
 
     return result;

@@ -174,16 +174,16 @@ auto dedupQueueIndices(std::vector<u32>& queueIndices) {
 
 auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhysicalDevice, const vk::raii::SurfaceKHR& vkSurface)
     -> std::expected<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError> {
-    auto supportedExtensionProperties = vkPhysicalDevice.enumerateDeviceExtensionProperties();
-    auto supportedExtensionNames = supportedExtensionProperties |
-                                     std::views::transform([](const vk::ExtensionProperties& ext) -> std::string { return std::string(ext.extensionName); }) |
-                                     std::ranges::to<std::vector>();
+    auto supportedExtensionProperties = Vec<vk::ExtensionProperties>::fromStdVector(vkPhysicalDevice.enumerateDeviceExtensionProperties());
+    auto supportedExtensionNames = supportedExtensionProperties.iter()
+        .map([](const auto& ext) { return std::string(ext.extensionName); })
+        .collect<Vec>();
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
     // Check the physical device for support of required extensions
 
     for (auto& rule : kRequiredPhysicalDeviceExtensions) {
-        if (!std::ranges::contains(supportedExtensionNames, rule.m_extensionName)) {
+        if (!supportedExtensionNames.contains(rule.m_extensionName)) {
             return std::unexpected(PhysicalDevicePropertyQueryError{.m_kind = rule.m_errorKindIfMissing});
         }
     }
@@ -225,8 +225,8 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     // Check for availability of optional features
 
     auto props = VulkanPhysicalDeviceProperties{};
-    std::vector<std::string> enabledExtensions;
-    for (auto& rule : kRequiredPhysicalDeviceExtensions) { enabledExtensions.emplace_back(rule.m_extensionName); }
+    auto enabledExtensions = Vec<std::string>::create();
+    for (auto& rule : kRequiredPhysicalDeviceExtensions) { enabledExtensions.emplace(rule.m_extensionName); }
     auto enabledVk10Features = defaultEnabledVk10Features();
     auto enabledVk11Features = defaultEnabledVk11Features();
     auto enabledVk12Features = defaultEnabledVk12Features();
@@ -237,7 +237,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
         bool satisfied = true;
 
         for (auto& reqdExtensionName : rule.m_requiredExtensionNames) {
-            satisfied &= std::ranges::contains(supportedExtensionNames, reqdExtensionName);
+            satisfied &= supportedExtensionNames.contains(reqdExtensionName);
         }
 
         for (auto& reqdFeature : rule.m_requiredFeatures) {
@@ -258,7 +258,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
         props.*(rule.m_setsIfSupported) = satisfied;
         if (satisfied) {
             for (auto& extName : rule.m_requiredExtensionNames) {
-                enabledExtensions.emplace_back(extName);
+                enabledExtensions.emplace(extName);
             }
         }
     }
@@ -312,7 +312,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     props.m_enabledVk12Features = enabledVk12Features;
     props.m_enabledVk13Features = enabledVk13Features;
     props.m_enabledVk14Features = enabledVk14Features;
-    props.m_enabledExtensions = enabledExtensions;
+    props.m_enabledExtensions = std::move(enabledExtensions);
     props.m_graphicsQueueIndex = graphicsQueueIndex;
     props.m_presentQueueIndex = presentQueueIndex;
     props.m_asyncComputeQueueIndex = asyncComputeQueueIndex;
@@ -359,6 +359,28 @@ auto VulkanPhysicalDeviceProperties::queueCreateInfos() const -> std::vector<vk:
         })
         | std::ranges::to<std::vector>();
     return infos;
+}
+
+
+auto VulkanPhysicalDeviceProperties::printInfo() const -> void {
+    log::info("  Device Information:");
+    log::info("    Name: {}", m_deviceName);
+    log::info("    Type: {}", vk::to_string(m_deviceType));
+    log::info("    Driver ID: {}", vk::to_string(m_driverId));
+    log::info("    VRAM heap size: {} MiB", m_vramSize / 1024 / 1024);
+    log::info("  Device Features:");
+    for (auto& rule : kOptionalPhysicalDeviceFeatures) {
+        log::info("    {}: {}", rule.m_name, this->*rule.m_setsIfSupported ? "Yes" : "No");
+    }
+
+    auto asyncComputeQueueContingency = m_asyncComputeQueueIndex == m_graphicsQueueIndex ? "aliases graphics queue"sv : "dedicated"sv;
+    auto presentQueueContingency = m_presentQueueIndex == m_graphicsQueueIndex ? "aliases graphics queue"sv
+        : m_presentQueueIndex == m_asyncComputeQueueIndex ? "aliases async compute queue"sv : "dedicated"sv;
+
+    log::info("  Device Queue Family Indices:");
+    log::info("    Graphics queue: {}", m_graphicsQueueIndex);
+    log::info("    Async compute queue: {} ({})", m_asyncComputeQueueIndex, asyncComputeQueueContingency);
+    log::info("    Present queue: {} ({})", m_presentQueueIndex, presentQueueContingency);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------

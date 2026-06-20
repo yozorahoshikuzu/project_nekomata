@@ -5,6 +5,7 @@ import std;
 import vulkan;
 import :core.math;
 import :core.platform.int_def;
+import :core.containers.vec;
 
 export namespace nekomata2 {
 
@@ -25,7 +26,7 @@ public:
     SdlWindow& operator=(SdlWindow&&) = default;
 
     // TODO: Document
-    [[nodiscard]] static auto vulkanInstanceExtensions() -> std::vector<std::string>;
+    [[nodiscard]] static auto vulkanInstanceExtensions() -> Vec<std::string>;
     // TODO: Document
     [[nodiscard]] auto vulkanCreateRawSurface(const vk::Instance& vkInstance) const -> vk::SurfaceKHR;
     // TODO: Document

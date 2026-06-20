@@ -5,6 +5,7 @@ import :core.platform.int_def;
 import :graphics.vulkan.vk_gpu_obrm;
 import :graphics.vulkan.sync_primitives.binary_semaphore;
 import :graphics.vulkan.vk_image_trait;
+import :core.containers.vec;
 
 export namespace nekomata2 {
 
@@ -45,7 +46,7 @@ static_assert(CVulkanImage<SwapchainImage> && "SwapchainImage must satisfy CVulk
 class VulkanSwapchain {
 public:
     VulkanSwapchain(std::nullptr_t);
-    VulkanSwapchain(vk::raii::SwapchainKHR&& swapchain, vk::Extent2D swapchainImageExtent, std::vector<SwapchainImage>&& swapchainImages);
+    VulkanSwapchain(vk::raii::SwapchainKHR&& swapchain, vk::Extent2D swapchainImageExtent, Vec<SwapchainImage>&& swapchainImages);
 
     static auto create(vk::Extent2D windowDrawableExtent, std::optional<VulkanSwapchain>&& oldSwapchain, bool vsyncEnable) -> VulkanSwapchain;
 
@@ -62,7 +63,7 @@ public:
 private:
     VulkanAsyncRaiiWrapper<vk::raii::SwapchainKHR> m_vkSwapchain = nullptr;
     vk::Extent2D m_swapchainImageExtent;
-    std::vector<SwapchainImage> m_vkSwapchainImages;
+    Vec<SwapchainImage> m_vkSwapchainImages = Vec<SwapchainImage>::create();
 };
 
 }

@@ -19,7 +19,7 @@ static constexpr std::array<vk::PresentModeKHR, 4> PRESENT_MODE_PRIORITY_VSYNC =
 static constexpr std::array<vk::PresentModeKHR, 4> PRESENT_MODE_PRIORITY_NO_VSYNC = { vk::PresentModeKHR::eMailbox, vk::PresentModeKHR::eImmediate, vk::PresentModeKHR::eFifoRelaxed, vk::PresentModeKHR::eFifo };
 
 VulkanSwapchain::VulkanSwapchain(std::nullptr_t) {}
-VulkanSwapchain::VulkanSwapchain(vk::raii::SwapchainKHR&& swapchain, vk::Extent2D swapchainImageExtent, std::vector<SwapchainImage>&& swapchainImages) : m_vkSwapchain(std::move(swapchain)), m_swapchainImageExtent(swapchainImageExtent), m_vkSwapchainImages(std::move(swapchainImages)) {}
+VulkanSwapchain::VulkanSwapchain(vk::raii::SwapchainKHR&& swapchain, vk::Extent2D swapchainImageExtent, Vec<SwapchainImage>&& swapchainImages) : m_vkSwapchain(std::move(swapchain)), m_swapchainImageExtent(swapchainImageExtent), m_vkSwapchainImages(std::move(swapchainImages)) {}
 
 auto VulkanSwapchain::create(vk::Extent2D windowDrawableExtent, std::optional<VulkanSwapchain>&& oldSwapchain, bool vsyncEnable) -> VulkanSwapchain {
     auto surfaceProps = VulkanPhysicalDeviceSurfaceProperties::query(VulkanContext::get().vkPhysicalDevice(), VulkanContext::get().vkSurface());
@@ -71,12 +71,10 @@ auto VulkanSwapchain::create(vk::Extent2D windowDrawableExtent, std::optional<Vu
     }
 
     auto swapchain = VulkanContext::get().vkDevice().createSwapchainKHR(swapchainCreateInfo);
-    auto preparedSwapchainImages = swapchain.getImages();
-    auto swapchainImages = preparedSwapchainImages
-        | std::views::transform([&](vk::Image image) -> SwapchainImage {
-            return SwapchainImage::from(image, imageExtent, surfaceFormat.format);
-        })
-        | std::ranges::to<std::vector>();
+    auto preparedSwapchainImages = Vec<vk::Image>::fromStdVector(swapchain.getImages());
+    auto swapchainImages = preparedSwapchainImages.iter()
+        .map([&](const auto& img) { return SwapchainImage::from(img, imageExtent, surfaceFormat.format); })
+        .collect<Vec>();
 
     return VulkanSwapchain(std::move(swapchain), imageExtent, std::move(swapchainImages));
 }

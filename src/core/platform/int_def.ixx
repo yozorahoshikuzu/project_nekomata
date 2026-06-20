@@ -15,6 +15,7 @@ export using usize = std::size_t;
 
 export using f32 = float;
 export using f64 = double;
+export using f16 = _Float16;
 
 constexpr u8  operator""_u8 (unsigned long long v) { return static_cast<u8>(v);  }
 constexpr u16 operator""_u16(unsigned long long v) { return static_cast<u16>(v); }
