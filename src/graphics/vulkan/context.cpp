@@ -177,7 +177,7 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
         .enumerate()
         .collect<Vec>();
 
-    if (std::ranges::all_of(props, [](const auto& val) { return !std::get<1>(val).has_value(); })) {
+    if (props.iter().all([](const auto& x) { return !x.second.has_value(); })) {
         log::crit("No GPUs shown by loader are supported!");
         for (auto& [i, prop] : props) {
             log::crit("  GPU #{}: {}", i, prop.error().toString());
@@ -198,7 +198,12 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
         prop->printInfo();
     }
 
-    auto scoreMaxIndex = std::distance(scores.begin(), std::ranges::max_element(scores));
+    auto scoreMaxIndex = scores.iter()
+        .enumerate()
+        .minByKey([](const auto& x) -> u32 { return x.second; })
+        .value()
+        .first;
+
     log::info("Picked GPU #{}", scoreMaxIndex);
     auto [_, prop] = std::move(props[scoreMaxIndex]);
     return { physicalDevices[scoreMaxIndex], std::move(*prop) };
