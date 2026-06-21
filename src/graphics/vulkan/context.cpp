@@ -200,7 +200,7 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
 
     auto scoreMaxIndex = scores.iter()
         .enumerate()
-        .minByKey([](const auto& x) -> u32 { return x.second; })
+        .maxByKey([](const auto& x) -> u32 { return x.second; })
         .value()
         .first;
 
@@ -210,15 +210,13 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
 }
 
 auto VulkanContext::createVkDevice(const vk::raii::PhysicalDevice& vkPhysicalDevice, const VulkanPhysicalDeviceProperties& vkPhysicalDeviceProps) -> vk::raii::Device {
+    log::info("Creating device..");
+
     auto deviceExtensionsC = vkPhysicalDeviceProps.m_enabledExtensions.iter()
+        .inspect([](const auto& x) { log::info("  Enabling device extension: {}", x); })
         .map([](auto& x) { return x.c_str(); })
         .collect<Vec>();
 
-    log::info("Creating device..");
-    for (auto& ext : vkPhysicalDeviceProps.m_enabledExtensions) {
-        log::info("  Enabling device extension: {}", ext);
-    }
-    
     auto queueCreateInfos = vkPhysicalDeviceProps.queueCreateInfos();
 
     auto deviceCreateInfo = vk::DeviceCreateInfo{}

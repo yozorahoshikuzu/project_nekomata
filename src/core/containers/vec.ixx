@@ -28,6 +28,7 @@ template <typename Iter, typename Output> concept IterProducts =
 template <typename Inner, typename F> class MapIter;
 template <typename Inner>             class EnumerateIter;
 template <typename Inner, typename P> class FilterIter;
+template <typename Inner, typename I> class InspectIter;
 
 class IteratorCppEndProxy {};
 
@@ -39,6 +40,8 @@ public:
     template <typename F> requires CIterator<Derived> constexpr auto map(F f) { return MapIter<Derived, F>(std::move(self()), std::move(f)); }
     template <typename P> requires CIterator<Derived> constexpr auto filter(P pred) { return FilterIter<Derived, P>(std::move(self()), std::move(pred)); }
     constexpr auto enumerate() requires CIterator<Derived> { return EnumerateIter<Derived>(std::move(self())); }
+
+    template <typename I> requires CIterator<Derived> constexpr auto inspect(I i) { return InspectIter<Derived, I>(std::move(self()), std::move(i)); }
 
     // ---- Horizontal Reduction -------------------------------------------------------------------------------------------------------------------------------
 
@@ -184,10 +187,6 @@ public:
     constexpr auto next() -> decltype(auto) { return m_f(m_inner.next()); }
     constexpr auto current() const -> decltype(auto) { return m_f(m_inner.current()); }
 
-    template <typename P> constexpr auto all(P pred) {
-        return std::all_of(m_inner.begin(), m_inner.end(), [&](auto&& elem) { return pred(m_f(std::move(elem))); });
-    }
-
 private:
     Inner m_inner;
     F m_f;
@@ -233,6 +232,19 @@ private:
     std::optional<ElemT> m_currentElem;
 };
 
+template <typename Inner, typename I> class InspectIter : public IteratorMixin<InspectIter<Inner, I>> {
+public:
+    constexpr InspectIter(Inner inner, I i) : m_inner(std::move(inner)), m_i(std::move(i)) {}
+
+    constexpr auto hasNext() const -> bool { return m_inner.hasNext(); }
+    constexpr auto next() -> decltype(auto) { auto& next = m_inner.next(); m_i(next); return next; }
+    constexpr auto current() const -> decltype(auto) { return m_inner.current(); }
+
+private:
+    Inner m_inner;
+    I m_i;
+};
+
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 export template <typename T> struct TTriviallyRelocatable : std::bool_constant<std::is_trivially_copyable_v<T>> {};
@@ -246,6 +258,7 @@ public:
 
     // TODO: remove later
     Vec() = default;
+    constexpr ~Vec() { destroyFinalize(); free(m_data); }
 
     constexpr Vec(Vec&& other) noexcept : m_data(other.m_data), m_len(other.m_len), m_capacity(other.m_capacity) {
         other.m_data = nullptr;
