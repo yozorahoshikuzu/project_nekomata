@@ -22,12 +22,12 @@ public:
             generation = m_generations[index];
         } else {
             index = static_cast<u32>(m_generations.size());
-            m_generations.emplace_back(1);
+            m_generations.emplace(1);
             generation = 1;
         }
 
         Entity ent = Entity::create(generation, index);
-        m_aliveEntities.push_back(ent);
+        m_aliveEntities.emplace(ent);
         return ent;
     }
 
@@ -44,7 +44,7 @@ public:
         m_generations[index]++;
         m_entityIndexFreelist.push(index);
 
-        std::erase_if(m_aliveEntities, [&](Entity other) { return other == ent; });
+        m_aliveEntities.retain([&](const auto& other) -> bool { return other != ent; });
     }
 
     bool isEntityValid(Entity ent) const {
@@ -52,7 +52,7 @@ public:
         return idx < m_generations.size() && m_generations[idx] == ent.generation();
     }
 
-    const std::vector<Entity>& entities() const { return m_aliveEntities; }
+    const Vec<Entity>& entities() const { return m_aliveEntities; }
     usize entityCount() const { return m_aliveEntities.size(); }
 
     template <typename T, typename... Args> T& emplace(Entity e, Args&&... args) {
@@ -103,7 +103,7 @@ public:
         s->m_workingWorld = this;
 
         ScriptType* raw = s.get();
-        m_scripts[e].push_back(std::move(s));
+        m_scripts[e].emplace(std::move(s));
         raw->onCreate();
         return *raw;
     }
@@ -114,7 +114,7 @@ public:
         if (it == m_scripts.end())
             return;
         auto& vec = it->second;
-        vec.erase(std::remove_if(vec.begin(), vec.end(), [](const auto& s) { return dynamic_cast<ScriptType*>(s.get()) != nullptr; }), vec.end());
+        vec.retain([](const auto& s) -> bool { return dynamic_cast<ScriptType*>(s.get()) == nullptr; });
     }
 
     void removeAllScripts(Entity ent) { m_scripts.erase(ent); }
@@ -137,12 +137,12 @@ public:
     }
 
 private:
-    std::vector<u32> m_generations;
+    Vec<u32> m_generations;
     std::queue<u32> m_entityIndexFreelist;
-    std::vector<Entity> m_aliveEntities;
+    Vec<Entity> m_aliveEntities;
 
     std::unordered_map<std::type_index, std::unique_ptr<IComponentSet>> m_components;
-    std::unordered_map<Entity, std::vector<std::unique_ptr<ScriptBase>>, EntityHash> m_scripts;
+    std::unordered_map<Entity, Vec<std::unique_ptr<ScriptBase>>, EntityHash> m_scripts;
 };
 
 } // namespace nekomata2::ecs

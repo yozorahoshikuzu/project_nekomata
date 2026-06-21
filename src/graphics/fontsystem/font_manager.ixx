@@ -28,16 +28,16 @@ struct FontEntry {
 struct FontRasterBatch {
     FontFace fontFace;
     u32 pixelSize;
-    std::vector<u32> glyphIndices;
+    Vec<u32> glyphIndices = Vec<u32>::create();
 };
 
 struct FontRasterInfo {
     std::span<const FontRasterBatch> batches;
     rendering::DynamicBitmapFontAtlas& atlas;
     // the u32 is the index in the font atlas image array
-    std::unordered_map<u32, std::vector<vk::BufferImageCopy2>>& copyRegions;
-    std::vector<u8>& resultBuffer;
-    std::vector<u32>& newImageIndices;
+    std::unordered_map<u32, Vec<vk::BufferImageCopy2>>& copyRegions;
+    Vec<u8>& resultBuffer;
+    Vec<u32>& newImageIndices;
 };
 
 struct GlyphInstance {
@@ -71,7 +71,7 @@ private:
     FT_Library m_ftLibrary;
     std::mutex m_ftLibraryMutex;
 
-    std::vector<std::unique_ptr<FontEntry>> m_fontEntries;
+    Vec<std::unique_ptr<FontEntry>> m_fontEntries = Vec<std::unique_ptr<FontEntry>>::create();
     std::shared_mutex m_registryMutex;
 
     u32 getFreeFontIndex();

@@ -1,6 +1,7 @@
 export module nekomata2:graphics.texturesystem.texture_to_shader_index_table;
 import std;
 import :core.platform.int_def;
+import :core.containers.vec;
 
 export namespace nekomata2::graphics::texturesystem {
 
@@ -22,10 +23,10 @@ public:
     auto setTextureShaderImageIndex(usize textureId, u32 shaderImageIndex) -> void;
     auto setTextureShaderSamplerIndex(usize textureId, u32 shaderSamplerIndex) -> void;
 
-    auto snapshotTables(std::vector<u32>& dstTextureToShaderImageIndexTable, std::vector<u32>& dstTextureToShaderSamplerIndexTable) const -> void;
+    auto snapshotTables(Vec<u32>& dstTextureToShaderImageIndexTable, Vec<u32>& dstTextureToShaderSamplerIndexTable) const -> void;
 private:
-    std::vector<std::atomic<u32>> m_textureToShaderImageIndexTable;
-    std::vector<std::atomic<u32>> m_textureToShaderSamplerIndexTable;
+    Vec<std::atomic<u32>> m_textureToShaderImageIndexTable   = Vec<std::atomic<u32>>::create();
+    Vec<std::atomic<u32>> m_textureToShaderSamplerIndexTable = Vec<std::atomic<u32>>::create();
 };
 
 }

@@ -27,7 +27,7 @@ private:
         i32 writerX, writerY;
     };
 
-    std::vector<Shelf> m_shelves;
+    Vec<Shelf> m_shelves = Vec<Shelf>::create();
     i32 m_atlasWidth, m_atlasHeight;
 };
 
@@ -62,7 +62,7 @@ struct DynamicBitmapFontAtlas {
         AtlasShelfPacker imagePacker;
     };
 
-    std::vector<AtlasTexture> m_atlasTextures;
+    Vec<AtlasTexture> m_atlasTextures = Vec<AtlasTexture>::create();
     std::unordered_map<AtlasGlyphKey, AtlasGlyphParams, AtlasGlyphKeyHash> m_glyphParams;
 
     auto insertGlyphParam(fonts::FontFace fontFace, u32 pixelSize, u32 glyphIndex, math::Vector2f texcoordStart, math::Vector2f texcoordEnd, u32 imageShaderIndex, math::Vector2f bearing, math::Vector2f size, float advance) -> void {
@@ -81,7 +81,7 @@ struct DynamicBitmapFontAtlas {
         auto image = VulkanImage::create(vk::ImageType::e2D, {width, height, 1}, 1, 1, vk::Format::eR8Unorm, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAuto, {}, VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics], vk::ImageLayout::eUndefined);
         auto imageShaderIndex = texturesystem::TextureManager::get().shaderResourceTable().allocateImageIndex();
         texturesystem::TextureManager::get().shaderResourceTable().bindImage(image, imageShaderIndex);
-        m_atlasTextures.emplace_back(AtlasTexture { std::move(image), imageShaderIndex.imageIndex, AtlasShelfPacker(width, height) });
+        m_atlasTextures.emplace(AtlasTexture { std::move(image), imageShaderIndex.imageIndex, AtlasShelfPacker(width, height) });
     }
 };
 

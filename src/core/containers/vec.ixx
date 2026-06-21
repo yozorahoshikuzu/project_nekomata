@@ -9,6 +9,7 @@ import :core.platform.int_def;
 template <typename Iter> concept CIterator = requires(Iter&& iter) {
     { iter.hasNext() } -> std::convertible_to<bool>;
     { iter.next() } -> std::convertible_to<decltype(iter.next())>;
+    { iter.current() } -> std::convertible_to<decltype(iter.current())>;
 };
 
 template <typename A, typename B, typename Output> concept Add = requires(A a, B b) { { a + b } -> std::convertible_to<Output>; };
@@ -27,6 +28,8 @@ template <typename Iter, typename Output> concept IterProducts =
 template <typename Inner, typename F> class MapIter;
 template <typename Inner>             class EnumerateIter;
 template <typename Inner, typename P> class FilterIter;
+
+class IteratorCppEndProxy {};
 
 template <typename Derived>
 class IteratorMixin {
@@ -144,6 +147,18 @@ public:
         return out;
     }
 
+    // ---- Compatibility with for-loops -----------------------------------------------------------------------------------------------------------------------
+
+    constexpr auto begin() { return self(); }
+    constexpr auto end() { return IteratorCppEndProxy{}; }
+    constexpr auto begin() const { return self(); }
+    constexpr auto end() const { return IteratorCppEndProxy{}; }
+
+    constexpr auto operator++() { self().next(); }
+    constexpr auto operator*() { return self().current(); }
+
+    constexpr auto operator==(const IteratorCppEndProxy&) const -> bool { return !self().hasNext(); }
+
 private:
     constexpr Derived& self() { return static_cast<Derived&>(*this); }
     constexpr const Derived& self() const { return static_cast<const Derived&>(*this); }
@@ -155,6 +170,7 @@ public:
 
     constexpr auto hasNext() const -> bool { return m_begin != m_end; }
     constexpr auto next() -> decltype(auto) { return *m_begin++; }
+    constexpr auto current() const -> decltype(auto) { return *m_begin; }
 
 private:
     TPtr m_begin, m_end;
@@ -166,6 +182,7 @@ public:
 
     constexpr auto hasNext() const -> bool { return m_inner.hasNext(); }
     constexpr auto next() -> decltype(auto) { return m_f(m_inner.next()); }
+    constexpr auto current() const -> decltype(auto) { return m_f(m_inner.current()); }
 
     template <typename P> constexpr auto all(P pred) {
         return std::all_of(m_inner.begin(), m_inner.end(), [&](auto&& elem) { return pred(m_f(std::move(elem))); });
@@ -182,6 +199,7 @@ public:
 
     constexpr auto hasNext() const -> bool { return m_inner.hasNext(); }
     constexpr auto next() { return std::pair{m_index++, m_inner.next()}; }
+    constexpr auto current() const { return std::pair{m_index, m_inner.current()}; }
 
 private:
     Inner m_inner;
@@ -194,6 +212,7 @@ public:
 
     constexpr auto hasNext() const -> bool { return m_currentElem.has_value(); }
     constexpr auto next() -> decltype(auto) { auto val = std::move(*m_currentElem); advance(); return val; }
+    constexpr auto current() const -> decltype(auto) { return *m_currentElem; }
 
 private:
     using ElemT = std::decay_t<decltype(std::declval<Inner&>().next())>;
@@ -225,7 +244,8 @@ public:
     static constexpr bool kUsesTriviallyRelocatableFastpath = TTriviallyRelocatableValue<T>;
     static constexpr bool kNeedsFinalizer = !std::is_trivially_destructible_v<T>;
 
-    Vec() = delete;
+    // TODO: remove later
+    Vec() = default;
 
     constexpr Vec(Vec&& other) noexcept : m_data(other.m_data), m_len(other.m_len), m_capacity(other.m_capacity) {
         other.m_data = nullptr;
@@ -290,6 +310,11 @@ public:
 
     constexpr T& operator[](usize index) noexcept { return m_data[index]; }
     constexpr const T& operator[](usize index) const noexcept { return m_data[index]; }
+
+    constexpr T& first() noexcept { return m_data[0]; }
+    constexpr const T& first() const noexcept { return m_data[0]; }
+    constexpr T& last() noexcept { return m_data[m_len - 1]; }
+    constexpr const T& last() const noexcept { return m_data[m_len - 1]; }
 
     constexpr auto isEmpty() const noexcept -> bool { return m_len == 0; }
     template <typename U> constexpr auto contains(const U& val) const noexcept -> bool { return std::find(m_data, m_data + m_len, val) != m_data + m_len; }
@@ -356,6 +381,28 @@ public:
         m_len = 0;
     }
 
+    template <typename P> constexpr auto retain(P pred) requires requires(T& d) { { pred(d) } -> std::convertible_to<bool>; }
+    {
+        usize newLen = 0;
+        for (usize src = 0; src < m_len; src++) {
+            if (pred(m_data[src])) {
+                if (newLen != src) {
+                    if constexpr (kUsesTriviallyRelocatableFastpath) {
+                        m_data[newLen] = std::move(m_data[src]);
+                    } else {
+                        new (m_data + newLen) T(std::move(m_data[src]));
+                        if constexpr (kNeedsFinalizer) m_data[src].~T();
+                    }
+                }
+                newLen++;
+            } else {
+                if constexpr (kNeedsFinalizer) m_data[src].~T();
+            }
+        }
+
+        m_len = newLen;
+    }
+
     // ---- Iterators ------------------------------------------------------------------------------------------------------------------------------------------
 
     auto iter() -> Iter<T*> { return Iter<T*>(m_data, m_data + m_len); }
@@ -399,7 +446,7 @@ private:
         m_capacity = newCapacity;
     }
 
-    T* m_data;
-    usize m_len;
-    usize m_capacity;
+    T* m_data        = nullptr;
+    usize m_len      = 0_usize;
+    usize m_capacity = 0_usize;
 };

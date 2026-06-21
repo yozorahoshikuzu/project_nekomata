@@ -81,7 +81,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     ecs::components::Transform firstCameraTransform;
     bool firstCameraFound = false;
 
-    for (auto [i, camera] : renderingData.m_cameras.m_storage | std::ranges::views::enumerate) {
+    for (auto [i, camera] : renderingData.m_cameras.m_storage.iter().enumerate()) {
         firstCamera = camera;
 
         auto cameraEntitySparseIndex = renderingData.m_cameras.m_storageToEntity[i];;
@@ -150,9 +150,9 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         auto batches = std::vector<fonts::FontRasterBatch>();
         batches.emplace_back(std::move(*batch));
 
-        std::vector<u8> resultBuffer;
-        std::vector<u32> newImageIndices;
-        std::unordered_map<u32, std::vector<vk::BufferImageCopy2>> bufferImageCopyRegions;
+        Vec<u8> resultBuffer = Vec<u8>::create();
+        Vec<u32> newImageIndices = Vec<u32>::create();
+        std::unordered_map<u32, Vec<vk::BufferImageCopy2>> bufferImageCopyRegions;
         fonts::FontRasterInfo rasterInfo = { batches, sharedRenderingResources.m_fontAtlas, bufferImageCopyRegions, resultBuffer, newImageIndices  };
 
         fonts::FontManager::get().rasterizeGlyphs(rasterInfo);
@@ -261,7 +261,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     u32 verticesThisDraw = 0;
 
     u32 shouldInvertColors = 0;
-    for (auto [i, renderable] : renderingData.m_renderables.m_storage | std::ranges::views::enumerate) {
+    for (auto [i, renderable] : renderingData.m_renderables.m_storage.iter().enumerate()) {
         // Get the LOD list for the renderable and skip it if no LODs are available
         auto& lodList = meshsystem::MeshAssetStorage::get().getLodList(renderable.meshAsset);
         auto bestAvailableLod = lodList.bestLodIndex.load(std::memory_order_acquire);

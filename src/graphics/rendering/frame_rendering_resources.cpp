@@ -29,7 +29,7 @@ auto FrameRenderingResources::prepareTransformsBuffer(MRThreadsSharedDataLeaf& r
     auto cameraModelMatrix = cameraTransform.m_transform3d.computeModelMatrix();
     auto viewMatrix = cameraModelMatrix.inverse().value_or(math::Matrix4x4f::identity());
 
-    for (auto [i, rend] : renderingData.m_renderables.m_storage | std::ranges::views::enumerate) {
+    for (auto [i, rend] : renderingData.m_renderables.m_storage.iter().enumerate()) {
         auto entSparseIndex = renderingData.m_renderables.m_storageToEntity[i];
 
         auto modelMatrix = math::Matrix4x4f::identity();

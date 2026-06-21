@@ -39,7 +39,7 @@ struct UiNode {
         return *children.back();
     }
 
-    void buildDrawCmds(std::vector<UiDrawCmd>& list, math::Vector2f screenLogicalSize, math::Vector2f parentPosition, math::Vector2f parentExtent) {
+    void buildDrawCmds(Vec<UiDrawCmd>& list, math::Vector2f screenLogicalSize, math::Vector2f parentPosition, math::Vector2f parentExtent) {
         if (!visible)
             return;
 
@@ -53,7 +53,7 @@ struct UiNode {
                     .ndcEnd   = unormToNdc(endPos.componentWiseDivide(screenLogicalSize)),
                     .color    = rect.color
                 };
-                list.emplace_back(drawCmd);
+                list.emplace(drawCmd);
             },
             [&](const UiTexture& texture) {
                 auto drawCmd = UiTextureDrawCmd{
@@ -63,7 +63,7 @@ struct UiNode {
                     .texcoordEnd = texture.texcoordEnd,
                     .texture = texture.texture
                 };
-                list.emplace_back(drawCmd);
+                list.emplace(drawCmd);
             },
             [&](const UiText& text) {
                 log::warn("Text not implemented");

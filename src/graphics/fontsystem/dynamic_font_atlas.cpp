@@ -30,9 +30,9 @@ std::optional<math::Vector2i> AtlasShelfPacker::pack(i32 width, i32 height) {
     }
 
     // No shelves fit the glyphs, so try creating a new one.
-    i32 newShelfY = m_shelves.empty() ? 0 : m_shelves.back().writerY + m_shelves.back().height;
+    i32 newShelfY = m_shelves.isEmpty() ? 0 : m_shelves.last().writerY + m_shelves.last().height;
     if (newShelfY + height <= m_atlasHeight) {
-        m_shelves.emplace_back(height, width, newShelfY);
+        m_shelves.emplace(height, width, newShelfY);
         return math::Vector2i(0, newShelfY);
     }
 

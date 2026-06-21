@@ -121,11 +121,11 @@ auto FontManager::rasterizeGlyphs(FontRasterInfo rasterInfo) -> void {
                 // Must add a new image to the atlas
                 rasterInfo.atlas.pushNewImage(4096, 4096);
                 imageIndex = rasterInfo.atlas.m_atlasTextures.size() - 1;
-                rasterInfo.newImageIndices.emplace_back(imageIndex);
-                if (auto offset = rasterInfo.atlas.m_atlasTextures.back().imagePacker.pack(imageWidth, imageHeight)) {
+                rasterInfo.newImageIndices.emplace(imageIndex);
+                if (auto offset = rasterInfo.atlas.m_atlasTextures.last().imagePacker.pack(imageWidth, imageHeight)) {
                     imageOffset = *offset;
-                    dstImageSize = { static_cast<i32>(rasterInfo.atlas.m_atlasTextures.back().image.extent().width), static_cast<i32>(rasterInfo.atlas.m_atlasTextures.back().image.extent().height) };
-                    image = *rasterInfo.atlas.m_atlasTextures.back().image.vkImage();
+                    dstImageSize = { static_cast<i32>(rasterInfo.atlas.m_atlasTextures.last().image.extent().width), static_cast<i32>(rasterInfo.atlas.m_atlasTextures.last().image.extent().height) };
+                    image = *rasterInfo.atlas.m_atlasTextures.last().image.vkImage();
                 } else {
                     log::error("Failed to pack glyph into atlas");
                     continue;
@@ -140,7 +140,7 @@ auto FontManager::rasterizeGlyphs(FontRasterInfo rasterInfo) -> void {
                 .setImageOffset({imageOffset.x(), imageOffset.y(), 0})
                 .setImageSubresource({vk::ImageAspectFlagBits::eColor, 0, 0, 1});
 
-            rasterInfo.copyRegions[imageIndex].push_back(bufferImageCopy);
+            rasterInfo.copyRegions[imageIndex].emplace(bufferImageCopy);
             for (u32 row = 0; row < imageHeight; row++) {
                 memcpy(
                     rasterInfo.resultBuffer.data() + bufferCursor + row * imageWidth,
@@ -245,7 +245,7 @@ auto FontManager::findAndBatchMissingGlyphs(FontFace font, rendering::DynamicBit
     if (!fontEntry.isLoaded) return {};
     std::scoped_lock faceLock(fontEntry.rasterMutex);
 
-    std::vector<u32> glyphIndices;
+    auto glyphIndices = Vec<u32>::create();
     std::unordered_set<u32> glyphsAlreadyQueued;
 
     for (auto it = utf8::iterator(text.begin(), text.begin(), text.end()); it != utf8::iterator(text.end(), text.begin(), text.end()); it++) {
@@ -256,13 +256,13 @@ auto FontManager::findAndBatchMissingGlyphs(FontFace font, rendering::DynamicBit
         auto glyphId = FT_Get_Char_Index(fontEntry.face, c);
 
         if (!atlas.hasGlyphParam(font, pixelSize, glyphId) && !glyphsAlreadyQueued.contains(glyphId)) {
-            glyphIndices.push_back(c);
+            glyphIndices.emplace(c);
             glyphsAlreadyQueued.insert(glyphId);
         }
     }
 
-    if (glyphIndices.empty()) return {};
-    return FontRasterBatch { font, pixelSize, glyphIndices };
+    if (glyphIndices.isEmpty()) return {};
+    return FontRasterBatch { font, pixelSize, std::move(glyphIndices) };
 }
 
 u32 FontManager::getFreeFontIndex() {
@@ -270,7 +270,7 @@ u32 FontManager::getFreeFontIndex() {
     for (u32 i = 0; i < m_fontEntries.size(); i++) {
         if (!m_fontEntries[i] || !m_fontEntries[i]->isLoaded) return i;
     }
-    m_fontEntries.emplace_back(std::make_unique<FontEntry>());
+    m_fontEntries.emplace(std::make_unique<FontEntry>());
     return m_fontEntries.size() - 1;
 }
 
