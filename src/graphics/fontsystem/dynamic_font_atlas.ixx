@@ -11,6 +11,7 @@ import :graphics.vulkan.vk_image;
 import :graphics.texturesystem.texture_manager;
 import :graphics.vulkan.vk_queue_family_swizzling;
 import :graphics.vulkan.context;
+import :core.containers.hashmap;
 
 export namespace nekomata2::graphics::rendering {
 
@@ -40,7 +41,7 @@ struct AtlasGlyphKey {
 };
 
 struct AtlasGlyphKeyHash {
-    std::size_t operator()(const AtlasGlyphKey& key) const noexcept {
+    static u64 hash(const AtlasGlyphKey& key) noexcept {
         return XXH3_64bits(&key, sizeof(key));
     }
 };
@@ -63,10 +64,10 @@ struct DynamicBitmapFontAtlas {
     };
 
     Vec<AtlasTexture> m_atlasTextures = Vec<AtlasTexture>::create();
-    std::unordered_map<AtlasGlyphKey, AtlasGlyphParams, AtlasGlyphKeyHash> m_glyphParams;
+    HashMap<AtlasGlyphKey, AtlasGlyphParams, AtlasGlyphKeyHash> m_glyphParams = HashMap<AtlasGlyphKey, AtlasGlyphParams, AtlasGlyphKeyHash>::create();
 
     auto insertGlyphParam(fonts::FontFace fontFace, u32 pixelSize, u32 glyphIndex, math::Vector2f texcoordStart, math::Vector2f texcoordEnd, u32 imageShaderIndex, math::Vector2f bearing, math::Vector2f size, float advance) -> void {
-        m_glyphParams.emplace(AtlasGlyphKey { fontFace, pixelSize, glyphIndex }, AtlasGlyphParams { texcoordStart, texcoordEnd, imageShaderIndex, bearing, size, advance });
+        m_glyphParams.insert(AtlasGlyphKey { fontFace, pixelSize, glyphIndex }, AtlasGlyphParams { texcoordStart, texcoordEnd, imageShaderIndex, bearing, size, advance });
     }
 
     auto hasGlyphParam(fonts::FontFace fontFace, u32 pixelSize, u32 glyphIndex) -> bool {
@@ -74,7 +75,7 @@ struct DynamicBitmapFontAtlas {
     }
 
     auto getGlyphParams(fonts::FontFace fontFace, u32 pixelSize, u32 glyphIndex) -> AtlasGlyphParams& {
-        return m_glyphParams.at(AtlasGlyphKey { fontFace, pixelSize, glyphIndex });
+        return m_glyphParams[AtlasGlyphKey { fontFace, pixelSize, glyphIndex }];
     }
 
     auto pushNewImage(u32 width, u32 height) -> void {
