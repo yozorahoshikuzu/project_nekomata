@@ -21,6 +21,9 @@ public:
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 export template<typename K, typename V, typename H> class HashMap;
+export template <typename K, typename V> class HashMapKeysIter;
+export template <typename K, typename V> class HashMapValuesIter;
+export template <typename K, typename V> class HashMapIter;
 
 template <typename T> constexpr auto avalancheHash(T v) -> u64 {
     u64 x = v;
@@ -43,6 +46,7 @@ template<> struct Hash<f32>         { static u64 hash(f32 v) { return avalancheH
 template<> struct Hash<f64>         { static u64 hash(f64 v) { return avalancheHash(v); } };
 template<> struct Hash<bool>        { static u64 hash(bool v) { return avalancheHash(v); } };
 template<> struct Hash<std::string> { static u64 hash(std::string_view v) { return XXH3_64bits(v.data(), v.size()); } };
+template<> struct Hash<std::type_index> { static u64 hash(std::type_index v) { return avalancheHash(v.hash_code()); } };
 
 export template <typename K, typename V, typename H = Hash<K>> class HashMap {
 public:
@@ -143,6 +147,22 @@ public:
         return std::nullopt;
     }
 
+    // ---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    constexpr auto keys() -> HashMapKeysIter<K, V> {
+        return HashMapKeysIter<K, V>(this);
+    }
+
+    constexpr auto values() -> HashMapValuesIter<K, V> {
+        return HashMapValuesIter<K, V>(this);
+    }
+
+    constexpr auto iter() -> HashMapIter<K, V> {
+        return HashMapIter<K, V>(this);
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------------------------------------------
+
     constexpr auto len() const -> usize { return m_len; }
     constexpr auto capacity() const -> usize { return m_capacity; }
     constexpr auto isEmpty() const -> bool { return m_len == 0; }
@@ -156,6 +176,9 @@ public:
 
 private:
     HashMap() = default;
+    friend class HashMapKeysIter<K, V>;
+    friend class HashMapValuesIter<K, V>;
+    friend class HashMapIter<K, V>;
 
     static constexpr auto kKeyNeedsFinalizer = !std::is_trivially_destructible_v<K>;
     static constexpr auto kValNeedsFinalizer = !std::is_trivially_destructible_v<V>;
@@ -344,5 +367,60 @@ private:
         }
 
         freeInPtrs(oldCtrls, oldEntries, oldDibs, oldCap);
+    }
+};
+
+
+export template <typename K, typename V> class HashMapKeysIter : public IteratorMixin<HashMapKeysIter<K, V>> {
+public:
+    constexpr HashMapKeysIter(HashMap<K, V>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
+
+
+    constexpr auto hasNext() const -> bool { return m_index < m_hashmap->m_capacity; }
+    constexpr auto next() -> decltype(auto) { const K& key = m_hashmap->m_entries[m_index].key; m_index++; skipEmpty(); return key; }
+    constexpr auto current() const -> decltype(auto) { return m_hashmap->m_entries[m_index].key; }
+
+private:
+    HashMap<K, V>* m_hashmap = nullptr;
+    usize m_index = 0;
+
+    constexpr auto skipEmpty() -> void {
+        while (m_index < m_hashmap->m_capacity && m_hashmap->m_ctrls[m_index] == HashMap<K, V>::kCtrlSentinelEmpty) m_index++;
+    }
+};
+
+export template <typename K, typename V> class HashMapValuesIter : public IteratorMixin<HashMapValuesIter<K, V>> {
+public:
+    constexpr HashMapValuesIter(HashMap<K, V>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
+
+    constexpr auto hasNext() const -> bool { return m_index < m_hashmap->m_capacity; }
+    constexpr auto next() -> decltype(auto) { V& value = m_hashmap->m_entries[m_index].value; m_index++; skipEmpty(); return value; }
+    constexpr auto current() const -> decltype(auto) { return m_hashmap->m_entries[m_index].value; }
+
+private:
+    HashMap<K, V>* m_hashmap = nullptr;
+    usize m_index = 0;
+
+    constexpr auto skipEmpty() -> void {
+        while (m_index < m_hashmap->m_capacity && m_hashmap->m_ctrls[m_index] == HashMap<K, V>::kCtrlSentinelEmpty) m_index++;
+    }
+};
+
+export template <typename K, typename V> class HashMapIter : public IteratorMixin<HashMapIter<K, V>> {
+public:
+    constexpr HashMapIter(HashMap<K, V>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
+
+    struct Kv { const K& key; V value; };
+
+    constexpr auto hasNext() const -> bool { return m_index < m_hashmap->m_capacity; }
+    constexpr auto next() -> decltype(auto) { Kv kv = { m_hashmap->m_entries[m_index].key, m_hashmap->m_entries[m_index].value }; m_index++; skipEmpty(); return kv; }
+    constexpr auto current() const -> decltype(auto) { Kv kv = { m_hashmap->m_entries[m_index].key, m_hashmap->m_entries[m_index].value }; return kv; }
+
+private:
+    HashMap<K, V>* m_hashmap = nullptr;
+    usize m_index = 0;
+
+    constexpr auto skipEmpty() -> void {
+        while (m_index < m_hashmap->m_capacity && m_hashmap->m_ctrls[m_index] == HashMap<K, V>::kCtrlSentinelEmpty) m_index++;
     }
 };
