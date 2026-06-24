@@ -21,9 +21,9 @@ public:
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 export template<typename K, typename V, typename H> class HashMap;
-export template <typename K, typename V> class HashMapKeysIter;
-export template <typename K, typename V> class HashMapValuesIter;
-export template <typename K, typename V> class HashMapIter;
+export template <typename K, typename V, typename H> class HashMapKeysIter;
+export template <typename K, typename V, typename H> class HashMapValuesIter;
+export template <typename K, typename V, typename H> class HashMapIter;
 
 template <typename T> constexpr auto avalancheHash(T v) -> u64 {
     u64 x = v;
@@ -70,6 +70,10 @@ public:
 
     constexpr auto insert(const K& key, const V& value) -> V& {
         return insertInner(K(key), V(value));
+    }
+
+    constexpr auto insert(const K& key, V&& value) -> V& {
+        return insertInner(K(key), static_cast<V&&>(value));
     }
 
     constexpr auto insert(K&& key, V&& value) -> V& {
@@ -149,16 +153,16 @@ public:
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    constexpr auto keys() -> HashMapKeysIter<K, V> {
-        return HashMapKeysIter<K, V>(this);
+    constexpr auto keys() -> HashMapKeysIter<K, V, H> {
+        return HashMapKeysIter<K, V, H>(this);
     }
 
-    constexpr auto values() -> HashMapValuesIter<K, V> {
-        return HashMapValuesIter<K, V>(this);
+    constexpr auto values() -> HashMapValuesIter<K, V, H> {
+        return HashMapValuesIter<K, V, H>(this);
     }
 
-    constexpr auto iter() -> HashMapIter<K, V> {
-        return HashMapIter<K, V>(this);
+    constexpr auto iter() -> HashMapIter<K, V, H> {
+        return HashMapIter<K, V, H>(this);
     }
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -176,9 +180,9 @@ public:
 
 private:
     HashMap() = default;
-    friend class HashMapKeysIter<K, V>;
-    friend class HashMapValuesIter<K, V>;
-    friend class HashMapIter<K, V>;
+    friend class HashMapKeysIter<K, V, H>;
+    friend class HashMapValuesIter<K, V, H>;
+    friend class HashMapIter<K, V, H>;
 
     static constexpr auto kKeyNeedsFinalizer = !std::is_trivially_destructible_v<K>;
     static constexpr auto kValNeedsFinalizer = !std::is_trivially_destructible_v<V>;
@@ -371,56 +375,56 @@ private:
 };
 
 
-export template <typename K, typename V> class HashMapKeysIter : public IteratorMixin<HashMapKeysIter<K, V>> {
+export template <typename K, typename V, typename H> class HashMapKeysIter : public IteratorMixin<HashMapKeysIter<K, V, H>> {
 public:
-    constexpr HashMapKeysIter(HashMap<K, V>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
+    constexpr HashMapKeysIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
 
     constexpr auto hasNext() const -> bool { return m_index < m_hashmap->m_capacity; }
-    constexpr auto next() -> decltype(auto) { const K& key = m_hashmap->m_entries[m_index].key; m_index++; skipEmpty(); return key; }
-    constexpr auto current() const -> decltype(auto) { return m_hashmap->m_entries[m_index].key; }
+    constexpr auto next() -> const K& { const K& key = m_hashmap->m_entries[m_index].key; m_index++; skipEmpty(); return key; }
+    constexpr auto current() const -> const K& { return m_hashmap->m_entries[m_index].key; }
 
 private:
-    HashMap<K, V>* m_hashmap = nullptr;
+    HashMap<K, V, H>* m_hashmap = nullptr;
     usize m_index = 0;
 
     constexpr auto skipEmpty() -> void {
-        while (m_index < m_hashmap->m_capacity && m_hashmap->m_ctrls[m_index] == HashMap<K, V>::kCtrlSentinelEmpty) m_index++;
+        while (m_index < m_hashmap->m_capacity && m_hashmap->m_ctrls[m_index] == HashMap<K, V, H>::kCtrlSentinelEmpty) m_index++;
     }
 };
 
-export template <typename K, typename V> class HashMapValuesIter : public IteratorMixin<HashMapValuesIter<K, V>> {
+export template <typename K, typename V, typename H> class HashMapValuesIter : public IteratorMixin<HashMapValuesIter<K, V, H>> {
 public:
-    constexpr HashMapValuesIter(HashMap<K, V>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
+    constexpr HashMapValuesIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
     constexpr auto hasNext() const -> bool { return m_index < m_hashmap->m_capacity; }
-    constexpr auto next() -> decltype(auto) { V& value = m_hashmap->m_entries[m_index].value; m_index++; skipEmpty(); return value; }
-    constexpr auto current() const -> decltype(auto) { return m_hashmap->m_entries[m_index].value; }
+    constexpr auto next() -> V& { V& value = m_hashmap->m_entries[m_index].value; m_index++; skipEmpty(); return value; }
+    constexpr auto current() const -> V& { return m_hashmap->m_entries[m_index].value; }
 
 private:
-    HashMap<K, V>* m_hashmap = nullptr;
+    HashMap<K, V, H>* m_hashmap = nullptr;
     usize m_index = 0;
 
     constexpr auto skipEmpty() -> void {
-        while (m_index < m_hashmap->m_capacity && m_hashmap->m_ctrls[m_index] == HashMap<K, V>::kCtrlSentinelEmpty) m_index++;
+        while (m_index < m_hashmap->m_capacity && m_hashmap->m_ctrls[m_index] == HashMap<K, V, H>::kCtrlSentinelEmpty) m_index++;
     }
 };
 
-export template <typename K, typename V> class HashMapIter : public IteratorMixin<HashMapIter<K, V>> {
+export template <typename K, typename V, typename H> class HashMapIter : public IteratorMixin<HashMapIter<K, V, H>> {
 public:
-    constexpr HashMapIter(HashMap<K, V>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
+    constexpr HashMapIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
-    struct Kv { const K& key; V value; };
+    struct Kv { const K& key; V& value; };
 
     constexpr auto hasNext() const -> bool { return m_index < m_hashmap->m_capacity; }
-    constexpr auto next() -> decltype(auto) { Kv kv = { m_hashmap->m_entries[m_index].key, m_hashmap->m_entries[m_index].value }; m_index++; skipEmpty(); return kv; }
-    constexpr auto current() const -> decltype(auto) { Kv kv = { m_hashmap->m_entries[m_index].key, m_hashmap->m_entries[m_index].value }; return kv; }
+    constexpr auto next() -> Kv { Kv kv = { m_hashmap->m_entries[m_index].key, m_hashmap->m_entries[m_index].value }; m_index++; skipEmpty(); return kv; }
+    constexpr auto current() const -> Kv { Kv kv = { m_hashmap->m_entries[m_index].key, m_hashmap->m_entries[m_index].value }; return kv; }
 
 private:
     HashMap<K, V>* m_hashmap = nullptr;
     usize m_index = 0;
 
     constexpr auto skipEmpty() -> void {
-        while (m_index < m_hashmap->m_capacity && m_hashmap->m_ctrls[m_index] == HashMap<K, V>::kCtrlSentinelEmpty) m_index++;
+        while (m_index < m_hashmap->m_capacity && m_hashmap->m_ctrls[m_index] == HashMap<K, V, H>::kCtrlSentinelEmpty) m_index++;
     }
 };

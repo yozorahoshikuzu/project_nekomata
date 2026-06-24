@@ -6,8 +6,8 @@ import :core.platform.int_def;
 
 template <typename Iter> concept CIterator = requires(Iter&& iter) {
     { iter.hasNext() } -> std::convertible_to<bool>;
-    { iter.next() } -> std::convertible_to<decltype(iter.next())>;
-    { iter.current() } -> std::convertible_to<decltype(iter.current())>;
+    iter.next();
+    iter.current();
 };
 
 template <typename A, typename B, typename Output> concept Add = requires(A a, B b) { { a + b } -> std::convertible_to<Output>; };
@@ -155,8 +155,8 @@ public:
     constexpr auto begin() const { return self(); }
     constexpr auto end() const { return IteratorCppEndProxy{}; }
 
-    constexpr auto operator++() { self().next(); }
-    constexpr auto operator*() { return self().current(); }
+    constexpr auto& operator++() { self().next(); return self(); }
+    constexpr decltype(auto) operator*() { return self().current(); }
 
     constexpr auto operator==(const IteratorCppEndProxy&) const -> bool { return !self().hasNext(); }
 

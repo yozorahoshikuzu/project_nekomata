@@ -37,7 +37,7 @@ public:
 };
 
 struct EntityHash {
-    u64 operator()(Entity e) const {
+    static u64 hash(Entity e) {
         return std::hash<u64>{}(e.m_id);
     }
 };

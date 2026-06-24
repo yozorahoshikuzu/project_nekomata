@@ -5,6 +5,7 @@ export import :core.ecs.entity;
 export import :core.ecs.script_base;
 import :core.platform.int_def;
 import :core.platform.assert;
+import :core.containers.hashmap;
 
 export namespace nekomata2::ecs {
 
@@ -35,7 +36,7 @@ public:
         if (!isEntityValid(ent))
             return;
 
-        for (auto& cset : m_components | std::views::values)
+        for (auto& cset : m_components.values())
             cset->removeForEntity(ent);
 
         removeAllScripts(ent);
@@ -62,11 +63,10 @@ public:
 
     template <typename T> void remove(Entity e) { components<T>().remove(e); }
 
-    template <typename T> bool has(Entity e) const {
-        auto it = m_components.find(std::type_index(typeid(T)));
-        if (it == m_components.end())
-            return false;
-        return it->second->containsEntity(e);
+    template <typename T> bool has(Entity e) {
+        auto vect = m_components.get(std::type_index(typeid(T)));
+        if (!vect.has_value()) return false;
+        return vect->get()->containsEntity(e);
     }
 
     template <typename T> T& get(Entity e) { return components<T>().get(e); }
@@ -74,22 +74,20 @@ public:
     template <typename T> const T& get(Entity e) const { return components<T>().get(e); }
 
     template <typename T> T* tryGet(Entity e) {
-        auto it = m_components.find(std::type_index(typeid(T)));
-        if (it == m_components.end())
-            return nullptr;
-        return static_cast<ComponentSet<T>*>(it->second.get())->try_get(e);
+        auto vect = m_components.get(std::type_index(typeid(T)));
+        if (!vect.has_value()) return nullptr;
+        return static_cast<ComponentSet<T>*>(vect->get())->try_get(e);
     }
 
     template <typename T> ComponentSet<T>& components() {
         auto key = std::type_index(typeid(T));
-        auto it = m_components.find(key);
-        if (it == m_components.end()) {
-            auto p = std::make_unique<ComponentSet<T>>();
-            auto* raw = p.get();
-            m_components.emplace(key, std::move(p));
-            return *raw;
+        auto vect = m_components.get(key);
+        if (!vect.has_value()) {
+            auto set = std::make_unique<ComponentSet<T>>();
+            auto& p = m_components.insert(std::move(key), std::move(set));
+            return *static_cast<ComponentSet<T>*>(p.get());
         }
-        return *static_cast<ComponentSet<T>*>(it->second.get());
+        return *static_cast<ComponentSet<T>*>(vect.value().get().get());
     }
 
     // Attach a script of the given type to the given entity.
@@ -103,6 +101,7 @@ public:
         s->m_workingWorld = this;
 
         ScriptType* raw = s.get();
+        if (!m_scripts.contains(e)) m_scripts.insert(e, Vec<std::unique_ptr<ScriptBase>>::create());
         m_scripts[e].emplace(std::move(s));
         raw->onCreate();
         return *raw;
@@ -110,28 +109,28 @@ public:
 
     // Remove the given script type from the given entity.
     template <typename ScriptType> void removeScript(Entity ent) {
-        auto it = m_scripts.find(ent);
-        if (it == m_scripts.end())
-            return;
-        auto& vec = it->second;
-        vec.retain([](const auto& s) -> bool { return dynamic_cast<ScriptType*>(s.get()) == nullptr; });
+        auto vec = m_scripts.get(ent);
+        if (!vec.has_value()) return;
+
+        auto& cont = vec->get();
+        cont.retain([](const auto& s) -> bool { return dynamic_cast<ScriptType*>(s.get()) == nullptr; });
     }
 
-    void removeAllScripts(Entity ent) { m_scripts.erase(ent); }
+    void removeAllScripts(Entity ent) { m_scripts.remove(ent); }
 
     // Get first script of given type of given entity. Returns nullptr if absent.
     template <typename ScriptType> ScriptType* getScript(Entity ent) {
-        auto it = m_scripts.find(ent);
-        if (it == m_scripts.end())
-            return nullptr;
-        for (auto& s : it->second)
+        auto vec = m_scripts.get(ent);
+        if (!vec.has_value()) return nullptr;
+
+        for (auto& s : vec->get())
             if (auto* cast = dynamic_cast<ScriptType*>(s.get()))
                 return cast;
         return nullptr;
     }
 
     void scriptsUpdate(float dt) {
-        for (auto& vec : m_scripts | std::views::values)
+        for (auto& vec : m_scripts.values())
             for (auto& s : vec)
                 s->onUpdate(dt);
     }
@@ -141,8 +140,8 @@ private:
     std::queue<u32> m_entityIndexFreelist;
     Vec<Entity> m_aliveEntities;
 
-    std::unordered_map<std::type_index, std::unique_ptr<IComponentSet>> m_components;
-    std::unordered_map<Entity, Vec<std::unique_ptr<ScriptBase>>, EntityHash> m_scripts;
+    HashMap<std::type_index, std::unique_ptr<IComponentSet>> m_components   = HashMap<std::type_index, std::unique_ptr<IComponentSet>>::create();
+    HashMap<Entity, Vec<std::unique_ptr<ScriptBase>>, EntityHash> m_scripts = HashMap<Entity, Vec<std::unique_ptr<ScriptBase>>, EntityHash>::create();
 };
 
 } // namespace nekomata2::ecs
