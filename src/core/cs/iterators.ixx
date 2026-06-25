@@ -65,7 +65,7 @@ public:
 
     constexpr FilterIter(Inner inner, P p) : m_inner(std::move(inner)), m_p(std::move(p)) {}
     constexpr auto next() -> std::optional<Item> {
-        while (auto next = m_inner.next()) { if (asLvalueRef(m_p(*next))) return next; }
+        while (auto next = m_inner.next()) { if (m_p(asLvalueRef(*next))) return next; }
         return std::nullopt;
     }
 

@@ -55,6 +55,11 @@ public:
     }
 
     constexpr static auto create() noexcept -> Vec { return Vec(nullptr, 0, 0); }
+    constexpr static auto create(std::initializer_list<T> list) -> Vec {
+        auto vec = Vec::withCapacity(list.size());
+        for (auto& elem : list) vec.emplace(elem);
+        return vec;
+    }
     constexpr static auto fromValue(usize len, const T& val) -> Vec {
         auto vec = Vec::create();
         vec.resize(len, val);
