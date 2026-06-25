@@ -70,3 +70,5 @@ If you generate makefiles instead of a build.ninja file, add `-j(number of cores
 Copyright (c) 2026 YozoraHoshikuzu
 
 This project is licensed under the Apache 2.0 license. See the LICENSE file for more information.
+
+This project makes use of the Iosevka font licensed under the SIL Open Font License, Version 1.1. See Assets/LICENSE-IosevkaTerm-Light.md, located in this repository, for more information.
