@@ -1,7 +1,7 @@
 export module nekomata2:core.containers.sparse_set_storage;
 import std;
 import :core.platform.int_def;
-import :core.containers.vec;
+import :core.cs.vec;
 
 export namespace nekomata2 {
 

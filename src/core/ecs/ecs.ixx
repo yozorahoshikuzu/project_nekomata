@@ -5,7 +5,7 @@ export import :core.ecs.entity;
 export import :core.ecs.script_base;
 import :core.platform.int_def;
 import :core.platform.assert;
-import :core.containers.hashmap;
+import :core.cs.hashmap;
 
 export namespace nekomata2::ecs {
 

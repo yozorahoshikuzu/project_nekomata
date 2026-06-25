@@ -1,6 +1,6 @@
 module;
 #include <cstdlib>
-export module nekomata2:core.containers.vec;
+export module nekomata2:core.cs.vec;
 import std;
 import :core.platform.int_def;
 import :core.cs.iterators;

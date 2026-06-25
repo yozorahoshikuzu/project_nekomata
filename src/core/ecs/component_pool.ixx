@@ -3,7 +3,7 @@ import std;
 import :core.ecs.entity;
 import :core.platform.int_def;
 import :core.platform.assert;
-import :core.containers.vec;
+import :core.cs.vec;
 
 export namespace nekomata2::ecs {
 

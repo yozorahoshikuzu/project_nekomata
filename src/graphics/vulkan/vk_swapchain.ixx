@@ -5,7 +5,7 @@ import :core.platform.int_def;
 import :graphics.vulkan.vk_gpu_obrm;
 import :graphics.vulkan.sync_primitives.binary_semaphore;
 import :graphics.vulkan.vk_image_trait;
-import :core.containers.vec;
+import :core.cs.vec;
 
 export namespace nekomata2 {
 

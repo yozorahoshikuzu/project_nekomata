@@ -11,7 +11,7 @@ import :graphics.vulkan.vk_image;
 import :graphics.texturesystem.texture_manager;
 import :graphics.vulkan.vk_queue_family_swizzling;
 import :graphics.vulkan.context;
-import :core.containers.hashmap;
+import :core.cs.hashmap;
 
 export namespace nekomata2::graphics::rendering {
 

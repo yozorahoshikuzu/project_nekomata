@@ -32,7 +32,6 @@ struct VSOut {
 
 [shader("vertex")]
 VSOut main(uint vertexID: SV_VulkanVertexID) {
-    /// Pull the vertices from the vertex buffer based on SV_VulkanVertexID.
     float3 position = push_consts.vertexbuffer[vertexID].position;
     float2 uv = float2(push_consts.vertexbuffer[vertexID].uvX, push_consts.vertexbuffer[vertexID].uvY);
 
@@ -145,8 +144,6 @@ float4 main(TESOut input, uint h : SV_PrimitiveID) : SV_Target {
     float3 col = textures[push_consts.textureId].Sample(samplers[push_consts.samplerId], input.uv).rgb;
     float3 finalCol = AcesTonemap::map(col);
     float3 xcol = lerp(finalCol, input.color, 0.1);
-
-
 
     return float4(xcol, 1.0);
 }

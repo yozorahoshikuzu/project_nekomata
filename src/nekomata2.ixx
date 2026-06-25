@@ -13,5 +13,5 @@ export import :core.input.mousemodes;
 export import :graphics.texturesystem.texture_manager;
 export import :graphics.meshsystem.mesh_asset_storage;
 export import :graphics.texturesystem.sampler_cache;
-export import :core.containers.vec;
-export import :core.containers.hashmap;
+export import :core.cs.vec;
+export import :core.cs.hashmap;

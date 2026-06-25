@@ -4,7 +4,7 @@ import vulkan;
 import vk_mem_alloc;
 import :graphics.vulkan.vk_queue_family_swizzling;
 import :core.platform.int_def;
-import :core.containers.vec;
+import :core.cs.vec;
 
 export namespace nekomata2 {
 

@@ -1,7 +1,7 @@
 export module nekomata2:graphics.texturesystem.texture_to_shader_index_table;
 import std;
 import :core.platform.int_def;
-import :core.containers.vec;
+import :core.cs.vec;
 
 export namespace nekomata2::graphics::texturesystem {
 

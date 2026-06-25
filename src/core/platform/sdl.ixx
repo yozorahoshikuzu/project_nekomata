@@ -5,7 +5,7 @@ import std;
 import vulkan;
 import :core.math;
 import :core.platform.int_def;
-import :core.containers.vec;
+import :core.cs.vec;
 
 export namespace nekomata2 {
 
