@@ -3,13 +3,28 @@ module;
 export module nekomata2:core.containers.vec;
 import std;
 import :core.platform.int_def;
-import :core.containers.iter;
+import :core.cs.iterators;
 
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 export template <typename T> struct TTriviallyRelocatable : std::bool_constant<std::is_trivially_copyable_v<T>> {};
 
 template <typename T> inline constexpr bool TTriviallyRelocatableValue = TTriviallyRelocatable<T>::value;
+
+template <typename T> class VecSliceIter : public IteratorBase<VecSliceIter<T>> {
+public:
+    using Item = T*;
+
+    constexpr VecSliceIter(T* begin, T* end) : m_begin(begin), m_end(end) {}
+    constexpr auto next() -> std::optional<Item> {
+        if (m_begin == m_end) return std::nullopt;
+        return m_begin++;
+    }
+
+private:
+    T* m_begin;
+    T* m_end;
+};
 
 export template <typename T> class Vec {
 public:
@@ -178,8 +193,8 @@ public:
 
     // ---- Iterators ------------------------------------------------------------------------------------------------------------------------------------------
 
-    auto iter() -> Iter<T*> { return Iter<T*>(m_data, m_data + m_len); }
-    auto iter() const -> Iter<const T*> { return Iter<const T*>(m_data, m_data + m_len); }
+    constexpr auto iter() -> VecSliceIter<T> { return VecSliceIter<T>(m_data, m_data + m_len); }
+    constexpr auto iter() const -> VecSliceIter<const T> { return VecSliceIter<const T>(m_data, m_data + m_len); }
 
 private:
     constexpr Vec(T* data, usize len, usize capacity) noexcept : m_data(data), m_len(len), m_capacity(capacity) {}

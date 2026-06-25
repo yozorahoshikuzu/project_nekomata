@@ -7,7 +7,7 @@ module;
 export module nekomata2:core.containers.hashmap;
 import :core.platform.int_def;
 import :core.platform.assert;
-import :core.containers.iter;
+import :core.cs.iterators;
 
 // TODO: move somewhere else
 export class Mem {
@@ -375,14 +375,18 @@ private:
 };
 
 
-export template <typename K, typename V, typename H> class HashMapKeysIter : public IteratorMixin<HashMapKeysIter<K, V, H>> {
+export template <typename K, typename V, typename H> class HashMapKeysIter : public IteratorBase<HashMapKeysIter<K, V, H>> {
 public:
+    using Item = const K*;
     constexpr HashMapKeysIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
-
-    constexpr auto hasNext() const -> bool { return m_index < m_hashmap->m_capacity; }
-    constexpr auto next() -> const K& { const K& key = m_hashmap->m_entries[m_index].key; m_index++; skipEmpty(); return key; }
-    constexpr auto current() const -> const K& { return m_hashmap->m_entries[m_index].key; }
+    constexpr auto next() -> std::optional<Item> {
+        if (m_index >= m_hashmap->m_capacity) return std::nullopt;
+        auto next = std::make_optional(&m_hashmap->m_entries[m_index].key);
+        m_index++;
+        skipEmpty();
+        return next;
+    }
 
 private:
     HashMap<K, V, H>* m_hashmap = nullptr;
@@ -393,13 +397,18 @@ private:
     }
 };
 
-export template <typename K, typename V, typename H> class HashMapValuesIter : public IteratorMixin<HashMapValuesIter<K, V, H>> {
+export template <typename K, typename V, typename H> class HashMapValuesIter : public IteratorBase<HashMapValuesIter<K, V, H>> {
 public:
+    using Item = V*;
     constexpr HashMapValuesIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
-    constexpr auto hasNext() const -> bool { return m_index < m_hashmap->m_capacity; }
-    constexpr auto next() -> V& { V& value = m_hashmap->m_entries[m_index].value; m_index++; skipEmpty(); return value; }
-    constexpr auto current() const -> V& { return m_hashmap->m_entries[m_index].value; }
+    constexpr auto next() -> std::optional<V*> {
+        if (m_index >= m_hashmap->m_capacity) return std::nullopt;
+        auto next = std::make_optional(&m_hashmap->m_entries[m_index].value);
+        m_index++;
+        skipEmpty();
+        return next;
+    }
 
 private:
     HashMap<K, V, H>* m_hashmap = nullptr;
@@ -410,15 +419,18 @@ private:
     }
 };
 
-export template <typename K, typename V, typename H> class HashMapIter : public IteratorMixin<HashMapIter<K, V, H>> {
+export template <typename K, typename V, typename H> class HashMapIter : public IteratorBase<HashMapIter<K, V, H>> {
 public:
+    using Item = KeyValue<const K*, V*>;
     constexpr HashMapIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
-    struct Kv { const K& key; V& value; };
-
-    constexpr auto hasNext() const -> bool { return m_index < m_hashmap->m_capacity; }
-    constexpr auto next() -> Kv { Kv kv = { m_hashmap->m_entries[m_index].key, m_hashmap->m_entries[m_index].value }; m_index++; skipEmpty(); return kv; }
-    constexpr auto current() const -> Kv { Kv kv = { m_hashmap->m_entries[m_index].key, m_hashmap->m_entries[m_index].value }; return kv; }
+    constexpr auto next() -> std::optional<Item> {
+        if (m_index >= m_hashmap->m_capacity) return std::nullopt;
+        auto next = std::make_optional(KeyValue<const K*, V*>(&m_hashmap->m_entries[m_index].key, &m_hashmap->m_entries[m_index].value));
+        m_index++;
+        skipEmpty();
+        return next;
+    }
 
 private:
     HashMap<K, V>* m_hashmap = nullptr;

@@ -177,7 +177,7 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
         .enumerate()
         .collect<Vec>();
 
-    if (props.iter().all([](const auto& x) { return !x.second.has_value(); })) {
+    if (props.iter().all([](const auto& x) { return !x.value.has_value(); })) {
         log::crit("No GPUs shown by loader are supported!");
         for (auto& [i, prop] : props) {
             log::crit("  GPU #{}: {}", i, prop.error().toString());
@@ -200,9 +200,9 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
 
     auto scoreMaxIndex = scores.iter()
         .enumerate()
-        .maxByKey([](const auto& x) -> u32 { return x.second; })
+        .maxByKey([](const auto& x) -> u32 { return x.value; })
         .value()
-        .first;
+        .index;
 
     log::info("Picked GPU #{}", scoreMaxIndex);
     auto [_, prop] = std::move(props[scoreMaxIndex]);
@@ -214,7 +214,7 @@ auto VulkanContext::createVkDevice(const vk::raii::PhysicalDevice& vkPhysicalDev
 
     auto deviceExtensionsC = vkPhysicalDeviceProps.m_enabledExtensions.iter()
         .inspect([](const auto& x) { log::info("  Enabling device extension: {}", x); })
-        .map([](auto& x) { return x.c_str(); })
+        .map([](const auto& x) { return x.c_str(); })
         .collect<Vec>();
 
     auto queueCreateInfos = vkPhysicalDeviceProps.queueCreateInfos();
