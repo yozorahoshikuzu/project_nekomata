@@ -25,6 +25,7 @@ constexpr i8  operator""_i8 (unsigned long long v) { return static_cast<i8>(v); 
 constexpr i16 operator""_i16(unsigned long long v) { return static_cast<i16>(v); }
 constexpr i32 operator""_i32(unsigned long long v) { return static_cast<i32>(v); }
 constexpr i64 operator""_i64(unsigned long long v) { return static_cast<i64>(v); }
+constexpr f16 operator""_f16(long double v) { return static_cast<f16>(v); }
 constexpr f32 operator""_f32(long double v) { return static_cast<f32>(v); }
 constexpr f64 operator""_f64(long double v) { return static_cast<f64>(v); }
 

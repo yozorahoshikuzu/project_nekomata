@@ -51,7 +51,7 @@ auto VulkanContext::create(nekomata2::SdlWindow& sdlWindow) -> std::unique_ptr<V
         log::warn("VK_EXT_descriptor_heap support is very experimental and not implemented everywhere!");
     }
 
-    std::unordered_map<u32, u32> queueFamilyIndexToQueueSlot;
+    auto queueFamilyIndexToQueueSlot = HashMap<u32, usize>::create();
 
     for (auto [i, queue_index] : vkContext->m_vkPhysicalDeviceProperties.m_queueFamilies.allUniqueQueueIndices() | std::views::enumerate) {
         auto vkQueue = VulkanContext::get().vkDevice().getQueue(queue_index, 0);
@@ -70,7 +70,7 @@ auto VulkanContext::create(nekomata2::SdlWindow& sdlWindow) -> std::unique_ptr<V
         auto queue = std::make_unique<VulkanQueue>(std::move(vkQueue), std::move(handle), lastTimelineSubmissionValue);
 
         vkContext->m_vkQueues.emplace_back(std::move(queue));
-        queueFamilyIndexToQueueSlot[queue_index] = i;
+        queueFamilyIndexToQueueSlot.insert(queue_index, i);
     }
 
     vkContext->m_vkGraphicsQueue = vkContext->m_vkQueues[queueFamilyIndexToQueueSlot[vkContext->m_vkPhysicalDeviceProperties.m_graphicsQueueIndex]].get();

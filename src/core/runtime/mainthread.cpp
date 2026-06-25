@@ -53,9 +53,22 @@ MainThread::MainThread(std::shared_ptr<MRThreadsSharedData> mrSharedData, std::u
     texElement->extent = math::Vector2f(250.0f, 249.0f);
     texElement->element = ui::UiTexture(moyaiTexture);
 
+    auto fontface = graphics::fonts::FontManager::get().loadFont("/usr/share/fonts/noto/NotoSans-Regular.ttf");
+
+    auto text = ui::UiNode::create();
+    text->position = math::Vector2f(300.0f, 260.0f);
+    text->extent = math::Vector2f(100.0f, 100.0f);
+    text->element = ui::UiText("Haiii :3", 24.0f, std::move(fontface));
+
+    auto text2 = ui::UiNode::create();
+    text2->position = math::Vector2f(300.0f, 290.0f);
+    text2->extent = math::Vector2f(100.0f, 100.0f);
+    text2->element = ui::UiText("we have many texts", 24.0f, std::move(fontface));
 
     rectElement->addChild(std::move(texElement));
     m_uiRoot->addChild(std::move(rectElement));
+    m_uiRoot->addChild(std::move(text));
+    m_uiRoot->addChild(std::move(text2));
 }
 
 auto MainThread::runMainLoop(const std::function<void(std::unique_ptr<ecs::World>&)>& initFn) -> void {

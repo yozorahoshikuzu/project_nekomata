@@ -2,6 +2,7 @@ export module nekomata2:core.ui.ui_drawcmds;
 import std;
 import :core.math;
 import :graphics.texturesystem.texture_manager;
+import :graphics.fontsystem.font_face;
 
 export namespace nekomata2::ui {
 
@@ -19,6 +20,13 @@ struct UiTextureDrawCmd {
     graphics::texturesystem::Texture texture;
 };
 
-using UiDrawCmd = std::variant<UiRectDrawCmd, UiTextureDrawCmd>;
+struct UiTextDrawCmd {
+    math::Vector2f baselinePos;
+    std::string text;
+    graphics::fonts::FontFace face;
+    float size;
+};
+
+using UiDrawCmd = std::variant<UiRectDrawCmd, UiTextureDrawCmd, UiTextDrawCmd>;
 
 }

@@ -202,7 +202,7 @@ auto FontManager::shapeText(FontFace font, rendering::DynamicBitmapFontAtlas& at
         }
 
         if (!atlas.hasGlyphParam(font, pixelSize, glyphId)) {
-            log::warn("Glyph {} (code {}) not found in atlas!", glyphId, (char)c);
+            log::warn("Glyph {} (code {}) not found in atlas! font={} pixelSize={}", glyphId, (char)c, (u32)font.handleIndex, pixelSize);
             continue;
         }
 

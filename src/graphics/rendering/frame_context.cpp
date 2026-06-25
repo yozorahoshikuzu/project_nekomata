@@ -122,7 +122,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     auto& cb = m_frameRenderingResources.commandBuffer().vkCommandBuffer();
 
     auto beginInfo = vk::CommandBufferBeginInfo{}
-        .setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+    .setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     cb.begin(beginInfo);
 
     // Temporary:: prepare font
@@ -133,77 +133,85 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     // u32 pixelSize = scriptDist(gen);
     u32 pixelSize = 18;
 
-        sharedRenderingResources.m_textToDisplay = std::format(":3\n\n  Project Nekomata\n\n  Device Name: {}\n  Device VRAM: {} MiB\n\n  FPS: {:.2f}\n  Frame Time: {:.5f} ms",
-            VulkanContext::get().vkPhysicalDeviceProps().m_deviceName,
-            VulkanContext::get().vkPhysicalDeviceProps().m_vramSize / (1024 * 1024),
-            1000.0f / sharedRenderingResources.displayMs,
-            sharedRenderingResources.displayMs,
-            renderingArea.x(),
-            renderingArea.y()
-        );
+    sharedRenderingResources.m_textToDisplay = std::format(":3\n\n  Project Nekomata\n\n  Device Name: {}\n  Device VRAM: {} MiB\n\n  FPS: {:.2f}\n  Frame Time: {:.5f} ms",
+        VulkanContext::get().vkPhysicalDeviceProps().m_deviceName,
+        VulkanContext::get().vkPhysicalDeviceProps().m_vramSize / (1024 * 1024),
+        1000.0f / sharedRenderingResources.displayMs,
+        sharedRenderingResources.displayMs,
+        renderingArea.x(),
+        renderingArea.y()
+    );
 
     VulkanBuffer stagingBuffer = nullptr;
 
-    // see if there are new glyphs to rasterize..
+    // see if there are new glyphs to rasterize in the system text..
     auto batch = fonts::FontManager::get().findAndBatchMissingGlyphs(sharedRenderingResources.m_fontFace, sharedRenderingResources.m_fontAtlas, sharedRenderingResources.m_textToDisplay, pixelSize);
+
+    auto all_texts_iter = renderingData.m_uiDrawCmds.iter()
+        .filterMap([&](const auto& x) {
+            if (!std::holds_alternative<ui::UiTextDrawCmd>(x)) return std::optional<fonts::FontRasterBatch>(std::nullopt);
+            auto cmd = std::get<ui::UiTextDrawCmd>(x);
+            auto batch = fonts::FontManager::get().findAndBatchMissingGlyphs(cmd.face, sharedRenderingResources.m_fontAtlas, cmd.text, cmd.size);
+            return batch;
+        })
+        .collect<Vec>();
+
     if (batch.has_value()) {
-        auto batches = std::vector<fonts::FontRasterBatch>();
-        batches.emplace_back(std::move(*batch));
+        all_texts_iter.emplace(std::move(batch.value()));
+    }
 
-        Vec<u8> resultBuffer = Vec<u8>::create();
-        Vec<u32> newImageIndices = Vec<u32>::create();
+    if (!all_texts_iter.isEmpty()) {
+        auto pixelBuffer = Vec<u8>::create();
+        auto newImageIndices = Vec<u32>::create();
         std::unordered_map<u32, Vec<vk::BufferImageCopy2>> bufferImageCopyRegions;
-        fonts::FontRasterInfo rasterInfo = { batches, sharedRenderingResources.m_fontAtlas, bufferImageCopyRegions, resultBuffer, newImageIndices  };
-
+        fonts::FontRasterInfo rasterInfo = { all_texts_iter, sharedRenderingResources.m_fontAtlas, bufferImageCopyRegions, pixelBuffer, newImageIndices };
         fonts::FontManager::get().rasterizeGlyphs(rasterInfo);
 
-        // There can be empty glyphs we don't care about in which case the size of the buffer will be 0
-        if (resultBuffer.size() != 0) {
+        // there can be glyphs that don't rasterize to anything but appeared in the batch, so the buffer might be zero-sized
+        if (pixelBuffer.len() != 0) {
+            stagingBuffer = VulkanBuffer::create(pixelBuffer.len(), vk::BufferUsageFlagBits::eTransferSrc, VulkanBufferMemoryMapping::MapForSequentialWrite, vma::MemoryUsage::eAutoPreferDevice, {}, VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics]);
+            memcpy(stagingBuffer.memoryHostPtr(), pixelBuffer.data(), pixelBuffer.len());
 
-        stagingBuffer = VulkanBuffer::create(resultBuffer.size(), vk::BufferUsageFlagBits::eTransferSrc, VulkanBufferMemoryMapping::MapForSequentialWrite, vma::MemoryUsage::eAutoPreferDevice, {}, VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics]);
-        memcpy(stagingBuffer.memoryHostPtr(), resultBuffer.data(), resultBuffer.size());
+            // Prepare for copy
+            auto barriers = VulkanPipelineBarriers::builder();
+            for (const auto& atlasImageIndex : bufferImageCopyRegions | std::views::keys) {
+                // For images that are newly created, transition from eUndefined instead
+                if (std::ranges::find(newImageIndices, atlasImageIndex) != newImageIndices.end()) {
+                    barriers.insertImageMemoryBarrier(sharedRenderingResources.m_fontAtlas.m_atlasTextures[atlasImageIndex].image,
+                        vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eNone, vk::AccessFlagBits2::eNone,
+                        vk::ImageLayout::eTransferDstOptimal, vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferWrite
+                    );
+                    continue;
+                }
 
-        // Prepare for copy
-        auto barriers = VulkanPipelineBarriers::builder();
-        for (const auto& atlasImageIndex : bufferImageCopyRegions | std::views::keys) {
-            // For images that are newly created, transition from eUndefined instead
-            if (std::ranges::find(newImageIndices, atlasImageIndex) != newImageIndices.end()) {
+                // Transition from eShaderReadOnlyOptimal for all others
                 barriers.insertImageMemoryBarrier(sharedRenderingResources.m_fontAtlas.m_atlasTextures[atlasImageIndex].image,
-                    vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eNone, vk::AccessFlagBits2::eNone,
+                    vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderRead,
                     vk::ImageLayout::eTransferDstOptimal, vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferWrite
                 );
-                continue;
+            }
+            barriers.flush(m_frameRenderingResources.commandBuffer());
+
+            // Run copies
+            for (const auto& [atlasImageIndex, regions] : bufferImageCopyRegions) {
+                auto copyInfo = vk::CopyBufferToImageInfo2{}
+                    .setDstImage(sharedRenderingResources.m_fontAtlas.m_atlasTextures[atlasImageIndex].image.vkImage())
+                    .setDstImageLayout(vk::ImageLayout::eTransferDstOptimal)
+                    .setSrcBuffer(stagingBuffer.vkBuffer())
+                    .setRegions(regions);
+
+                cb.copyBufferToImage2(copyInfo);
             }
 
-            // Transition from eShaderReadOnlyOptimal for all others
-            barriers.insertImageMemoryBarrier(sharedRenderingResources.m_fontAtlas.m_atlasTextures[atlasImageIndex].image,
-                vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderRead,
-                vk::ImageLayout::eTransferDstOptimal, vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferWrite
-            );
-        }
-        barriers.flush(m_frameRenderingResources.commandBuffer());
-
-        // Run copies
-        for (const auto& [atlasImageIndex, regions] : bufferImageCopyRegions) {
-            auto copyInfo = vk::CopyBufferToImageInfo2{}
-                .setDstImage(sharedRenderingResources.m_fontAtlas.m_atlasTextures[atlasImageIndex].image.vkImage())
-                .setDstImageLayout(vk::ImageLayout::eTransferDstOptimal)
-                .setSrcBuffer(stagingBuffer.vkBuffer())
-                .setRegions(regions);
-
-            cb.copyBufferToImage2(copyInfo);
-        }
-
-        // Prepare for usage
-        auto barriers2 = VulkanPipelineBarriers::builder();
-        for (const auto& atlasImageIndex : bufferImageCopyRegions | std::views::keys) {
-            barriers2.insertImageMemoryBarrier(sharedRenderingResources.m_fontAtlas.m_atlasTextures[atlasImageIndex].image,
-                vk::ImageLayout::eTransferDstOptimal, vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferWrite,
-                vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderRead
-            );
-        }
-        barriers2.flush(m_frameRenderingResources.commandBuffer());
-
+            // Prepare for usage
+            auto barriers2 = VulkanPipelineBarriers::builder();
+            for (const auto& atlasImageIndex : bufferImageCopyRegions | std::views::keys) {
+                barriers2.insertImageMemoryBarrier(sharedRenderingResources.m_fontAtlas.m_atlasTextures[atlasImageIndex].image,
+                    vk::ImageLayout::eTransferDstOptimal, vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferWrite,
+                    vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderRead
+                );
+            }
+            barriers2.flush(m_frameRenderingResources.commandBuffer());
         }
     }
 
@@ -364,6 +372,9 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
     // Draw UI
 
+    auto textInstanceBuffers = Vec<VulkanBuffer>::create();
+
+    auto queuesForBuffer = VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics];
     for (const auto& uiDrawCmd : renderingData.m_uiDrawCmds) {
         match(uiDrawCmd,
             [&](const ui::UiRectDrawCmd& drawCmd) {
@@ -394,8 +405,26 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
                 cb.pushConstants<PushConstants>(sharedRenderingResources.m_uiTextureRendererLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, pushConstants);
                 cb.draw(4, 1, 0, 0);
             },
-            [&](auto&) {
-                log::warn("Unsupported UI draw command in UI draw command list!");
+            [&](const ui::UiTextDrawCmd& drawCmd) {
+                auto shapedText = fonts::FontManager::get().shapeText(drawCmd.face, sharedRenderingResources.m_fontAtlas, drawCmd.text, drawCmd.size, drawCmd.baselinePos, renderingArea);
+                auto buffer = VulkanBuffer::create(shapedText.size() * sizeof(fonts::GlyphInstance), vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer, VulkanBufferMemoryMapping::MapForSequentialWrite, vma::MemoryUsage::eAutoPreferDevice, {}, queuesForBuffer);
+                memcpy(buffer.memoryHostPtr(), shapedText.data(), shapedText.size() * sizeof(fonts::GlyphInstance));
+
+                auto fontPushConstantData2 = std::array<unsigned char, 12>{};
+
+                u32 sampler2 = texturesystem::TextureManager::get().samplerCache().acquireSampler(
+                    texturesystem::SamplerParams::defaultValues().setMinFilter(vk::Filter::eNearest).setMagFilter(vk::Filter::eNearest).setMipmapMode(vk::SamplerMipmapMode::eNearest).setMaxLod(0.0f)
+                );
+                auto instanceDevicePtr2 = buffer.memoryDevicePtr();
+                memcpy(fontPushConstantData2.data(), &instanceDevicePtr2, 8);
+                memcpy(fontPushConstantData2.data() + 8, &sampler2, 4);
+                textInstanceBuffers.emplace(std::move(buffer));
+
+                cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.m_bitmapFontRendererPipeline.vkPipeline());
+                texturesystem::TextureManager::get().shaderResourceTable().bindToCommandBuffer(m_frameRenderingResources.commandBuffer(), sharedRenderingResources.m_bitmapFontRendererLayout, vk::PipelineBindPoint::eGraphics);
+
+                cb.pushConstants<unsigned char>(sharedRenderingResources.m_bitmapFontRendererLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, fontPushConstantData2);
+                cb.draw(4, shapedText.size(), 0, 0);
             }
         );
     }

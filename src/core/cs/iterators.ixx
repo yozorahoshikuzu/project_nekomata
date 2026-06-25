@@ -29,12 +29,25 @@ template <typename K, typename V> struct AsLvalueRef<KeyValue<K*, V*>> { using t
 template <typename T> using AsLvalueRefT = typename AsLvalueRef<T>::type;
 template <typename T> using DerefT = std::remove_pointer_t<std::remove_reference_t<T>>;
 
+template <typename T> struct UnwrapOptional;
+template <typename T> struct UnwrapOptional<std::optional<T>> { using type = T; };
+template <typename T> using UnwrapOptionalT = typename UnwrapOptional<T>::type;
+
 template <typename T> constexpr auto asLvalueRef(Enumerand<T*> x) -> AsLvalueRefT<Enumerand<T*>> { return {x.index, *x.value}; }
 template <typename T> constexpr auto asLvalueRef(T&& x) -> AsLvalueRefT<T> { return x; }
 template <typename T> constexpr auto asLvalueRef(T* x) -> AsLvalueRefT<T*> { return *x; }
 template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<K, V*> x) -> AsLvalueRefT<KeyValue<K, V*>> { return {x.key, *x.value}; }
 template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<K*, V> x) -> AsLvalueRefT<KeyValue<K*, V>> { return {*x.key, x.value}; }
 template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<K*, V*> x) -> AsLvalueRefT<KeyValue<K*, V*>> { return {*x.key, *x.value}; }
+
+
+template <typename T> constexpr auto mapArgs(T& x) -> T& { return x; }
+template <typename T> constexpr auto mapArgs(T&& x) -> T&& { return std::forward<T>(x); }
+template <typename T> constexpr auto mapArgs(T* x) -> T& { return *x; }
+template <typename K, typename V> constexpr auto mapArgs(KeyValue<K, V> x) -> KeyValue<K&, V&> { return x; }
+template <typename K, typename V> constexpr auto mapArgs(KeyValue<K*, V> x) -> KeyValue<K&, V&> { return {*x.key, x.value}; }
+template <typename K, typename V> constexpr auto mapArgs(KeyValue<K, V*> x) -> KeyValue<K&, V&> { return {x.key, *x.value}; }
+template <typename K, typename V> constexpr auto mapArgs(KeyValue<K*, V*> x) -> KeyValue<K&, V&> { return {*x.key, *x.value}; }
 
 template <typename T> constexpr auto deref(T&& x) -> DerefT<T> { return x; }
 template <typename T> constexpr auto deref(T* x) -> DerefT<T*> { return *x; }
@@ -50,7 +63,7 @@ public:
 
     constexpr MapIter(Inner inner, F f) : m_inner(std::move(inner)), m_f(std::move(f)) {}
     constexpr auto next() -> std::optional<Item> {
-        if (auto next = m_inner.next()) return m_f(asLvalueRef(std::move(*next)));
+        if (auto next = m_inner.next()) return m_f(mapArgs(std::move(*next)));
         return std::nullopt;
     }
 
@@ -66,6 +79,21 @@ public:
     constexpr FilterIter(Inner inner, P p) : m_inner(std::move(inner)), m_p(std::move(p)) {}
     constexpr auto next() -> std::optional<Item> {
         while (auto next = m_inner.next()) { if (m_p(asLvalueRef(*next))) return next; }
+        return std::nullopt;
+    }
+
+private:
+    Inner m_inner;
+    P     m_p;
+};
+
+template <Iterator Inner, typename P> class FilterMapIter : public IteratorBase<FilterMapIter<Inner, P>> {
+public:
+    using Item = UnwrapOptionalT<std::invoke_result_t<P, AsLvalueRefT<typename Inner::Item>>>;
+
+    constexpr FilterMapIter(Inner inner, P p) : m_inner(std::move(inner)), m_p(std::move(p)) {}
+    constexpr auto next() -> std::optional<Item> {
+        while (auto next = m_inner.next()) { if (auto mapped = m_p(mapArgs(std::move(*next)))) return mapped; }
         return std::nullopt;
     }
 
@@ -143,6 +171,7 @@ public:
 
     template <typename F> constexpr auto map(F&& f) && { return MapIter<Derived, std::decay_t<F>>(std::move(self()), std::forward<F>(f)); }
     template <typename P> constexpr auto filter(P&& p) && { return FilterIter<Derived, std::decay_t<P>>(std::move(self()), std::forward<P>(p)); }
+    template <typename P> constexpr auto filterMap(P&& p) && { return FilterMapIter<Derived, std::decay_t<P>>(std::move(self()), std::forward<P>(p)); }
     constexpr auto enumerate() && { return EnumerateIter<Derived>(std::move(self())); }
     template <typename F> constexpr auto inspect(F&& f) && { return InspectIter<Derived, std::decay_t<F>>(std::move(self()), std::forward<F>(f)); }
 

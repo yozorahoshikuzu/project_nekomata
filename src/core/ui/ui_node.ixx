@@ -66,7 +66,12 @@ struct UiNode {
                 list.emplace(drawCmd);
             },
             [&](const UiText& text) {
-                log::warn("Text not implemented");
+                auto drawCmd = UiTextDrawCmd{
+                    .baselinePos = position,
+                    .text = text.text,
+                    .size = text.size
+                };
+                list.emplace(drawCmd);
             }
         );
 
