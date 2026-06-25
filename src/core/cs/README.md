@@ -4,8 +4,8 @@ This is a set of random containers and some convenience features I made when I w
 They bring a more Rust-style approach to C++ to solve some sanity problems with its standard library, such as bad
 ergonomics/syntax, low performance, and LSP breakage (fuck you `std::ranges`).
 
-It's preferable to use the containers in these modules intead of the ones in the C++ standard library (e.g. `Vec`
-instead of `std::vector`, `HashMap` instead of `std::unordered_map`).
+In this project it's preferable to use these containers/algorithms over the standard library ones (e.g. `Vec` instead of
+`std::vector`, `HashMap` instead of `std::unordered_map`) for the reasons stated above.
 
 Note: These containers might have some bugs and edge cases... but I still think they're pretty good.
 
@@ -43,3 +43,4 @@ auto sum = v.iter()
     .map([](i32 x) { return x * x; })
     .sum();
 ```
+
