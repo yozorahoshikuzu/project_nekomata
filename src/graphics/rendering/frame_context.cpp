@@ -127,26 +127,9 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
     // Temporary:: prepare font
 
-    // std::random_device rd;
-    // std::mt19937 gen(rd());
-    // std::uniform_int_distribution<int> scriptDist(8, 30);
-    // u32 pixelSize = scriptDist(gen);
-    u32 pixelSize = 18;
-
-    sharedRenderingResources.m_textToDisplay = std::format(":3\n\n  Project Nekomata\n\n  Device Name: {}\n  Device VRAM: {} MiB\n\n  FPS: {:.2f}\n  Frame Time: {:.5f} ms",
-        VulkanContext::get().vkPhysicalDeviceProps().m_deviceName,
-        VulkanContext::get().vkPhysicalDeviceProps().m_vramSize / (1024 * 1024),
-        1000.0f / sharedRenderingResources.displayMs,
-        sharedRenderingResources.displayMs,
-        renderingArea.x(),
-        renderingArea.y()
-    );
-
     VulkanBuffer stagingBuffer = nullptr;
 
     // see if there are new glyphs to rasterize in the system text..
-    auto batch = fonts::FontManager::get().findAndBatchMissingGlyphs(sharedRenderingResources.m_fontFace, sharedRenderingResources.m_fontAtlas, sharedRenderingResources.m_textToDisplay, pixelSize);
-
     auto all_texts_iter = renderingData.m_uiDrawCmds.iter()
         .filterMap([&](const auto& x) {
             if (!std::holds_alternative<ui::UiTextDrawCmd>(x)) return std::optional<fonts::FontRasterBatch>(std::nullopt);
@@ -155,10 +138,6 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
             return batch;
         })
         .collect<Vec>();
-
-    if (batch.has_value()) {
-        all_texts_iter.emplace(std::move(batch.value()));
-    }
 
     if (!all_texts_iter.isEmpty()) {
         auto pixelBuffer = Vec<u8>::create();
@@ -349,26 +328,6 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
         shouldInvertColors = shouldInvertColors == 0 ? 1 : 0;
     }
-
-    // Draw the text (finally...)
-
-    cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.m_bitmapFontRendererPipeline.vkPipeline());
-    texturesystem::TextureManager::get().shaderResourceTable().bindToCommandBuffer(m_frameRenderingResources.commandBuffer(), sharedRenderingResources.m_bitmapFontRendererLayout, vk::PipelineBindPoint::eGraphics);
-
-    auto shapedText = fonts::FontManager::get().shapeText(sharedRenderingResources.m_fontFace, sharedRenderingResources.m_fontAtlas, sharedRenderingResources.m_textToDisplay, pixelSize, Vector2f(5.0, 20.0), renderingArea);
-    memcpy(m_frameRenderingResources.glyphInstanceBuffer().memoryHostPtr(), shapedText.data(), shapedText.size() * sizeof(fonts::GlyphInstance));
-
-    auto fontPushConstantData = std::array<unsigned char, 12>{};
-
-    u32 sampler = texturesystem::TextureManager::get().samplerCache().acquireSampler(
-        texturesystem::SamplerParams::defaultValues().setMinFilter(vk::Filter::eNearest).setMagFilter(vk::Filter::eNearest).setMipmapMode(vk::SamplerMipmapMode::eNearest).setMaxLod(0.0f)
-    );
-    auto instanceDevicePtr = m_frameRenderingResources.glyphInstanceBuffer().memoryDevicePtr();
-    memcpy(fontPushConstantData.data(), &instanceDevicePtr, 8);
-    memcpy(fontPushConstantData.data() + 8, &sampler, 4);
-
-    cb.pushConstants<unsigned char>(sharedRenderingResources.m_bitmapFontRendererLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, fontPushConstantData);
-    cb.draw(4, shapedText.size(), 0, 0);
 
     // Draw UI
 
