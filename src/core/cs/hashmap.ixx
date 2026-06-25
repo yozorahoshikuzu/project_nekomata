@@ -131,7 +131,7 @@ public:
 
             while (matches) {
                 u32 bit = __builtin_ctz(matches);
-                usize slot = (base + bit) & (m_capacity - 1);
+                usize slot = (base + static_cast<usize>(bit)) & (m_capacity - 1);
                 if (m_entries[slot].key == key) return removeAt(slot);
 
                 matches &= (matches - 1);
@@ -164,7 +164,7 @@ public:
     constexpr auto isEmpty() const -> bool { return m_len == 0; }
 
     constexpr auto clear() -> void {
-        finalizeDestroy();
+        destroyEntries();
         memset(m_ctrls, kCtrlSentinelEmpty, m_capacity + 16);
         memset(m_dibs, 0, m_capacity * sizeof(u32));
         m_len = 0;
@@ -196,7 +196,7 @@ private:
 
     static constexpr auto kCtrlSentinelEmpty   = 0x80_u8;
 
-    static constexpr auto computeH2(u64 hash) -> u8 { return static_cast<u8>(hash % 0x7f); }
+    static constexpr auto computeH2(u64 hash) -> u8 { return static_cast<u8>(hash & 0x7f); }
 
     constexpr auto hashHomeIndex(u64 hash) -> usize { return static_cast<usize>(hash >> 7) & (m_capacity - 1); }
     constexpr auto computeNextIndex(usize index) -> usize { return (index + 1) & (m_capacity - 1); }
@@ -219,36 +219,13 @@ private:
 
     constexpr auto freeAll() -> void {
         if (!m_ctrls) return;
-        freeInPtrs(m_ctrls, m_entries, m_dibs, m_capacity);
+        destroyEntries();
+        Mem::freeAligned(m_ctrls);
+        Mem::free(m_entries);
+        Mem::free(m_dibs);
         m_ctrls = nullptr;
         m_entries = nullptr;
         m_dibs = nullptr;
-    }
-
-    constexpr auto finalizeDestroy() {
-        if constexpr (kMustFinalize) {
-            for (usize i = 0; i < m_capacity; i++) {
-                if (m_ctrls[i] != kCtrlSentinelEmpty) {
-                    if constexpr (kKeyNeedsFinalizer) m_entries[i].key.~K();
-                    if constexpr (kValNeedsFinalizer) m_entries[i].value.~V();
-                }
-            }
-        }
-    }
-
-    constexpr auto freeInPtrs(u8* ctrls, Entry* entries, u32* dibs, usize cap) -> void {
-        if constexpr (kMustFinalize) {
-            for (usize i = 0; i < cap; i++) {
-                if (ctrls[i] != kCtrlSentinelEmpty) {
-                    if constexpr (kKeyNeedsFinalizer) entries[i].key.~K();
-                    if constexpr (kValNeedsFinalizer) entries[i].value.~V();
-                }
-            }
-        }
-
-        Mem::freeAligned(ctrls);
-        Mem::free(entries);
-        Mem::free(dibs);
     }
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -259,6 +236,7 @@ private:
         if constexpr (kKeyNeedsFinalizer) m_entries[index].key.~K();
         if constexpr (kValNeedsFinalizer) m_entries[index].value.~V();
         m_ctrls[index] = kCtrlSentinelEmpty;
+        mirrorPaddingEntries(index);
         m_dibs[index] = 0;
 
         m_len--;
@@ -270,11 +248,13 @@ private:
             new (&m_entries[index].key) K(std::move(m_entries[nextIndex].key));
             new (&m_entries[index].value) V(std::move(m_entries[nextIndex].value));
             m_ctrls[index] = m_ctrls[nextIndex];
+            mirrorPaddingEntries(index);
             m_dibs[index] = m_dibs[nextIndex] - 1;
 
             if constexpr (kKeyNeedsFinalizer) m_entries[nextIndex].key.~K();
             if constexpr (kValNeedsFinalizer) m_entries[nextIndex].value.~V();
             m_ctrls[nextIndex] = kCtrlSentinelEmpty;
+            mirrorPaddingEntries(nextIndex);
             m_dibs[nextIndex] = 0;
             index = nextIndex;
         }
@@ -303,6 +283,7 @@ private:
                 new (&m_entries[index].key) K(std::move(wkey));
                 new (&m_entries[index].value) V(std::move(wvalue));
                 m_ctrls[index] = wh2;
+                mirrorPaddingEntries(index);
                 m_dibs[index] = wdib;
                 m_len++;
                 return m_entries[index].value;
@@ -328,6 +309,7 @@ private:
                 new (&m_entries[index].key) K(std::move(wkey));
                 new (&m_entries[index].value) V(std::move(wvalue));
                 m_ctrls[index] = wh2;
+                mirrorPaddingEntries(index);
                 m_dibs[index] = wdib;
 
                 wkey = std::move(tkey);
@@ -362,7 +344,27 @@ private:
             }
         }
 
-        freeInPtrs(oldCtrls, oldEntries, oldDibs, oldCap);
+        Mem::freeAligned(oldCtrls);
+        Mem::free(oldEntries);
+        Mem::free(oldDibs);
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    constexpr auto mirrorPaddingEntries(usize index) -> void {
+        if (index < 16)
+            m_ctrls[m_capacity + index] = m_ctrls[index];
+    }
+
+    constexpr auto destroyEntries() -> void {
+        if constexpr (kMustFinalize) {
+            for (usize i = 0; i < m_capacity; i++) {
+                if (m_ctrls[i] != kCtrlSentinelEmpty) {
+                    if constexpr (kKeyNeedsFinalizer) m_entries[i].key.~K();
+                    if constexpr (kValNeedsFinalizer) m_entries[i].value.~V();
+                }
+            }
+        }
     }
 };
 

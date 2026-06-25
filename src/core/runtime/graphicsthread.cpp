@@ -4,6 +4,7 @@ import :graphics.cmd_alloc;
 import :graphics.vulkan.context;
 import :graphics.meshsystem.mesh_asset_storage;
 import :core.runtime.graphicsthread;
+import :graphics.fontsystem.font_manager;
 
 namespace nekomata2 {
 
@@ -24,7 +25,7 @@ auto RenderThread::runMainLoop() -> void {
     }
 
     m_timeAtStart = std::chrono::high_resolution_clock::now();
-
+    m_overlayFont = graphics::fonts::FontManager::get().loadFont("../Assets/IosevkaTerm-Light.ttf");
 
     m_lastFrameTime = std::chrono::high_resolution_clock::now();
     while (true) {
@@ -76,6 +77,19 @@ auto RenderThread::loop() -> void {
         m_transientRenderingResources.handleWindowSizeChange(m_currentWindowExtent);
     }
     auto timeSinceStart = std::chrono::duration<float>(currentTime - m_timeAtStart).count();
+
+    bool injectOverlay = true;
+    if (injectOverlay) {
+        std::string text = std::format("--- Project Nekomata ---\n\n  FPS: {:.2f}",
+            1000.0f / m_sharedRenderingResources.displayMs
+        );
+        m_mrSharedData->m_leafs.getSecondary().m_uiDrawCmds.emplace(ui::UiTextDrawCmd {
+            .baselinePos = Vector2f(4.0f, 18.0f),
+            .text = text,
+            .face = m_overlayFont,
+            .size = 14.0f
+        });
+    }
 
     auto result = m_frames[m_currentFrameContextIndex].execute(m_transientRenderingResources, m_sharedRenderingResources, m_vkSwapchain,
                                                                m_mrSharedData->m_leafs.getSecondary(), timeSinceStart);

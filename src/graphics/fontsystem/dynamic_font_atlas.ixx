@@ -37,7 +37,9 @@ struct AtlasGlyphKey {
     u32 pixelSize;
     u32 glyphIndex;
 
-    bool operator==(const AtlasGlyphKey&) const = default;
+    bool operator==(const AtlasGlyphKey& other) const {
+        return fontFace == other.fontFace && pixelSize == other.pixelSize && glyphIndex == other.glyphIndex;
+    }
 };
 
 struct AtlasGlyphKeyHash {
@@ -64,7 +66,7 @@ struct DynamicBitmapFontAtlas {
     };
 
     Vec<AtlasTexture> m_atlasTextures = Vec<AtlasTexture>::create();
-    HashMap<AtlasGlyphKey, AtlasGlyphParams, AtlasGlyphKeyHash> m_glyphParams = HashMap<AtlasGlyphKey, AtlasGlyphParams, AtlasGlyphKeyHash>::create();
+    HashMap<AtlasGlyphKey, AtlasGlyphParams, AtlasGlyphKeyHash> m_glyphParams = HashMap<AtlasGlyphKey, AtlasGlyphParams, AtlasGlyphKeyHash>::withCapacity(64);
 
     auto insertGlyphParam(fonts::FontFace fontFace, u32 pixelSize, u32 glyphIndex, math::Vector2f texcoordStart, math::Vector2f texcoordEnd, u32 imageShaderIndex, math::Vector2f bearing, math::Vector2f size, float advance) -> void {
         m_glyphParams.insert(AtlasGlyphKey { fontFace, pixelSize, glyphIndex }, AtlasGlyphParams { texcoordStart, texcoordEnd, imageShaderIndex, bearing, size, advance });
