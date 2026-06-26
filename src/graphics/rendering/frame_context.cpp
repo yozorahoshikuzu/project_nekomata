@@ -132,7 +132,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     // see if there are new glyphs to rasterize in the system text..
     auto all_texts_iter = renderingData.m_uiDrawCmds.iter()
         .filterMap([&](const auto& x) {
-            if (!std::holds_alternative<ui::UiTextDrawCmd>(x)) return std::optional<fonts::FontRasterBatch>(std::nullopt);
+            if (!std::holds_alternative<ui::UiTextDrawCmd>(x)) return Option<fonts::FontRasterBatch>::none();
             auto cmd = std::get<ui::UiTextDrawCmd>(x);
             auto batch = fonts::FontManager::get().findAndBatchMissingGlyphs(cmd.face, sharedRenderingResources.m_fontAtlas, cmd.text, cmd.size);
             return batch;

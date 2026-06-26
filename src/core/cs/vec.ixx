@@ -7,6 +7,7 @@ import :core.log;
 import :core.platform.int_def;
 import :core.cs.iterators;
 import :core.cs.mem;
+import :core.cs.nonzero_ptr;
 
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -16,12 +17,12 @@ template <typename T> inline constexpr bool TTriviallyRelocatableValue = TTrivia
 
 template <typename T> class VecSliceIter : public IteratorBase<VecSliceIter<T>> {
 public:
-    using Item = T*;
+    using Item = NonZeroPtr<T>;
 
     constexpr VecSliceIter(T* begin, T* end) : m_begin(begin), m_end(end) {}
-    constexpr auto next() -> std::optional<Item> {
-        if (m_begin == m_end) return std::nullopt;
-        return m_begin++;
+    constexpr auto next() -> Option<Item> {
+        if (m_begin == m_end) return Option<Item>::none();
+        return Option<Item>::some(NonZeroPtr<T>(m_begin++));
     }
 
 private:

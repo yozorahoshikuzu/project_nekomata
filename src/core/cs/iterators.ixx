@@ -1,12 +1,15 @@
 export module nekomata2:core.cs.iterators;
 import std;
 import :core.platform.int_def;
+import :core.cs.nonzero_ptr;
+import :core.cs.option;
+import :core.log;
 
 // ---- Iterator Trait  ----------------------------------------------------------------------------------------------------------------------------------------
 
 export template <typename T> concept Iterator = requires(T t) {
     typename T::Item;
-    { t.next() } -> std::same_as<std::optional<typename T::Item>>;
+    { t.next() } -> std::same_as<Option<typename T::Item>>;
 };
 
 // ---- References ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -15,27 +18,42 @@ template <typename T> struct Enumerand {
     usize index; T value;
 };
 
+template <typename T> requires HasNiche<T> struct NicheValue<Enumerand<T>> {
+    static Enumerand<T> niche() { return Enumerand<T>(0, NicheValue<T>::niche()); }
+    static bool isNiche(const Enumerand<T>& ptr) { return NicheValue<T>::isNiche(ptr.value); }
+};
+
 export template <typename K, typename V> struct KeyValue {
     K key; V value;
 };
 
+// TODO: implement NicheValue for KeyValue
+
 // Maps T -> T& and U* -> U&.
 export template <typename T> struct AsLvalueRef { using type = T&; };
 template <typename T> struct AsLvalueRef<T*> { using type = T&; };
+template <typename T> struct AsLvalueRef<NonZeroPtr<T>> { using type = T&; };
 template <typename T> struct AsLvalueRef<Enumerand<T*>> { using type = Enumerand<T&>; };
+template <typename T> struct AsLvalueRef<Enumerand<NonZeroPtr<T>>> { using type = Enumerand<T&>; };
 template <typename K, typename V> struct AsLvalueRef<KeyValue<K*, V>> { using type = KeyValue<K&, V&>; };
 template <typename K, typename V> struct AsLvalueRef<KeyValue<K, V*>> { using type = KeyValue<K&, V&>; };
 template <typename K, typename V> struct AsLvalueRef<KeyValue<K*, V*>> { using type = KeyValue<K&, V&>; };
 template <typename T> using AsLvalueRefT = typename AsLvalueRef<T>::type;
-template <typename T> using DerefT = std::remove_pointer_t<std::remove_reference_t<T>>;
+
+export template <typename T> struct Deref { using type = std::remove_pointer_t<std::remove_reference_t<T>>; };
+template<typename T> struct Deref<NonZeroPtr<T>> { using type = T; };
+template <typename T> using DerefT = typename Deref<T>::type;
 
 template <typename T> struct UnwrapOptional;
 template <typename T> struct UnwrapOptional<std::optional<T>> { using type = T; };
+template <typename T> struct UnwrapOptional<Option<T>> { using type = T; };
 template <typename T> using UnwrapOptionalT = typename UnwrapOptional<T>::type;
 
 template <typename T> constexpr auto asLvalueRef(Enumerand<T*> x) -> AsLvalueRefT<Enumerand<T*>> { return {x.index, *x.value}; }
+template <typename T> constexpr auto asLvalueRef(Enumerand<NonZeroPtr<T>> x) -> AsLvalueRefT<Enumerand<NonZeroPtr<T>>> { return {x.index, *x.value}; }
 template <typename T> constexpr auto asLvalueRef(T&& x) -> AsLvalueRefT<T> { return x; }
 template <typename T> constexpr auto asLvalueRef(T* x) -> AsLvalueRefT<T*> { return *x; }
+template <typename T> constexpr auto asLvalueRef(NonZeroPtr<T> x) -> AsLvalueRefT<NonZeroPtr<T>> { return *x; }
 template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<K, V*> x) -> AsLvalueRefT<KeyValue<K, V*>> { return {x.key, *x.value}; }
 template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<K*, V> x) -> AsLvalueRefT<KeyValue<K*, V>> { return {*x.key, x.value}; }
 template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<K*, V*> x) -> AsLvalueRefT<KeyValue<K*, V*>> { return {*x.key, *x.value}; }
@@ -44,6 +62,8 @@ template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<K*, V*> x)
 template <typename T> constexpr auto mapArgs(T& x) -> T& { return x; }
 template <typename T> constexpr auto mapArgs(T&& x) -> T&& { return std::forward<T>(x); }
 template <typename T> constexpr auto mapArgs(T* x) -> T& { return *x; }
+template <typename T> constexpr auto mapArgs(NonZeroPtr<T> x) -> T& { return *x; }
+template <typename T> constexpr auto mapArgs(Enumerand<T*> x) -> Enumerand<T&> { return {x.index, *x.value}; }
 template <typename K, typename V> constexpr auto mapArgs(KeyValue<K, V> x) -> KeyValue<K&, V&> { return x; }
 template <typename K, typename V> constexpr auto mapArgs(KeyValue<K*, V> x) -> KeyValue<K&, V&> { return {*x.key, x.value}; }
 template <typename K, typename V> constexpr auto mapArgs(KeyValue<K, V*> x) -> KeyValue<K&, V&> { return {x.key, *x.value}; }
@@ -62,9 +82,9 @@ public:
     using Item = std::invoke_result_t<F, AsLvalueRefT<typename Inner::Item>>;
 
     constexpr MapIter(Inner inner, F f) : m_inner(std::move(inner)), m_f(std::move(f)) {}
-    constexpr auto next() -> std::optional<Item> {
-        if (auto next = m_inner.next()) return m_f(mapArgs(std::move(*next)));
-        return std::nullopt;
+    constexpr auto next() -> Option<Item> {
+        if (auto next = m_inner.next()) return Option<Item>::some(m_f(mapArgs(std::move(next.unwrap()))));
+        return Option<Item>::none();
     }
 
 private:
@@ -77,9 +97,9 @@ public:
     using Item = typename Inner::Item;
 
     constexpr FilterIter(Inner inner, P p) : m_inner(std::move(inner)), m_p(std::move(p)) {}
-    constexpr auto next() -> std::optional<Item> {
-        while (auto next = m_inner.next()) { if (m_p(asLvalueRef(*next))) return next; }
-        return std::nullopt;
+    constexpr auto next() -> Option<Item> {
+        while (auto next = m_inner.next()) { if (m_p(asLvalueRef(next.unwrap()))) return Option<Item>::some(std::move(next.unwrap())); }
+        return Option<Item>::none();
     }
 
 private:
@@ -92,9 +112,9 @@ public:
     using Item = UnwrapOptionalT<std::invoke_result_t<P, AsLvalueRefT<typename Inner::Item>>>;
 
     constexpr FilterMapIter(Inner inner, P p) : m_inner(std::move(inner)), m_p(std::move(p)) {}
-    constexpr auto next() -> std::optional<Item> {
-        while (auto next = m_inner.next()) { if (auto mapped = m_p(mapArgs(std::move(*next)))) return mapped; }
-        return std::nullopt;
+    constexpr auto next() -> Option<Item> {
+        while (auto next = m_inner.next()) { if (auto mapped = m_p(mapArgs(std::move(next.unwrap())))) return Option<Item>::some(std::move(mapped.unwrap())); }
+        return Option<Item>::none();
     }
 
 private:
@@ -107,9 +127,9 @@ public:
     using Item = Enumerand<typename Inner::Item>;
 
     constexpr EnumerateIter(Inner inner) : m_inner(std::move(inner)) {}
-    constexpr auto next() -> std::optional<Item> {
-        if (auto next = m_inner.next()) return Enumerand{m_index++, std::forward<typename Inner::Item>(*next)};
-        return std::nullopt;
+    constexpr auto next() -> Option<Item> {
+        if (auto next = m_inner.next()) return Option<Item>::some(Enumerand{m_index++, std::forward<typename Inner::Item>(next.unwrap())});
+        return Option<Item>::none();
     }
 
 private:
@@ -124,12 +144,12 @@ public:
     using Item = typename Inner::Item;
 
     constexpr InspectIter(Inner inner, F f) : m_inner(std::move(inner)), m_f(std::move(f)) {}
-    constexpr auto next() -> std::optional<Item> {
+    constexpr auto next() -> Option<Item> {
         if (auto next = m_inner.next()) {
-            m_f(asLvalueRef(*next));
-            return next;
+            m_f(asLvalueRef(next.unwrap()));
+            return Option<Item>::some(std::move(next.unwrap()));
         }
-        return std::nullopt;
+        return Option<Item>::none();
     }
 
 private:
@@ -152,14 +172,14 @@ public:
     explicit constexpr CxxIterInner(Iter inner) : m_inner(std::move(inner)) { ++*this; }
 
     constexpr auto operator++() -> CxxIterInner& { m_current = m_inner.next(); return *this; }
-    constexpr auto operator*() -> reference { return asLvalueRef(*m_current); }
-    constexpr auto operator->() -> pointer { return &*m_current; }
-    constexpr auto operator->() const -> pointer { return &*m_current; }
-    constexpr auto operator!=(const EndSentinel&) const -> bool { return m_current.has_value(); }
+    constexpr auto operator*() -> reference { return asLvalueRef(m_current.unwrap()); }
+    constexpr auto operator->() -> pointer { return &m_current.unwrap(); }
+    constexpr auto operator->() const -> pointer { return &m_current.unwrap(); }
+    constexpr auto operator!=(const EndSentinel&) const -> bool { return m_current.isSome(); }
 
 private:
     Iter m_inner;
-    std::optional<typename Iter::Item> m_current;
+    Option<typename Iter::Item> m_current = Option<typename Iter::Item>::none();
 };
 
 // ---- Common CRTP iterator mixin -----------------------------------------------------------------------------------------------------------------------------
@@ -181,7 +201,7 @@ public:
         using Item = typename Derived::Item;
         using ValueType = DerefT<Item>;
         ValueType sum = ValueType(0);
-        while (auto v = self().next()) sum = std::move(sum) + deref(std::move(*v));
+        while (auto v = self().next()) sum = std::move(sum) + deref(std::move(v.unwrap()));
         return sum;
     }
 
@@ -189,20 +209,20 @@ public:
         using Item = typename Derived::Item;
         using ValueType = DerefT<Item>;
         ValueType prod = ValueType(1);
-        while (auto v = self().next()) prod = std::move(prod) * deref(std::move(*v));
+        while (auto v = self().next()) prod = std::move(prod) * deref(std::move(v.unwrap()));
         return prod;
     }
 
     template <typename P> constexpr auto all(P&& pred) -> bool {
         while (auto v = self().next()) {
-            if (!pred(asLvalueRef(std::move(*v)))) return false;
+            if (!pred(asLvalueRef(std::move(v.unwrap())))) return false;
         }
         return true;
     }
 
     template <typename P> constexpr auto any(P&& pred) -> bool {
         while (auto v = self().next()) {
-            if (pred(asLvalueRef(std::move(*v)))) return true;
+            if (pred(asLvalueRef(std::move(v.unwrap())))) return true;
         }
         return false;
     }
@@ -213,15 +233,15 @@ public:
         using KeyValueType = DerefT<ValueType>;
 
         auto firstOpt = std::move(self().next());
-        if (!firstOpt) return std::nullopt;
+        if (!firstOpt) return Option<KeyValueType>::none();
 
-        KeyValueType best = std::move(*firstOpt);
+        KeyValueType best = std::move(firstOpt.unwrap());
 
         while (auto v = self().next()) {
-            if (asLvalueRef(*v) < asLvalueRef(best)) best = std::move(*v);
+            if (asLvalueRef(v.unwrap()) < asLvalueRef(best)) best = std::move(v.unwrap());
         }
 
-        return best;
+        return Option<KeyValueType>::some(std::move(best));
     }
 
 
@@ -231,15 +251,15 @@ public:
         using KeyValueType = DerefT<ValueType>;
 
         auto firstOpt = std::move(self().next());
-        if (!firstOpt) return std::nullopt;
+        if (!firstOpt) return Option<KeyValueType>::none();
 
-        KeyValueType best = std::move(*firstOpt);
+        KeyValueType best = std::move(firstOpt.unwrap());
 
         while (auto v = self().next()) {
-            if (asLvalueRef(*v) > asLvalueRef(best)) best = std::move(*v);
+            if (asLvalueRef(v.unwrap()) > asLvalueRef(best)) best = std::move(v.unwrap());
         }
 
-        return best;
+        return Option<KeyValueType>::some(std::move(best));
     }
 
     template <typename F> constexpr auto minByKey(F&& f) {
@@ -248,14 +268,14 @@ public:
         using KeyValueType = DerefT<ValueType>;
 
         auto firstOpt = std::move(self().next());
-        if (!firstOpt) return std::optional<ValueType>(std::nullopt);
+        if (!firstOpt) return Option<ValueType>::none();
 
-        ValueType best = std::move(*firstOpt);
+        ValueType best = std::move(firstOpt.unwrap());
 
         while (auto v = self().next()) {
-            if (f(asLvalueRef(*v)) < f(asLvalueRef(best))) best = std::move(*v);
+            if (f(asLvalueRef(v.unwrap())) < f(asLvalueRef(best))) best = std::move(v.unwrap());
         }
-        return std::optional<ValueType>{best};
+        return Option<ValueType>::some(std::move(best));
     }
 
     template <typename F> constexpr auto maxByKey(F&& f) {
@@ -264,14 +284,14 @@ public:
         using KeyValueType = DerefT<ValueType>;
 
         auto firstOpt = std::move(self().next());
-        if (!firstOpt) return std::optional<ValueType>{std::nullopt};
+        if (!firstOpt) return Option<ValueType>::none();
 
-        ValueType best = std::move(*firstOpt);
+        ValueType best = std::move(firstOpt.unwrap());
 
         while (auto v = self().next()) {
-            if (f(asLvalueRef(*v)) > f(asLvalueRef(best))) best = std::move(*v);
+            if (f(asLvalueRef(v.unwrap())) > f(asLvalueRef(best))) best = std::move(v.unwrap());
         }
-        return std::optional<ValueType>{best};
+        return Option<ValueType>::some(std::move(best));
     }
 
 
@@ -281,7 +301,7 @@ public:
         using Item = typename Derived::Item;
         using T = std::remove_const_t<Item>;
         auto out = Container<T>::create();
-        while (auto v = self().next()) out.emplace(std::move(*v));
+        while (auto v = self().next()) out.emplace(std::move(v.unwrap()));
         return out;
     }
 

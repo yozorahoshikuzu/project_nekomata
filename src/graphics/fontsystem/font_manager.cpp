@@ -236,14 +236,14 @@ auto FontManager::shapeText(FontFace font, rendering::DynamicBitmapFontAtlas& at
     return glyphInstances;
 }
 auto FontManager::findAndBatchMissingGlyphs(FontFace font, rendering::DynamicBitmapFontAtlas& atlas, std::string_view text, u32 pixelSize)
-    -> std::optional<FontRasterBatch> {
+    -> Option<FontRasterBatch> {
     std::shared_lock lock(m_registryMutex);
 
     // TODO: a thread could possibly be rasterizing glyphs and updating the atlas, so reading concurrently here is not safe, with a single thread right now
     // TODO: that's not a concern, but could become later when we dispatch threads to do raster work
 
     auto& fontEntry = *m_fontEntries[font.handleIndex];
-    if (!fontEntry.isLoaded) return {};
+    if (!fontEntry.isLoaded) return Option<FontRasterBatch>::none();
     std::scoped_lock faceLock(fontEntry.rasterMutex);
 
     auto glyphIndices = Vec<u32>::create();
@@ -262,8 +262,8 @@ auto FontManager::findAndBatchMissingGlyphs(FontFace font, rendering::DynamicBit
         }
     }
 
-    if (glyphIndices.isEmpty()) return {};
-    return FontRasterBatch { font, pixelSize, std::move(glyphIndices) };
+    if (glyphIndices.isEmpty()) return Option<FontRasterBatch>::none();
+    return Option<FontRasterBatch>::some(FontRasterBatch { font, pixelSize, std::move(glyphIndices) });
 }
 
 u32 FontManager::getFreeFontIndex() {

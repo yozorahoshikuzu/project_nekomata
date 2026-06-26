@@ -22,3 +22,6 @@ export import :core.ui.components.ui_text;
 export import :core.ui.components.ui_texture;
 export import :graphics.fontsystem.font_manager;
 export import :graphics.fontsystem.font_face;
+export import :core.cs.niche;
+export import :core.cs.option;
+export import :core.cs.nonzero_ptr;

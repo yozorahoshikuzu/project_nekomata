@@ -208,7 +208,7 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
     auto scoreMaxIndex = scores.iter()
         .enumerate()
         .maxByKey([](const auto& x) -> u32 { return x.value; })
-        .value()
+        .unwrap()
         .index;
 
     log::info("Picked GPU #{}", scoreMaxIndex);

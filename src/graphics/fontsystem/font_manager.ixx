@@ -65,7 +65,7 @@ public:
 
     auto rasterizeGlyphs(FontRasterInfo rasterInfo) -> void;
     auto shapeText(FontFace font, rendering::DynamicBitmapFontAtlas& atlas, std::string_view text, u32 pixelSize, math::Vector2f baselineStartPos, math::Vector2f screenSize) -> std::vector<GlyphInstance>;
-    auto findAndBatchMissingGlyphs(FontFace font, rendering::DynamicBitmapFontAtlas& atlas, std::string_view text, u32 pixelSize) -> std::optional<FontRasterBatch>;
+    auto findAndBatchMissingGlyphs(FontFace font, rendering::DynamicBitmapFontAtlas& atlas, std::string_view text, u32 pixelSize) -> Option<FontRasterBatch>;
 
 private:
     FT_Library m_ftLibrary;

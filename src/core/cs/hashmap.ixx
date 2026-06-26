@@ -370,12 +370,12 @@ public:
     using Item = const K*;
     constexpr HashMapKeysIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
-    constexpr auto next() -> std::optional<Item> {
-        if (m_index >= m_hashmap->m_capacity) return std::nullopt;
-        auto next = std::make_optional(&m_hashmap->m_entries[m_index].key);
+    constexpr auto next() -> Option<Item> {
+        if (m_index >= m_hashmap->m_capacity) return Option<Item>::none();
+        auto i = m_index;
         m_index++;
         skipEmpty();
-        return next;
+        return Option<Item>::some(&m_hashmap->m_entries[i].key);
     }
 
 private:
@@ -392,12 +392,12 @@ public:
     using Item = V*;
     constexpr HashMapValuesIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
-    constexpr auto next() -> std::optional<V*> {
-        if (m_index >= m_hashmap->m_capacity) return std::nullopt;
-        auto next = std::make_optional(&m_hashmap->m_entries[m_index].value);
+    constexpr auto next() -> Option<Item> {
+        if (m_index >= m_hashmap->m_capacity) return Option<Item>::none();
+        auto i = m_index;
         m_index++;
         skipEmpty();
-        return next;
+        return Option<Item>::some(&m_hashmap->m_entries[i].value);
     }
 
 private:
@@ -414,12 +414,12 @@ public:
     using Item = KeyValue<const K*, V*>;
     constexpr HashMapIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
-    constexpr auto next() -> std::optional<Item> {
-        if (m_index >= m_hashmap->m_capacity) return std::nullopt;
-        auto next = std::make_optional(KeyValue<const K*, V*>(&m_hashmap->m_entries[m_index].key, &m_hashmap->m_entries[m_index].value));
+    constexpr auto next() -> Option<Item> {
+        if (m_index >= m_hashmap->m_capacity) return Option<Item>::none();
+        auto i = m_index;
         m_index++;
         skipEmpty();
-        return next;
+        return Option<Item>::some(KeyValue<const K*, V*>(&m_hashmap->m_entries[i].key, &m_hashmap->m_entries[i].value));
     }
 
 private:
