@@ -1,9 +1,12 @@
 module;
 #include <cstdlib>
+#include <malloc.h>
 export module nekomata2:core.cs.vec;
 import std;
+import :core.log;
 import :core.platform.int_def;
 import :core.cs.iterators;
+import :core.cs.mem;
 
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -43,7 +46,7 @@ public:
     constexpr Vec& operator=(Vec&& other) noexcept {
         if (this == &other) return *this;
         destroyFinalize();
-        free(m_data);
+        Mem::free(m_data);
 
         m_data = other.m_data;
         m_len = other.m_len;
@@ -223,17 +226,16 @@ private:
 
     constexpr auto reallocate(usize newCapacity) {
         if constexpr (kUsesTriviallyRelocatableFastpath) {
-            auto ptr = static_cast<T*>(realloc(m_data, newCapacity * sizeof(T)));
-            if (!ptr) throw std::bad_alloc();
+            auto ptr = Mem::reallocChecked(m_data, newCapacity);
             m_data = ptr;
         } else {
-            auto ptr = static_cast<T*>(malloc(newCapacity * sizeof(T)));
+            auto ptr = Mem::allocChecked<T>(newCapacity);
             if (!ptr) throw std::bad_alloc();
             for (usize i = 0; i < m_len; i++) {
                 new (ptr + i) T(std::move(m_data[i]));
                 if constexpr (kNeedsFinalizer) m_data[i].~T();
             }
-            free(m_data);
+            Mem::free(m_data);
             m_data = ptr;
         }
         m_capacity = newCapacity;

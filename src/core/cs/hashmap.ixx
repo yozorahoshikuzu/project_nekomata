@@ -205,15 +205,11 @@ private:
 
     constexpr auto alloc(usize cap) -> void {
         m_capacity = cap;
-        m_ctrls = Mem::allocAligned<u8>(cap + 16, 16);
-        if (!m_ctrls) __builtin_trap();
+        m_ctrls = Mem::allocAlignedChecked<u8>(cap + 16, 16);
+        m_entries = Mem::allocChecked<Entry>(cap);
+        m_dibs = Mem::allocChecked<u32>(cap);
+
         memset(m_ctrls, kCtrlSentinelEmpty, cap + 16);
-
-        m_entries = Mem::alloc<Entry>(cap);
-        if (!m_entries) __builtin_trap();
-
-        m_dibs = Mem::alloc<u32>(cap);
-        if (!m_dibs) __builtin_trap();
         memset(m_dibs, 0, cap * sizeof(u32));
     }
 
