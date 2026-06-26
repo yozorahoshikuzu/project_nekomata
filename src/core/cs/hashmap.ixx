@@ -367,7 +367,7 @@ private:
 
 export template <typename K, typename V, typename H> class HashMapKeysIter : public IteratorBase<HashMapKeysIter<K, V, H>> {
 public:
-    using Item = const K*;
+    using Item = NonZeroPtr<const K>;
     constexpr HashMapKeysIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
     constexpr auto next() -> Option<Item> {
@@ -375,7 +375,7 @@ public:
         auto i = m_index;
         m_index++;
         skipEmpty();
-        return Option<Item>::some(&m_hashmap->m_entries[i].key);
+        return Option<Item>::some(NonZeroPtr<const K>(&m_hashmap->m_entries[i].key));
     }
 
 private:
@@ -389,7 +389,7 @@ private:
 
 export template <typename K, typename V, typename H> class HashMapValuesIter : public IteratorBase<HashMapValuesIter<K, V, H>> {
 public:
-    using Item = V*;
+    using Item = NonZeroPtr<V>;
     constexpr HashMapValuesIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
     constexpr auto next() -> Option<Item> {
@@ -397,7 +397,7 @@ public:
         auto i = m_index;
         m_index++;
         skipEmpty();
-        return Option<Item>::some(&m_hashmap->m_entries[i].value);
+        return Option<Item>::some(NonZeroPtr<V>(&m_hashmap->m_entries[i].value));
     }
 
 private:
@@ -411,7 +411,7 @@ private:
 
 export template <typename K, typename V, typename H> class HashMapIter : public IteratorBase<HashMapIter<K, V, H>> {
 public:
-    using Item = KeyValue<const K*, V*>;
+    using Item = KeyValue<NonZeroPtr<const K>, NonZeroPtr<V>>;
     constexpr HashMapIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
     constexpr auto next() -> Option<Item> {
@@ -419,7 +419,7 @@ public:
         auto i = m_index;
         m_index++;
         skipEmpty();
-        return Option<Item>::some(KeyValue<const K*, V*>(&m_hashmap->m_entries[i].key, &m_hashmap->m_entries[i].value));
+        return Option<Item>::some(Item(NonZeroPtr<const K>(&m_hashmap->m_entries[i].key), NonZeroPtr<V>(&m_hashmap->m_entries[i].value)));
     }
 
 private:

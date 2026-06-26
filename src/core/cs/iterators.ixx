@@ -27,7 +27,19 @@ export template <typename K, typename V> struct KeyValue {
     K key; V value;
 };
 
-// TODO: implement NicheValue for KeyValue
+template <typename K, typename V> requires HasNiche<K> struct NicheValue<KeyValue<K, V>> {
+    alignas(V) static u8 m_invalidV[sizeof(V)];
+    static KeyValue<K,V> niche() { return KeyValue<K,V>(NicheValue<K>::niche(), *reinterpret_cast<V*>(m_invalidV)); }
+    static bool isNiche(const KeyValue<K, V>& ptr) { return NicheValue<K>::isNiche(ptr.key); }
+};
+
+template <typename K, typename V> requires (!HasNiche<K> && HasNiche<V>) struct NicheValue<KeyValue<K, V>> {
+    alignas(K) static u8 m_invalidK[sizeof(K)];
+    static KeyValue<K,V> niche() { return KeyValue<K,V>(*reinterpret_cast<K*>(m_invalidK), NicheValue<V>::niche()); }
+    static bool isNiche(const KeyValue<K, V>& ptr) { return NicheValue<V>::isNiche(ptr.value); }
+};
+
+// todo: automatically deduce this shit
 
 // Maps T -> T& and U* -> U&.
 export template <typename T> struct AsLvalueRef { using type = T&; };
@@ -38,6 +50,10 @@ template <typename T> struct AsLvalueRef<Enumerand<NonZeroPtr<T>>> { using type 
 template <typename K, typename V> struct AsLvalueRef<KeyValue<K*, V>> { using type = KeyValue<K&, V&>; };
 template <typename K, typename V> struct AsLvalueRef<KeyValue<K, V*>> { using type = KeyValue<K&, V&>; };
 template <typename K, typename V> struct AsLvalueRef<KeyValue<K*, V*>> { using type = KeyValue<K&, V&>; };
+template <typename K, typename V> struct AsLvalueRef<KeyValue<NonZeroPtr<K>, V>> { using type = KeyValue<K&, V&>; };
+template <typename K, typename V> struct AsLvalueRef<KeyValue<K, NonZeroPtr<V>>> { using type = KeyValue<K&, V&>; };
+template <typename K, typename V> struct AsLvalueRef<KeyValue<NonZeroPtr<K>, NonZeroPtr<V>>> { using type = KeyValue<K&, V&>; };
+
 template <typename T> using AsLvalueRefT = typename AsLvalueRef<T>::type;
 
 export template <typename T> struct Deref { using type = std::remove_pointer_t<std::remove_reference_t<T>>; };
@@ -57,6 +73,9 @@ template <typename T> constexpr auto asLvalueRef(NonZeroPtr<T> x) -> AsLvalueRef
 template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<K, V*> x) -> AsLvalueRefT<KeyValue<K, V*>> { return {x.key, *x.value}; }
 template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<K*, V> x) -> AsLvalueRefT<KeyValue<K*, V>> { return {*x.key, x.value}; }
 template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<K*, V*> x) -> AsLvalueRefT<KeyValue<K*, V*>> { return {*x.key, *x.value}; }
+template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<K, NonZeroPtr<V>> x) -> AsLvalueRefT<KeyValue<K, NonZeroPtr<V>>> { return {x.key, *x.value}; }
+template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<NonZeroPtr<K>, V> x) -> AsLvalueRefT<KeyValue<NonZeroPtr<K>, V>> { return {*x.key, x.value}; }
+template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<NonZeroPtr<K>, NonZeroPtr<V>> x) -> AsLvalueRefT<KeyValue<NonZeroPtr<K>, NonZeroPtr<V>>> { return {*x.key, *x.value}; }
 
 
 template <typename T> constexpr auto mapArgs(T& x) -> T& { return x; }
