@@ -66,6 +66,7 @@ struct UiNode {
                 list.emplace(drawCmd);
             },
             [&](const UiText& text) {
+                if (text.text.empty()) return;
                 auto drawCmd = UiTextDrawCmd{
                     .baselinePos = position,
                     .text = text.text,

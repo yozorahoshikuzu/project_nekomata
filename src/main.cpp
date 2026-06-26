@@ -55,6 +55,13 @@ public:
         posText->element = nekomata2::ui::UiText{"hai :3", 18.0f, std::move(m_fontFace)};
         m_text = posText.get();
         nekomata2::ui::UiSystem::get().getRoot().addChild(std::move(posText));
+
+        auto statusText = nekomata2::ui::UiNode::create();
+        statusText->position = { 10.0f, 240.0f };
+        statusText->extent = { 100.0f, 100.0f };
+        statusText->element = nekomata2::ui::UiText{"", 18.0f, std::move(m_fontFace)};
+        m_statusText = statusText.get();
+        nekomata2::ui::UiSystem::get().getRoot().addChild(std::move(statusText));
     }
 
     void onDestroy() override {}
@@ -104,11 +111,13 @@ public:
         if (Input::get().isKeyDown(Key::Escape)) {
             Input::get().setMouseMode(MouseMode::Normal);
             m_handleMouseMovement = false;
+            std::get<nekomata2::ui::UiText>(m_statusText->element).text = "(Mouse Released)";
         }
 
         if (Input::get().isKeyDown(Key::MouseLeft)) {
             Input::get().setMouseMode(MouseMode::Captured);
             m_handleMouseMovement = true;
+            std::get<nekomata2::ui::UiText>(m_statusText->element).text = "";
         }
 
         auto camPos = m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position;
@@ -121,6 +130,7 @@ public:
 
     nekomata2::graphics::fonts::FontFace m_fontFace;
     nekomata2::ui::UiNode* m_text = nullptr;
+    nekomata2::ui::UiNode* m_statusText = nullptr;
 };
 
 
