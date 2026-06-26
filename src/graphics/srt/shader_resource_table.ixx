@@ -18,6 +18,8 @@ class IShaderResourceTable {
 public:
     virtual ~IShaderResourceTable() = default;
 
+    virtual auto modelName() const -> std::string_view = 0;
+
     virtual auto allocateImageIndex() -> SRTResourceIndex = 0;
     virtual auto allocateImageIndices(u32 count, std::span<SRTResourceIndex> dstIndices) -> void = 0;
     virtual auto freeImageIndex(SRTResourceIndex index) -> void = 0;

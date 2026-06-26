@@ -89,14 +89,15 @@ auto RenderThread::loop() -> void {
             vramStr = std::format("{:.2f} MB", physicalDeviceProps.m_vramSize / 1024.0f / 1024.0f);
         }
 
-
-        std::string text = std::format("--- Project Nekomata ---\n FPS: {:.2f} ({:.3f}ms)\n\n -SDL-\n Video Driver: {}\n\n -Vulkan-\n Device: {}\n Driver: {} {}.{}.{}.{} API Version {}.{}.{}.{}\n VRAM: {}",
+        std::string text = std::format("--- Project Nekomata ---\n FPS: {:.2f} ({:.3f}ms)\n\n -SDL-\n Video Driver: {}\n\n -Vulkan-\n Device: {}\n Driver: {} {}.{}.{}.{} API Version {}.{}.{}.{}\n VRAM: {}\n Shader Cache: {}\n Descriptor Binding Model: {}",
             1000.0f / m_sharedRenderingResources.displayMs, m_sharedRenderingResources.displayMs,
             m_mrSharedData->m_sdlVideoDriverName,
             physicalDeviceProps.m_deviceName,
             physicalDeviceProps.m_driverName, physicalDeviceProps.getDriverVersionVariant(), physicalDeviceProps.getDriverVersionMajor(), physicalDeviceProps.getDriverVersionMinor(), physicalDeviceProps.getDriverVersionPatch(),
             physicalDeviceProps.getApiVersionVariant(), physicalDeviceProps.getApiVersionMajor(), physicalDeviceProps.getApiVersionMinor(), physicalDeviceProps.getApiVersionPatch(),
-            vramStr
+            vramStr,
+            VulkanContext::get().shaderCache()->usesPipelineBinaries() ? "Yes" : "No",
+            graphics::texturesystem::TextureManager::get().shaderResourceTable().modelName()
         );
         m_mrSharedData->m_leafs.getSecondary().m_uiDrawCmds.emplace(ui::UiTextDrawCmd {
             .baselinePos = Vector2f(4.0f, 18.0f),

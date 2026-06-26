@@ -22,6 +22,8 @@ public:
 
     static auto create(u32 maxImageCount, u32 maxSamplerCount) -> std::unique_ptr<BindlessDescriptorSetShaderResourceTable>;
 
+    auto modelName() const -> std::string_view override { return "Bindless"; }
+
     auto allocateImageIndex() -> SRTResourceIndex override;
     auto allocateImageIndices(u32 count, std::span<SRTResourceIndex> dstIndices) -> void override;
     auto freeImageIndex(SRTResourceIndex index) -> void override;

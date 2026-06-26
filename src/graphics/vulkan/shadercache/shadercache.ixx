@@ -18,7 +18,14 @@ public:
     auto createGraphicsPipeline(vk::StructureChain<ScElements...>& chain) -> vk::raii::Pipeline {
         return match(m_shaderCacheFrontend,
             [&](ShaderCachePipelineBinaryFrontend& sc) { return sc.handleCreateGraphicsPipeline(chain); },
-            [&](auto&) { return VulkanContext::get().vkDevice().createGraphicsPipeline(nullptr, chain.template get<vk::GraphicsPipelineCreateInfo>()); }
+            [&](const std::monostate&) { return VulkanContext::get().vkDevice().createGraphicsPipeline(nullptr, chain.template get<vk::GraphicsPipelineCreateInfo>()); }
+        );
+    }
+
+    auto usesPipelineBinaries() const -> bool {
+        return match(m_shaderCacheFrontend,
+            [&](const ShaderCachePipelineBinaryFrontend&) { return true; },
+            [&](const std::monostate&) { return false; }
         );
     }
 private:

@@ -50,14 +50,14 @@ public:
             .m_transform3d.m_position = { 2.0f, 1.0f, 1.0f };
 
         auto posText = nekomata2::ui::UiNode::create();
-        posText->position = { 10.0f, 220.0f };
+        posText->position = { 10.0f, 280.0f };
         posText->extent = { 100.0f, 100.0f };
         posText->element = nekomata2::ui::UiText{"hai :3", 18.0f, std::move(m_fontFace)};
         m_text = posText.get();
         nekomata2::ui::UiSystem::get().getRoot().addChild(std::move(posText));
 
         auto statusText = nekomata2::ui::UiNode::create();
-        statusText->position = { 10.0f, 240.0f };
+        statusText->position = { 10.0f, 300.0f };
         statusText->extent = { 100.0f, 100.0f };
         statusText->element = nekomata2::ui::UiText{"", 18.0f, std::move(m_fontFace)};
         m_statusText = statusText.get();
