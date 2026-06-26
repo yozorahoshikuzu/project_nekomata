@@ -28,13 +28,13 @@ export template <typename K, typename V> struct KeyValue {
 };
 
 template <typename K, typename V> requires HasNiche<K> struct NicheValue<KeyValue<K, V>> {
-    alignas(V) static u8 m_invalidV[sizeof(V)];
+    alignas(V) inline static u8 m_invalidV[sizeof(V)] = {};
     static KeyValue<K,V> niche() { return KeyValue<K,V>(NicheValue<K>::niche(), *reinterpret_cast<V*>(m_invalidV)); }
     static bool isNiche(const KeyValue<K, V>& ptr) { return NicheValue<K>::isNiche(ptr.key); }
 };
 
 template <typename K, typename V> requires (!HasNiche<K> && HasNiche<V>) struct NicheValue<KeyValue<K, V>> {
-    alignas(K) static u8 m_invalidK[sizeof(K)];
+    alignas(K) inline static u8 m_invalidK[sizeof(K)] = {};
     static KeyValue<K,V> niche() { return KeyValue<K,V>(*reinterpret_cast<K*>(m_invalidK), NicheValue<V>::niche()); }
     static bool isNiche(const KeyValue<K, V>& ptr) { return NicheValue<V>::isNiche(ptr.value); }
 };

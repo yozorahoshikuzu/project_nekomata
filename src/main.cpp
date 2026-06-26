@@ -256,6 +256,14 @@ void onGameInit(std::unique_ptr<nekomata2::ecs::World>& world) {
 int main(int argc, char* argv[]) {
     nekomata2::log::info("haii :3");
 
+    int x = 5;
+    auto nonzero = Option<NonZeroPtr<int>>::some(NonZeroPtr<int>(&x));
+    auto none = Option<NonZeroPtr<int>>::none();
+
+    nekomata2::log::info("sizeof(nonzero) = {}, is some = {}", sizeof(nonzero), nonzero.isSome());
+    nekomata2::log::info("sizeof(none) = {}, is none = {}", sizeof(none), none.isNone());
+
+
     nekomata2::entry(onGameInit);
 
     return 0;
