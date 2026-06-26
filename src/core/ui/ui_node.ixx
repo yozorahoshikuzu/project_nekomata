@@ -17,7 +17,7 @@ inline math::Vector2f unormToNdc(math::Vector2f x) {
     return x * 2.0f - math::Vector2f(1.0f);
 }
 
-using UiElement = std::variant<UiRect, UiText, UiTexture>;
+using UiElement = std::variant<std::monostate, UiRect, UiText, UiTexture>;
 
 struct UiNode {
     static auto create() -> std::unique_ptr<UiNode> {
@@ -28,7 +28,7 @@ struct UiNode {
 
     bool visible = true;
 
-    UiElement element = UiRect();
+    UiElement element = std::monostate{};
 
     std::vector<std::unique_ptr<UiNode>> children;
     UiNode* parent = nullptr;
@@ -72,7 +72,8 @@ struct UiNode {
                     .size = text.size
                 };
                 list.emplace(drawCmd);
-            }
+            },
+            [](const std::monostate&) {}
         );
 
         for (auto& child : children)

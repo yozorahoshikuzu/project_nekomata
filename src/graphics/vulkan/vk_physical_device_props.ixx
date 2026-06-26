@@ -96,9 +96,14 @@ public:
     [[nodiscard]] auto vmaAllocatorCreateFlags() const -> vma::AllocatorCreateFlags;
 
     std::string m_deviceName            = "(unknown)";
+    std::string m_driverName            = "(unknown driver name)";
     vk::PhysicalDeviceType m_deviceType = vk::PhysicalDeviceType::eOther;
     vk::DriverId m_driverId             = {};
+    u32 m_driverVersion                 = 0_u32;
     u64 m_vramSize                      = 0_u64;
+    u32 m_apiVersion                    = 0_u32;
+
+    u32 m_vramMemoryHeapIndex = 0_u32;
 
     bool m_hasExtMemoryBudget   = false;
     bool m_hasExtMemoryPriority = false;
@@ -127,6 +132,29 @@ public:
     vk::PhysicalDeviceVulkan14Features m_enabledVk14Features = {};
 
     auto printInfo() const -> void;
+
+    auto getApiVersionVariant() const -> u32 { return m_apiVersion >> 29; }
+    auto getApiVersionMajor() const -> u32 { return (m_apiVersion >> 22) & 0x7f_u32; }
+    auto getApiVersionMinor() const -> u32 { return (m_apiVersion >> 12) & 0x3ff_u32; }
+    auto getApiVersionPatch() const -> u32 { return m_apiVersion & 0xfff_u32; }
+
+    auto getDriverVersionVariant() const -> u32 {
+        if (m_driverId == vk::DriverId::eNvidiaProprietary) return m_driverVersion >> 22;
+        return m_driverVersion >> 29;
+    }
+    auto getDriverVersionMajor() const -> u32 {
+        if (m_driverId == vk::DriverId::eNvidiaProprietary) return (m_driverVersion >> 14) & 0xff_u32;
+        return (m_driverVersion >> 22) & 0x7f_u32;
+    }
+    auto getDriverVersionMinor() const -> u32 {
+        if (m_driverId == vk::DriverId::eNvidiaProprietary) return (m_driverVersion >> 6) & 0xff_u32;
+        return (m_driverVersion >> 12) & 0x3ff_u32;
+    }
+    auto getDriverVersionPatch() const -> u32 {
+        if (m_driverId == vk::DriverId::eNvidiaProprietary) return m_driverVersion & 0x3f_u32;
+        return m_driverVersion & 0xfff_u32;
+    }
+
 };
 
 class VulkanPhysicalDeviceSurfaceProperties {

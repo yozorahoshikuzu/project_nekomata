@@ -123,6 +123,13 @@ auto VulkanContext::antiLagPacePresent(u64 frameIndex, u32 targetFps) -> void {
     }
 }
 
+auto VulkanContext::extMemoryBudgetGetVramBudget() const -> u64 {
+    debug_assert(m_vkPhysicalDeviceProperties.m_hasExtMemoryBudget, "extMemoryBudget not supported");
+
+    auto query = m_vkPhysicalDevice.getMemoryProperties2<vk::PhysicalDeviceMemoryProperties2, vk::PhysicalDeviceMemoryBudgetPropertiesEXT>();
+    return query.get<vk::PhysicalDeviceMemoryBudgetPropertiesEXT>().heapBudget[m_vkPhysicalDeviceProperties.m_vramMemoryHeapIndex];
+}
+
 auto VulkanContext::initVkRaiiContext() -> vk::raii::Context {
     return {};
 }

@@ -19,6 +19,7 @@ MainThread::MainThread(std::shared_ptr<MRThreadsSharedData> mrSharedData, std::u
     cmdalloc::VulkanCommandPoolsList::initThreadLocalCommandPools();
 
     auto windowLogicalSize = m_sdlWindow.getLogicalSize();
+    auto windowLogicalSizef = math::Vector2f(m_sdlWindow.getLogicalSize().x(), m_sdlWindow.getLogicalSize().y());
     auto windowDisplayScale = m_sdlWindow.getDisplayScale();
     log::info("Window logical size: {}x{}", windowLogicalSize.x(), windowLogicalSize.y());
     log::info("Window display scale: {}", windowDisplayScale);
@@ -28,47 +29,7 @@ MainThread::MainThread(std::shared_ptr<MRThreadsSharedData> mrSharedData, std::u
     m_meshAssetStorage = meshsystem::MeshAssetStorage::create();
     m_textureManager = graphics::texturesystem::TextureManager::create();
     m_fontManager = graphics::fonts::FontManager::create();
-
-    auto moyaiTexture = graphics::texturesystem::TextureManager::get().loadKtx2TextureAsync(
-        "../Assets/ui_test.ktx2",
-        graphics::texturesystem::SamplerParams::defaultValues()
-            .setMinFilter(vk::Filter::eLinear)
-            .setMagFilter(vk::Filter::eLinear)
-            .setMipmapMode(vk::SamplerMipmapMode::eLinear)
-    );
-
-
-    m_uiRoot = ui::UiNode::create();
-    m_uiRoot->position = math::Vector2f(0.0f, 0.0f);
-    m_uiRoot->extent = math::Vector2f(m_sdlWindow.getLogicalSize().x(), m_sdlWindow.getLogicalSize().y());
-    m_uiRoot->element = ui::UiRect(math::Vector4f(0.0f, 0.0f, 0.0f, 0.0f));
-
-    auto rectElement = ui::UiNode::create();
-    rectElement->position = math::Vector2f(16.0f, 300.0f);
-    rectElement->extent = math::Vector2f(270.0f, 269.0f);
-    rectElement->element = ui::UiRect(math::Vector4f(255.0f / 255.0f, 147.0f / 255.0f, 0.0f, 0.5f));
-
-    auto texElement = ui::UiNode::create();
-    texElement->position = math::Vector2f(10.0f, 10.0f);
-    texElement->extent = math::Vector2f(250.0f, 249.0f);
-    texElement->element = ui::UiTexture(moyaiTexture);
-
-    auto fontface = graphics::fonts::FontManager::get().loadFont("/usr/share/fonts/noto/NotoSans-Regular.ttf");
-
-    auto text = ui::UiNode::create();
-    text->position = math::Vector2f(300.0f, 260.0f);
-    text->extent = math::Vector2f(100.0f, 100.0f);
-    text->element = ui::UiText("Haiii :3", 24.0f, std::move(fontface));
-
-    auto text2 = ui::UiNode::create();
-    text2->position = math::Vector2f(300.0f, 290.0f);
-    text2->extent = math::Vector2f(100.0f, 100.0f);
-    text2->element = ui::UiText("we have many texts", 24.0f, std::move(fontface));
-
-    rectElement->addChild(std::move(texElement));
-    m_uiRoot->addChild(std::move(rectElement));
-    m_uiRoot->addChild(std::move(text));
-    m_uiRoot->addChild(std::move(text2));
+    m_uiSystem = ui::UiSystem::create(windowLogicalSizef);
 }
 
 auto MainThread::runMainLoop(const std::function<void(std::unique_ptr<ecs::World>&)>& initFn) -> void {
@@ -101,6 +62,10 @@ auto MainThread::runMainLoop(const std::function<void(std::unique_ptr<ecs::World
 auto MainThread::loop(float dt) -> void {
     m_inputManager->handleNewFrame(m_sdlWindow);
     VulkanContext::get().antiLagPaceInput(m_frameIndex, 0);
+
+    auto logicalSize = m_sdlWindow.getLogicalSize();
+    auto logicalSizeFloat = math::Vector2f(logicalSize.x(), logicalSize.y());
+    ui::UiSystem::get().handleViewportResize(logicalSizeFloat);
     SDL_Event event;
     auto totalMouseDelta = math::Vector2f(0.0f);
     while (SDL_PollEvent(&event)) {
@@ -153,10 +118,7 @@ auto MainThread::loop(float dt) -> void {
         m_mrSharedData->m_leafs.getPrimary().m_textureToSamplerShaderIndexSnapshot
     );
     m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds.clear();
-    auto logicalSize = m_sdlWindow.getLogicalSize();
-    auto logicalSizeFloat = math::Vector2f(logicalSize.x(), logicalSize.y());
-    m_uiRoot->extent = logicalSizeFloat;
-    m_uiRoot->buildDrawCmds(m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds, logicalSizeFloat, math::Vector2f(0.0f), logicalSizeFloat);
+    ui::UiSystem::get().getRoot().buildDrawCmds(m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds, logicalSizeFloat, math::Vector2f(0.0f), logicalSizeFloat);
 
     m_mrSharedData->m_leafs.getPrimary().m_hasValidFrame = true;
 

@@ -41,11 +41,20 @@ public:
 
 class CameraScript : public nekomata2::ecs::ScriptBase {
 public:
+    CameraScript(nekomata2::graphics::fonts::FontFace face) : m_fontFace(face) {}
+
     void onCreate() override {
         m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity)
             .m_transform3d = Transform3D::identity();
         m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity)
             .m_transform3d.m_position = { 2.0f, 1.0f, 1.0f };
+
+        auto posText = nekomata2::ui::UiNode::create();
+        posText->position = { 10.0f, 220.0f };
+        posText->extent = { 100.0f, 100.0f };
+        posText->element = nekomata2::ui::UiText{"hai :3", 18.0f, std::move(m_fontFace)};
+        m_text = posText.get();
+        nekomata2::ui::UiSystem::get().getRoot().addChild(std::move(posText));
     }
 
     void onDestroy() override {}
@@ -103,11 +112,15 @@ public:
         }
 
         auto camPos = m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position;
+        std::get<nekomata2::ui::UiText>(m_text->element).text = std::format("pos: {:.2f}, {:.2f}, {:.2f}", camPos.x(), camPos.y(), camPos.z());
     }
 
     bool m_handleMouseMovement = true;
     float m_rotationPitch = 0.0f;
     float m_rotationYaw = 0.0f;
+
+    nekomata2::graphics::fonts::FontFace m_fontFace;
+    nekomata2::ui::UiNode* m_text = nullptr;
 };
 
 
@@ -166,6 +179,7 @@ void onGameInit(std::unique_ptr<nekomata2::ecs::World>& world) {
         .setAnisotropy(16.0f);
 
     nekomata2::graphics::texturesystem::Texture ts1 = ts.loadKtx2TextureAsync("../Assets/abstractart.ktx2", samplerSettings);
+    auto fnt = nekomata2::graphics::fonts::FontManager::get().loadFont("/usr/share/fonts/noto/NotoSans-Regular.ttf");
 
 
     auto& mas = nekomata2::meshsystem::MeshAssetStorage::get();
@@ -224,7 +238,7 @@ void onGameInit(std::unique_ptr<nekomata2::ecs::World>& world) {
     auto cameraEnt = world->createEntity();
     world->emplace<nekomata2::ecs::components::Camera>(cameraEnt, 0.01f, 1000.0f, 60.0f, true);
     world->emplace<nekomata2::ecs::components::Transform>(cameraEnt);
-    world->addScript<CameraScript>(cameraEnt);
+    world->addScript<CameraScript>(cameraEnt, fnt);
 
     Input::get().setMouseMode(MouseMode::Captured);
 }

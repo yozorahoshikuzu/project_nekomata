@@ -270,14 +270,17 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     auto rayTracingPipelineProperties = propertiesQuery.get<vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
 
     auto deviceName = std::string(coreProperties.deviceName);
+    auto driverName = std::string(propertiesQuery.get<vk::PhysicalDeviceVulkan12Properties>().driverName);
     auto deviceType = coreProperties.deviceType;
 
     auto memoryProperties = vkPhysicalDevice.getMemoryProperties();
     u64 vramSize = 0;
+    u32 vramHeapIndex = 0;
     for (usize i = 0; i < memoryProperties.memoryHeapCount; i++) {
         auto& heap = memoryProperties.memoryHeaps[i];
         if (heap.flags & vk::MemoryHeapFlagBits::eDeviceLocal) {
             vramSize += heap.size;
+            vramHeapIndex = i;
         }
     }
 
@@ -302,9 +305,13 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     dedupQueueIndices(swapchainImageQueueIndices);
 
     props.m_deviceName = deviceName;
+    props.m_driverName = driverName;
     props.m_deviceType = deviceType;
     props.m_driverId = propertiesQuery.get<vk::PhysicalDeviceVulkan12Properties>().driverID;
+    props.m_driverVersion = coreProperties.driverVersion;
+    props.m_apiVersion = coreProperties.apiVersion;
     props.m_vramSize = vramSize;
+    props.m_vramMemoryHeapIndex = vramHeapIndex;
     props.m_accelerationStructureProperties = accelerationStructureProperties;
     props.m_rayTracingPipelineProperties = rayTracingPipelineProperties;
     props.m_enabledVk10Features = enabledVk10Features;

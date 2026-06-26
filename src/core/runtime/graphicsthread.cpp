@@ -61,7 +61,7 @@ auto RenderThread::loop() -> void {
     bool shouldReportFps = timeSinceLastFpsReport > 0.4f;
     if (shouldReportFps) {
         m_lastFpsReportTime = currentTime;
-        m_sharedRenderingResources.displayMs = deltaTime * 1000.0f;
+        m_sharedRenderingResources.displayMs = fpsSmoothedDt * 1000.0f;
     }
 
     meshsystem::MeshAssetStorage::get().tickGC(m_currentFrameNumber);
@@ -80,8 +80,23 @@ auto RenderThread::loop() -> void {
 
     bool injectOverlay = true;
     if (injectOverlay) {
-        std::string text = std::format("--- Project Nekomata ---\n\n  FPS: {:.2f}",
-            1000.0f / m_sharedRenderingResources.displayMs
+        auto& physicalDeviceProps = VulkanContext::get().vkPhysicalDeviceProps();
+        std::string vramStr;
+        if (physicalDeviceProps.m_hasExtMemoryBudget) {
+            f64 vramBudget = VulkanContext::get().extMemoryBudgetGetVramBudget();
+            vramStr = std::format("{:.2f} MB (avail: {:.2f} MB)", physicalDeviceProps.m_vramSize / 1024.0f / 1024.0f, vramBudget / 1024.0f / 1024.0f);
+        } else {
+            vramStr = std::format("{:.2f} MB", physicalDeviceProps.m_vramSize / 1024.0f / 1024.0f);
+        }
+
+
+        std::string text = std::format("--- Project Nekomata ---\n FPS: {:.2f} ({:.3f}ms)\n\n -SDL-\n Video Driver: {}\n\n -Vulkan-\n Device: {}\n Driver: {} {}.{}.{}.{} API Version {}.{}.{}.{}\n VRAM: {}",
+            1000.0f / m_sharedRenderingResources.displayMs, m_sharedRenderingResources.displayMs,
+            m_mrSharedData->m_sdlVideoDriverName,
+            physicalDeviceProps.m_deviceName,
+            physicalDeviceProps.m_driverName, physicalDeviceProps.getDriverVersionVariant(), physicalDeviceProps.getDriverVersionMajor(), physicalDeviceProps.getDriverVersionMinor(), physicalDeviceProps.getDriverVersionPatch(),
+            physicalDeviceProps.getApiVersionVariant(), physicalDeviceProps.getApiVersionMajor(), physicalDeviceProps.getApiVersionMinor(), physicalDeviceProps.getApiVersionPatch(),
+            vramStr
         );
         m_mrSharedData->m_leafs.getSecondary().m_uiDrawCmds.emplace(ui::UiTextDrawCmd {
             .baselinePos = Vector2f(4.0f, 18.0f),

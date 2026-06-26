@@ -37,6 +37,7 @@ public:
     std::barrier<> m_syncpointBarrier;
 
     std::atomic<bool> m_shouldQuit;
+    std::string_view m_sdlVideoDriverName;
 };
 
 }

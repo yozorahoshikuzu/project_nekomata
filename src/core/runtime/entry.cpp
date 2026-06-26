@@ -31,6 +31,7 @@ auto entryAfterSdlInit(const std::function<void(std::unique_ptr<ecs::World>&)>& 
     auto windowCurrentRes = window.vulkanGetDrawableSize();
 
     auto threadSharedData = std::make_shared<MRThreadsSharedData>(windowCurrentRes);
+    threadSharedData->m_sdlVideoDriverName = SDL_GetCurrentVideoDriver();
 
     MainThread mainthread(threadSharedData, std::move(vulkanContext), std::move(window));
     setThreadName("MainThread");

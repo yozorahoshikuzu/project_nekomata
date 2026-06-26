@@ -44,6 +44,8 @@ public:
     auto antiLagPaceInput(u64 frameIndex, u32 targetFps) -> void;
     auto antiLagPacePresent(u64 frameIndex, u32 targetFps) -> void;
 
+    auto extMemoryBudgetGetVramBudget() const -> u64;
+
 private:
 
     // TODO: Document

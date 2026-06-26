@@ -52,9 +52,9 @@ struct TCSPatchConst {
 
 TCSPatchConst PatchConstantFunc(InputPatch<VSOut, 3> patch) {
     TCSPatchConst patchConst;
-    patchConst.edges[0] = 10;
-    patchConst.edges[1] = 10;
-    patchConst.edges[2] = 10;
+    patchConst.edges[0] = 2;
+    patchConst.edges[1] = 2;
+    patchConst.edges[2] = 2;
     patchConst.inner = 1;
     return patchConst;
 }

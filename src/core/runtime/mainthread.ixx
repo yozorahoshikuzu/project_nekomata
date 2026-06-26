@@ -10,6 +10,7 @@ import :graphics.meshsystem.mesh_asset_storage;
 import :graphics.texturesystem.texture_manager;
 import :graphics.fontsystem.font_manager;
 import :core.ui.ui_node;
+import :core.ui.ui_system;
 
 export namespace nekomata2 {
 
@@ -33,7 +34,7 @@ private:
     std::unique_ptr<graphics::texturesystem::TextureManager> m_textureManager = nullptr;
     std::unique_ptr<graphics::fonts::FontManager> m_fontManager = nullptr;
 
-    std::unique_ptr<ui::UiNode> m_uiRoot = nullptr;
+    std::unique_ptr<ui::UiSystem> m_uiSystem = nullptr;
 
     u64 m_frameIndex = 0;
 };
