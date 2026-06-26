@@ -12,7 +12,7 @@ export template <typename T> concept Iterator = requires(T t) {
     { t.next() } -> std::same_as<Option<typename T::Item>>;
 };
 
-// ---- References ---------------------------------------------------------------------------------------------------------------------------------------------
+// ---- Iterator Builtins --------------------------------------------------------------------------------------------------------------------------------------
 
 template <typename T> struct Enumerand {
     usize index; T value;
@@ -39,54 +39,81 @@ template <typename K, typename V> requires (!HasNiche<K> && HasNiche<V>) struct 
     static bool isNiche(const KeyValue<K, V>& ptr) { return NicheValue<V>::isNiche(ptr.value); }
 };
 
-// todo: automatically deduce this shit
+// ---- Reference Resolve --------------------------------------------------------------------------------------------------------------------------------------
 
-// Maps T -> T& and U* -> U&.
-export template <typename T> struct AsLvalueRef { using type = T&; };
-template <typename T> struct AsLvalueRef<T*> { using type = T&; };
-template <typename T> struct AsLvalueRef<NonZeroPtr<T>> { using type = T&; };
-template <typename T> struct AsLvalueRef<Enumerand<T*>> { using type = Enumerand<T&>; };
-template <typename T> struct AsLvalueRef<Enumerand<NonZeroPtr<T>>> { using type = Enumerand<T&>; };
-template <typename K, typename V> struct AsLvalueRef<KeyValue<K*, V>> { using type = KeyValue<K&, V&>; };
-template <typename K, typename V> struct AsLvalueRef<KeyValue<K, V*>> { using type = KeyValue<K&, V&>; };
-template <typename K, typename V> struct AsLvalueRef<KeyValue<K*, V*>> { using type = KeyValue<K&, V&>; };
-template <typename K, typename V> struct AsLvalueRef<KeyValue<NonZeroPtr<K>, V>> { using type = KeyValue<K&, V&>; };
-template <typename K, typename V> struct AsLvalueRef<KeyValue<K, NonZeroPtr<V>>> { using type = KeyValue<K&, V&>; };
-template <typename K, typename V> struct AsLvalueRef<KeyValue<NonZeroPtr<K>, NonZeroPtr<V>>> { using type = KeyValue<K&, V&>; };
+export template <typename T> struct AsLvalueRef;
+template <typename T> struct AsLvalueRef<T&> {
+    using type = T&;
 
+    constexpr static auto asLvalueRef(T& x) -> type { return x; }
+};
+template <typename T> struct AsLvalueRef<T*> {
+    using type = T&;
+
+    constexpr static auto asLvalueRef(T* x) -> type { return *x; }
+};
+template <typename T> struct AsLvalueRef<NonNullPtr<T>> {
+    using type = T&;
+
+    constexpr static auto asLvalueRef(NonNullPtr<T> x) -> type { return *x; }
+};
+template <typename T> struct AsLvalueRef<Enumerand<T>> {
+    using type = Enumerand<typename AsLvalueRef<T>::type>;
+
+    constexpr static auto asLvalueRef(Enumerand<T> x) -> type { return {x.index, AsLvalueRef<T>::asLvalueRef(x.value) }; }
+};
+template <typename K, typename V> struct AsLvalueRef<KeyValue<K, V>> {
+    using type = KeyValue<typename AsLvalueRef<K>::type, typename AsLvalueRef<V>::type>;
+
+    constexpr static auto asLvalueRef(KeyValue<K, V> x) -> type { return {AsLvalueRef<K>::asLvalueRef(x.key), AsLvalueRef<V>::asLvalueRef(x.value) }; }
+};
 template <typename T> using AsLvalueRefT = typename AsLvalueRef<T>::type;
 
+template <typename T> constexpr auto asLvalueRef(T& x) -> AsLvalueRefT<T> {
+    return AsLvalueRef<T>::asLvalueRef(x);
+}
+
+// ---- Pointer/Optional Resolve -------------------------------------------------------------------------------------------------------------------------------
+
 export template <typename T> struct Deref { using type = std::remove_pointer_t<std::remove_reference_t<T>>; };
-template<typename T> struct Deref<NonZeroPtr<T>> { using type = T; };
+template<typename T> struct Deref<NonNullPtr<T>> { using type = T; };
 template <typename T> using DerefT = typename Deref<T>::type;
 
-template <typename T> struct UnwrapOptional;
-template <typename T> struct UnwrapOptional<std::optional<T>> { using type = T; };
-template <typename T> struct UnwrapOptional<Option<T>> { using type = T; };
-template <typename T> using UnwrapOptionalT = typename UnwrapOptional<T>::type;
+template <typename T> struct UnwrapOption;
+template <typename T> struct UnwrapOption<Option<T>> { using type = T; };
+template <typename T> using UnwrapOptionT = typename UnwrapOption<T>::type;
 
-template <typename T> constexpr auto asLvalueRef(Enumerand<T*> x) -> AsLvalueRefT<Enumerand<T*>> { return {x.index, *x.value}; }
-template <typename T> constexpr auto asLvalueRef(Enumerand<NonZeroPtr<T>> x) -> AsLvalueRefT<Enumerand<NonZeroPtr<T>>> { return {x.index, *x.value}; }
-template <typename T> constexpr auto asLvalueRef(T&& x) -> AsLvalueRefT<T> { return x; }
-template <typename T> constexpr auto asLvalueRef(T* x) -> AsLvalueRefT<T*> { return *x; }
-template <typename T> constexpr auto asLvalueRef(NonZeroPtr<T> x) -> AsLvalueRefT<NonZeroPtr<T>> { return *x; }
-template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<K, V*> x) -> AsLvalueRefT<KeyValue<K, V*>> { return {x.key, *x.value}; }
-template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<K*, V> x) -> AsLvalueRefT<KeyValue<K*, V>> { return {*x.key, x.value}; }
-template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<K*, V*> x) -> AsLvalueRefT<KeyValue<K*, V*>> { return {*x.key, *x.value}; }
-template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<K, NonZeroPtr<V>> x) -> AsLvalueRefT<KeyValue<K, NonZeroPtr<V>>> { return {x.key, *x.value}; }
-template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<NonZeroPtr<K>, V> x) -> AsLvalueRefT<KeyValue<NonZeroPtr<K>, V>> { return {*x.key, x.value}; }
-template <typename K, typename V> constexpr auto asLvalueRef(KeyValue<NonZeroPtr<K>, NonZeroPtr<V>> x) -> AsLvalueRefT<KeyValue<NonZeroPtr<K>, NonZeroPtr<V>>> { return {*x.key, *x.value}; }
+// ---- Arg Reference Resolve ----------------------------------------------------------------------------------------------------------------------------------
 
+template <typename T> struct AsArgMapRef;
+template <typename T> struct AsArgMapRef<T&&> {
+    using type = T&&;
 
-template <typename T> constexpr auto mapArgs(T& x) -> T& { return x; }
-template <typename T> constexpr auto mapArgs(T&& x) -> T&& { return std::forward<T>(x); }
-template <typename T> constexpr auto mapArgs(T* x) -> T& { return *x; }
-template <typename T> constexpr auto mapArgs(NonZeroPtr<T> x) -> T& { return *x; }
-template <typename T> constexpr auto mapArgs(Enumerand<T*> x) -> Enumerand<T&> { return {x.index, *x.value}; }
-template <typename K, typename V> constexpr auto mapArgs(KeyValue<K, V> x) -> KeyValue<K&, V&> { return x; }
-template <typename K, typename V> constexpr auto mapArgs(KeyValue<K*, V> x) -> KeyValue<K&, V&> { return {*x.key, x.value}; }
-template <typename K, typename V> constexpr auto mapArgs(KeyValue<K, V*> x) -> KeyValue<K&, V&> { return {x.key, *x.value}; }
-template <typename K, typename V> constexpr auto mapArgs(KeyValue<K*, V*> x) -> KeyValue<K&, V&> { return {*x.key, *x.value}; }
+    constexpr static auto asArgMapRef(T&& x) -> type { return std::forward<T>(x); }
+};
+template <typename T> struct AsArgMapRef<T*> {
+    using type = T&;
+
+    constexpr static auto asArgMapRef(T* x) -> type { return *x; }
+};
+template <typename T> struct AsArgMapRef<NonNullPtr<T>> {
+    using type = T&;
+
+    constexpr static auto asArgMapRef(NonNullPtr<T> x) -> type { return *x; }
+};
+template <typename T> struct AsArgMapRef<Enumerand<T>> {
+    using type = Enumerand<typename AsArgMapRef<T>::type>;
+
+    constexpr static auto asArgMapRef(Enumerand<T> x) -> type { return {x.index, AsArgMapRef<T>::asArgMapRef(x.value)}; }
+};
+template <typename K, typename V> struct AsArgMapRef<KeyValue<K, V>> {
+    using type = KeyValue<typename AsArgMapRef<K>::type, typename AsArgMapRef<V>::type>;
+
+    constexpr static auto asArgMapRef(KeyValue<K, V> x) -> type { return {AsArgMapRef<K>::asArgMapRef(x.key), AsArgMapRef<V>::asArgMapRef(x.value)}; }
+};
+template <typename T> using AsArgMapRefT = typename AsArgMapRef<T>::type;
+
+template <typename T> constexpr auto mapArgs(T&& x) -> AsArgMapRefT<T> { return AsArgMapRef<T>::asArgMapRef(std::forward<T>(x)); }
 
 
 // ---- Basic Iterators ----------------------------------------------------------------------------------------------------------------------------------------
@@ -125,7 +152,7 @@ private:
 
 template <Iterator Inner, typename P> class FilterMapIter : public IteratorBase<FilterMapIter<Inner, P>> {
 public:
-    using Item = UnwrapOptionalT<std::invoke_result_t<P, AsLvalueRefT<typename Inner::Item>>>;
+    using Item = UnwrapOptionT<std::invoke_result_t<P, AsLvalueRefT<typename Inner::Item>>>;
 
     constexpr FilterMapIter(Inner inner, P p) : m_inner(std::move(inner)), m_p(std::move(p)) {}
     constexpr auto next() -> Option<Item> {
@@ -151,6 +178,23 @@ public:
 private:
     Inner m_inner;
     usize m_index = 0;
+};
+
+template <Iterator I1, Iterator I2> class ZipIter : public IteratorBase<ZipIter<I1, I2>> {
+public:
+    using Item = KeyValue<typename I1::Item, typename I2::Item>;
+
+    constexpr ZipIter(I1 i1, I2 i2) : m_i1(std::move(i1)), m_i2(std::move(i2)) {}
+    constexpr auto next() -> Option<Item> {
+        auto next1 = m_i1.next();
+        auto next2 = m_i2.next();
+        if (next1.isSome() && next2.isSome()) return Option<Item>::some(KeyValue(std::move(next1.unwrap()), std::move(next2.unwrap())));
+        return Option<Item>::none();
+    }
+
+private:
+    I1 m_i1;
+    I2 m_i2;
 };
 
 // ---- Inspector Iterators ------------------------------------------------------------------------------------------------------------------------------------
@@ -209,6 +253,7 @@ public:
     template <typename P> constexpr auto filter(P&& p) && { return FilterIter<Derived, std::decay_t<P>>(std::move(self()), std::forward<P>(p)); }
     template <typename P> constexpr auto filterMap(P&& p) && { return FilterMapIter<Derived, std::decay_t<P>>(std::move(self()), std::forward<P>(p)); }
     constexpr auto enumerate() && { return EnumerateIter<Derived>(std::move(self())); }
+    template <typename I2> requires Iterator<I2> constexpr auto zip(I2&& i2) && { return ZipIter<Derived, I2>(std::move(self()), std::forward<I2>(i2)); }
     template <typename F> constexpr auto inspect(F&& f) && { return InspectIter<Derived, std::decay_t<F>>(std::move(self()), std::forward<F>(f)); }
 
     // ---- Iterator Reductions --------------------------------------------------------------------------------------------------------------------------------
@@ -231,14 +276,14 @@ public:
 
     template <typename P> constexpr auto all(P&& pred) -> bool {
         while (auto v = self().next()) {
-            if (!pred(asLvalueRef(std::move(v.unwrap())))) return false;
+            if (!pred(asLvalueRef(v.unwrap()))) return false;
         }
         return true;
     }
 
     template <typename P> constexpr auto any(P&& pred) -> bool {
         while (auto v = self().next()) {
-            if (pred(asLvalueRef(std::move(v.unwrap())))) return true;
+            if (pred(asLvalueRef(v.unwrap()))) return true;
         }
         return false;
     }
