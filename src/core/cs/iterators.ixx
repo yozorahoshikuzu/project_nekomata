@@ -88,9 +88,6 @@ template <typename K, typename V> constexpr auto mapArgs(KeyValue<K*, V> x) -> K
 template <typename K, typename V> constexpr auto mapArgs(KeyValue<K, V*> x) -> KeyValue<K&, V&> { return {x.key, *x.value}; }
 template <typename K, typename V> constexpr auto mapArgs(KeyValue<K*, V*> x) -> KeyValue<K&, V&> { return {*x.key, *x.value}; }
 
-template <typename T> constexpr auto deref(T&& x) -> DerefT<T> { return x; }
-template <typename T> constexpr auto deref(T* x) -> DerefT<T*> { return *x; }
-
 
 // ---- Basic Iterators ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -220,7 +217,7 @@ public:
         using Item = typename Derived::Item;
         using ValueType = DerefT<Item>;
         ValueType sum = ValueType(0);
-        while (auto v = self().next()) sum = std::move(sum) + deref(std::move(v.unwrap()));
+        while (auto v = self().next()) sum = std::move(sum) + mapArgs(std::move(v.unwrap()));
         return sum;
     }
 
@@ -228,7 +225,7 @@ public:
         using Item = typename Derived::Item;
         using ValueType = DerefT<Item>;
         ValueType prod = ValueType(1);
-        while (auto v = self().next()) prod = std::move(prod) * deref(std::move(v.unwrap()));
+        while (auto v = self().next()) prod = std::move(prod) * mapArgs(std::move(v.unwrap()));
         return prod;
     }
 
