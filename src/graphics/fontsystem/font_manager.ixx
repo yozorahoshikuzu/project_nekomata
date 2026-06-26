@@ -35,7 +35,7 @@ struct FontRasterInfo {
     std::span<const FontRasterBatch> batches;
     rendering::DynamicBitmapFontAtlas& atlas;
     // the u32 is the index in the font atlas image array
-    std::unordered_map<u32, Vec<vk::BufferImageCopy2>>& copyRegions;
+    HashMap<u32, Vec<vk::BufferImageCopy2>>& copyRegions;
     Vec<u8>& resultBuffer;
     Vec<u32>& newImageIndices;
 };

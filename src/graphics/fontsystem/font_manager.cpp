@@ -140,6 +140,7 @@ auto FontManager::rasterizeGlyphs(FontRasterInfo rasterInfo) -> void {
                 .setImageOffset({imageOffset.x(), imageOffset.y(), 0})
                 .setImageSubresource({vk::ImageAspectFlagBits::eColor, 0, 0, 1});
 
+            if (!rasterInfo.copyRegions.contains(imageIndex)) rasterInfo.copyRegions.insert(imageIndex, Vec<vk::BufferImageCopy2>::create());
             rasterInfo.copyRegions[imageIndex].emplace(bufferImageCopy);
             for (u32 row = 0; row < imageHeight; row++) {
                 memcpy(

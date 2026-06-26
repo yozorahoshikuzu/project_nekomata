@@ -142,7 +142,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     if (!all_texts_iter.isEmpty()) {
         auto pixelBuffer = Vec<u8>::create();
         auto newImageIndices = Vec<u32>::create();
-        std::unordered_map<u32, Vec<vk::BufferImageCopy2>> bufferImageCopyRegions;
+        auto bufferImageCopyRegions = HashMap<u32, Vec<vk::BufferImageCopy2>>::create();
         fonts::FontRasterInfo rasterInfo = { all_texts_iter, sharedRenderingResources.m_fontAtlas, bufferImageCopyRegions, pixelBuffer, newImageIndices };
         fonts::FontManager::get().rasterizeGlyphs(rasterInfo);
 
@@ -153,7 +153,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
             // Prepare for copy
             auto barriers = VulkanPipelineBarriers::builder();
-            for (const auto& atlasImageIndex : bufferImageCopyRegions | std::views::keys) {
+            for (const auto& atlasImageIndex : bufferImageCopyRegions.keys()) {
                 // For images that are newly created, transition from eUndefined instead
                 if (std::ranges::find(newImageIndices, atlasImageIndex) != newImageIndices.end()) {
                     barriers.insertImageMemoryBarrier(sharedRenderingResources.m_fontAtlas.m_atlasTextures[atlasImageIndex].image,
@@ -172,7 +172,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
             barriers.flush(m_frameRenderingResources.commandBuffer());
 
             // Run copies
-            for (const auto& [atlasImageIndex, regions] : bufferImageCopyRegions) {
+            for (const auto& [atlasImageIndex, regions] : bufferImageCopyRegions.iter()) {
                 auto copyInfo = vk::CopyBufferToImageInfo2{}
                     .setDstImage(sharedRenderingResources.m_fontAtlas.m_atlasTextures[atlasImageIndex].image.vkImage())
                     .setDstImageLayout(vk::ImageLayout::eTransferDstOptimal)
@@ -184,7 +184,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
             // Prepare for usage
             auto barriers2 = VulkanPipelineBarriers::builder();
-            for (const auto& atlasImageIndex : bufferImageCopyRegions | std::views::keys) {
+            for (const auto& atlasImageIndex : bufferImageCopyRegions.keys()) {
                 barriers2.insertImageMemoryBarrier(sharedRenderingResources.m_fontAtlas.m_atlasTextures[atlasImageIndex].image,
                     vk::ImageLayout::eTransferDstOptimal, vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferWrite,
                     vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderRead
