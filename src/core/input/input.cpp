@@ -15,6 +15,7 @@ auto Input::create() -> std::unique_ptr<Input> {
 auto Input::handleNewFrame(SdlWindow& window) -> void {
     memset(m_thisFramePressedKeyCounts, 0, sizeof(m_thisFramePressedKeyCounts));
     memset(m_thisFrameReleasedKeyCounts, 0, sizeof(m_thisFrameReleasedKeyCounts));
+    m_keyEventsThisFrame.clear();
 
     if (m_systemCurrentMouseMode != m_mouseMode) {
         switch (m_mouseMode) {
@@ -30,6 +31,9 @@ auto Input::handleNewFrame(SdlWindow& window) -> void {
 
         m_systemCurrentMouseMode = m_mouseMode;
     }
+}
+auto Input::insertInputKeyEvent(InputKeyEvent&& event) -> void {
+    m_keyEventsThisFrame.emplace(std::move(event));
 }
 
 auto Input::setKeyState(Key x, bool state) -> void {

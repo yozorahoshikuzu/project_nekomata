@@ -37,6 +37,7 @@ private:
     std::unique_ptr<ui::UiSystem> m_uiSystem = nullptr;
 
     u64 m_frameIndex = 0;
+    bool injectOverlay = false;
 };
 
 }

@@ -78,8 +78,7 @@ auto RenderThread::loop() -> void {
     }
     auto timeSinceStart = std::chrono::duration<float>(currentTime - m_timeAtStart).count();
 
-    bool injectOverlay = true;
-    if (injectOverlay) {
+    if (m_mrSharedData->m_leafs.getSecondary().injectOverlay) {
         auto& physicalDeviceProps = VulkanContext::get().vkPhysicalDeviceProps();
         std::string vramStr;
         if (physicalDeviceProps.m_hasExtMemoryBudget) {

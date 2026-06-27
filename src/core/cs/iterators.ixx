@@ -1,3 +1,5 @@
+module;
+#include <cstddef>
 export module nekomata2:core.cs.iterators;
 import std;
 import :core.platform.int_def;
@@ -67,8 +69,8 @@ private:
 
 
 template <typename T> struct NicheValue<IteratorInternalNonNullPtr<T>> {
-    static IteratorInternalNonNullPtr<T> niche() { return IteratorInternalNonNullPtr<T>(NicheValue<NonNullPtr<T>>::niche()); }
-    static bool isNiche(const IteratorInternalNonNullPtr<T>& ptr) { return NicheValue<NonNullPtr<T>>::isNiche(ptr.ptr); }
+    static auto setNiche(u8* storage) { NicheValue<NonNullPtr<T>>::setNiche(storage); }
+    static bool matchesNiche(const u8* storage) { return NicheValue<NonNullPtr<T>>::matchesNiche(storage); }
 };
 
 template <typename T> struct Enumerand {
@@ -76,8 +78,8 @@ template <typename T> struct Enumerand {
 };
 
 template <typename T> requires HasNiche<T> struct NicheValue<Enumerand<T>> {
-    static Enumerand<T> niche() { return Enumerand<T>(0, NicheValue<T>::niche()); }
-    static bool isNiche(const Enumerand<T>& ptr) { return NicheValue<T>::isNiche(ptr.value); }
+    static auto setNiche(u8* storage) { NicheValue<T>::setNiche(storage + offsetof(Enumerand<T>, value)); }
+    static bool matchesNiche(const u8* storage) { return NicheValue<T>::matchesNiche(storage + offsetof(Enumerand<T>, value)); }
 };
 
 export template <typename K, typename V> struct KeyValue {
@@ -85,15 +87,15 @@ export template <typename K, typename V> struct KeyValue {
 };
 
 template <typename K, typename V> requires HasNiche<K> struct NicheValue<KeyValue<K, V>> {
-    alignas(V) inline static u8 m_invalidV[sizeof(V)] = {};
-    static KeyValue<K,V> niche() { return KeyValue<K,V>(NicheValue<K>::niche(), *reinterpret_cast<V*>(m_invalidV)); }
-    static bool isNiche(const KeyValue<K, V>& ptr) { return NicheValue<K>::isNiche(ptr.key); }
+    using KV = KeyValue<K, V>;
+    static auto setNiche(u8* storage) { NicheValue<K>::setNiche(storage + offsetof(KV, key)); }
+    static bool matchesNiche(const u8* storage) { return NicheValue<K>::matchesNiche(storage + offsetof(KV, key)); }
 };
 
 template <typename K, typename V> requires (!HasNiche<K> && HasNiche<V>) struct NicheValue<KeyValue<K, V>> {
-    alignas(K) inline static u8 m_invalidK[sizeof(K)] = {};
-    static KeyValue<K,V> niche() { return KeyValue<K,V>(*reinterpret_cast<K*>(m_invalidK), NicheValue<V>::niche()); }
-    static bool isNiche(const KeyValue<K, V>& ptr) { return NicheValue<V>::isNiche(ptr.value); }
+    using KV = KeyValue<K, V>;
+    static auto setNiche(u8* storage) { NicheValue<V>::setNiche(storage + offsetof(KV, value)); }
+    static bool matchesNiche(const u8* storage) { return NicheValue<V>::matchesNiche(storage + offsetof(KV, value)); }
 };
 
 // ---- Reference Resolve --------------------------------------------------------------------------------------------------------------------------------------
@@ -102,7 +104,7 @@ export template <typename T> struct IteratorElementResolveBehavior;
 template <typename T> struct IteratorElementResolveBehavior {
     using IntoLambdaByRef  = T&;
     using IntoLambdaByMove = T&&;
-    using OwnedType        = T;
+    using OwnedType        = std::remove_cvref_t<T>;
 
     constexpr static auto intoLambdaByRef(T& x) -> IntoLambdaByRef { return x; }
     constexpr static auto intoLambdaByMove(T&& x) -> IntoLambdaByMove { return std::forward<T>(x); }
@@ -111,7 +113,7 @@ template <typename T> struct IteratorElementResolveBehavior {
 template <typename T> struct IteratorElementResolveBehavior<IteratorInternalPtr<T>> {
     using IntoLambdaByRef =  T&;
     using IntoLambdaByMove = T&;
-    using OwnedType        = T;
+    using OwnedType        = std::remove_cvref_t<T>;
 
     constexpr static auto intoLambdaByRef(IteratorInternalPtr<T> x) -> IntoLambdaByRef { return *x; }
     constexpr static auto intoLambdaByMove(IteratorInternalPtr<T> x) -> IntoLambdaByMove { return *x; }
@@ -120,7 +122,7 @@ template <typename T> struct IteratorElementResolveBehavior<IteratorInternalPtr<
 template <typename T> struct IteratorElementResolveBehavior<IteratorInternalNonNullPtr<T>> {
     using IntoLambdaByRef =  T&;
     using IntoLambdaByMove = T&;
-    using OwnedType        = T;
+    using OwnedType        = std::remove_cvref_t<T>;
 
     constexpr static auto intoLambdaByRef(IteratorInternalNonNullPtr<T> x) -> IntoLambdaByRef { return *x; }
     constexpr static auto intoLambdaByMove(IteratorInternalNonNullPtr<T> x) -> IntoLambdaByMove { return *x; }

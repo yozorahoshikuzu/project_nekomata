@@ -22,6 +22,7 @@ struct MRThreadsSharedDataLeaf {
     Vec<u32> m_textureToSamplerShaderIndexSnapshot = Vec<u32>::fromValue(4096, 0);
     Vec<ui::UiDrawCmd> m_uiDrawCmds                = Vec<ui::UiDrawCmd>::create();
     bool m_hasValidFrame = false;
+    bool injectOverlay = false;
 };
 
 class MRThreadsSharedData {

@@ -76,12 +76,16 @@ auto MainThread::loop(float dt) -> void {
         }
         case SDL_EVENT_KEY_DOWN: {
             auto code = core::input::mapSdlKeyToKey(event.key.key);
+            auto mod = core::input::mapSdlKeyModToKeyMod(event.key.mod);
             m_inputManager->setKeyState(code, true);
+            m_inputManager->insertInputKeyEvent(core::input::InputKeyEvent{code, mod, true, event.key.repeat});
             break;
         }
         case SDL_EVENT_KEY_UP: {
             auto code = core::input::mapSdlKeyToKey(event.key.key);
+            auto mod = core::input::mapSdlKeyModToKeyMod(event.key.mod);
             m_inputManager->setKeyState(code, false);
+            m_inputManager->insertInputKeyEvent(core::input::InputKeyEvent{code, mod, false, event.key.repeat});
             break;
         }
         case SDL_EVENT_MOUSE_BUTTON_DOWN: {
@@ -104,6 +108,18 @@ auto MainThread::loop(float dt) -> void {
     }
     m_inputManager->setMouseDelta(totalMouseDelta);
 
+    // ---- Renderer overlay control ---------------------------------------------------------------------------------------------------------------------------
+
+    auto specialKeyPressed = m_inputManager->keyEventsThisFrame().iter()
+        .find([](const auto& x) {
+            bool hasAltMod = (x.modifiers & core::input::KeyModifierFlags::LAlt) != core::input::KeyModifierFlags::None;
+            return x.key == core::input::Key::F12 && x.state && (!x.isRepeat) && hasAltMod;
+        })
+        .isSome();
+    if (specialKeyPressed) {
+        injectOverlay = !injectOverlay;
+    }
+
     m_currentWorld->scriptsUpdate(dt);
 
     m_mrSharedData->m_leafs.getPrimary().m_currentWindowExtent = m_sdlWindow.vulkanGetDrawableSize();
@@ -121,6 +137,7 @@ auto MainThread::loop(float dt) -> void {
     ui::UiSystem::get().getRoot().buildDrawCmds(m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds, logicalSizeFloat, math::Vector2f(0.0f), logicalSizeFloat);
 
     m_mrSharedData->m_leafs.getPrimary().m_hasValidFrame = true;
+    m_mrSharedData->m_leafs.getPrimary().injectOverlay = injectOverlay;
 
     m_frameIndex++;
 }

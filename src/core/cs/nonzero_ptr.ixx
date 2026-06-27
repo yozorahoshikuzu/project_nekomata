@@ -1,5 +1,6 @@
 export module nekomata2:core.cs.nonzero_ptr;
 import :core.cs.niche;
+import :core.cs.option;
 
 export template <typename T> class NonNullPtr {
 public:
@@ -30,6 +31,7 @@ private:
 };
 
 template <typename T> struct NicheValue<NonNullPtr<T>> {
-    static NonNullPtr<T> niche() { return NonNullPtr<T>(nullptr); }
-    static bool isNiche(const NonNullPtr<T>& ptr) { return ptr.m_ptr == nullptr; }
+    static auto setNiche(u8* storage) { std::memset(storage, 0, sizeof(NonNullPtr<T>)); }
+    static bool matchesNiche(const u8* storage) { u8* nullptrBits = nullptr; return std::memcmp(storage, &nullptrBits, sizeof(NonNullPtr<T>)) == 0; }
 };
+static_assert(sizeof(Option<NonNullPtr<u32>>) == 8, "NonNullPtr should have a working niche");

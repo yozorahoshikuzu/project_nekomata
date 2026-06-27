@@ -1,5 +1,6 @@
 export module nekomata2:core.cs.niche;
 import std;
+import :core.platform.int_def;
 
 /// Niche values are used to optimize the representation of objects potentially containing an object that has a niche value, to avoid having to store a
 /// discriminator to identify whether the object is present or not.
@@ -12,7 +13,7 @@ import std;
 /// directly.
 export template <typename T, typename = void> struct NicheValue {};
 
-template <typename T> concept HasNiche = requires {
-    { NicheValue<T>::niche() }                           -> std::same_as<T>;
-    { NicheValue<T>::isNiche(std::declval<const T&>()) } -> std::same_as<bool>;
+template <typename T> concept HasNiche = requires (u8* storage) {
+    { NicheValue<T>::setNiche(storage) } -> std::convertible_to<void>;
+    { NicheValue<T>::matchesNiche(storage) } -> std::convertible_to<bool>;
 };

@@ -171,7 +171,7 @@ math::Vector2f pixelsToNDC(math::Vector2f px, math::Vector2f screenSize) {
 }
 
 auto FontManager::shapeText(FontFace font, rendering::DynamicBitmapFontAtlas& atlas, std::string_view text, u32 pixelSize, math::Vector2f baselineStartPos, math::Vector2f screenSize)
-    -> std::vector<GlyphInstance> {
+    -> Vec<GlyphInstance> {
     std::shared_lock lock(m_registryMutex);
     auto& fontEntry = *m_fontEntries[font.handleIndex];
     if (!fontEntry.isLoaded) return {};
@@ -180,7 +180,7 @@ auto FontManager::shapeText(FontFace font, rendering::DynamicBitmapFontAtlas& at
     FT_Set_Pixel_Sizes(fontEntry.face, 0, pixelSize);
     bool hasKerning = FT_HAS_KERNING(fontEntry.face);
 
-    std::vector<GlyphInstance> glyphInstances;
+    auto glyphInstances = Vec<GlyphInstance>::withCapacity(text.size());
 
     math::Vector2f cursor = baselineStartPos;
     u32 previousGlyphIndex = 0;
@@ -227,7 +227,7 @@ auto FontManager::shapeText(FontFace font, rendering::DynamicBitmapFontAtlas& at
         inst.texcoordStart = param.texcoordStart;
         inst.texcoordEnd   = param.texcoordEnd;
         inst.imageShaderIndex  = param.imageShaderIndex;
-        glyphInstances.push_back(inst);
+        glyphInstances.emplace(inst);
 
         cursor.x() += param.advance;
         previousGlyphIndex = glyphId;

@@ -26,6 +26,28 @@ enum class Key {
 };
 constexpr auto kKeyDiscrimsCount = static_cast<u32>(Key::CountDiscrim);
 
+enum class KeyModifierFlags : u32 {
+    None = 0x0,
+    LShift = 0x1,
+    RShift = 0x2,
+    AnyShift = LShift | RShift,
+    LControl = 0x4,
+    RControl = 0x8,
+    AnyControl = LControl | RControl,
+    LAlt = 0x10,
+    RAlt = 0x20,
+    AnyAlt = LAlt | RAlt,
+    LSystem = 0x40,
+    RSystem = 0x80,
+    AnySystem = LSystem | RSystem,
+    CapsLock = 0x100,
+};
+constexpr auto operator|(KeyModifierFlags lhs, KeyModifierFlags rhs) -> KeyModifierFlags { return static_cast<KeyModifierFlags>(static_cast<u32>(lhs) | static_cast<u32>(rhs)); }
+constexpr auto operator|=(KeyModifierFlags& lhs, KeyModifierFlags rhs) -> KeyModifierFlags& { lhs = static_cast<KeyModifierFlags>(static_cast<u32>(lhs) | static_cast<u32>(rhs)); return lhs; }
+constexpr auto operator&(KeyModifierFlags lhs, KeyModifierFlags rhs) -> KeyModifierFlags { return static_cast<KeyModifierFlags>(static_cast<u32>(lhs) & static_cast<u32>(rhs)); }
+constexpr auto operator&=(KeyModifierFlags& lhs, KeyModifierFlags rhs) -> KeyModifierFlags& { lhs = static_cast<KeyModifierFlags>(static_cast<u32>(lhs) & static_cast<u32>(rhs)); return lhs; }
+constexpr auto operator~(KeyModifierFlags x) -> KeyModifierFlags { return static_cast<KeyModifierFlags>(~static_cast<u32>(x)); }
+
 constexpr auto mapSdlKeyToKey(SDL_Keycode keycode) -> Key {
     switch (keycode) {
     case SDLK_0: return Key::Digit0;
@@ -158,6 +180,20 @@ constexpr auto mapSdlMouseButtonToKey(u8 sdlMouseCode) -> Key {
     }
     log::warn("unhandled mouse button code: {}", sdlMouseCode);
     return Key::CountDiscrim;
+}
+
+constexpr auto mapSdlKeyModToKeyMod(u32 sdlKeyMod) -> KeyModifierFlags {
+    auto result = KeyModifierFlags::None;
+    if (sdlKeyMod & SDL_KMOD_LSHIFT) result |= KeyModifierFlags::LShift;
+    if (sdlKeyMod & SDL_KMOD_RSHIFT) result |= KeyModifierFlags::RShift;
+    if (sdlKeyMod & SDL_KMOD_LCTRL) result |= KeyModifierFlags::LControl;
+    if (sdlKeyMod & SDL_KMOD_RCTRL) result |= KeyModifierFlags::RControl;
+    if (sdlKeyMod & SDL_KMOD_LALT) result |= KeyModifierFlags::LAlt;
+    if (sdlKeyMod & SDL_KMOD_RALT) result |= KeyModifierFlags::RAlt;
+    if (sdlKeyMod & SDL_KMOD_LGUI) result |= KeyModifierFlags::LSystem;
+    if (sdlKeyMod & SDL_KMOD_RGUI) result |= KeyModifierFlags::RSystem;
+    if (sdlKeyMod & SDL_KMOD_CAPS) result |= KeyModifierFlags::CapsLock;
+    return result;
 }
 
 }

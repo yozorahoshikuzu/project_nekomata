@@ -11,17 +11,25 @@ public:
     static constexpr bool kIsCopyable = std::is_copy_constructible_v<T>;
     static constexpr bool kIsMovable = std::is_move_constructible_v<T>;
 
-    static auto none() -> Option<T> { return Option<T>(); }
-    static auto some(T value) -> Option<T> { return Option<T>(std::move(value)); }
+    constexpr static auto none() -> Option<T> { return Option<T>(); }
+    constexpr static auto some(const T& value) -> Option<T> { return Option<T>(value); }
+    constexpr static auto some(T&& value) -> Option<T> { return Option<T>(std::forward<T>(value)); }
 
-    Option(const Option& other) requires kIsCopyable {
+    template <typename F> constexpr static auto someIf(bool cond, F&& f) -> Option<T>
+        requires std::invocable<F> && std::same_as<std::invoke_result_t<F>, T>
+    {
+        if (cond) return some(f());
+        return none();
+    }
+
+    constexpr Option(const Option& other) requires kIsCopyable {
         if (other.isSome()) {
             storeObj(*other.ptr());
         } else {
             storeNone();
         }
     }
-    Option& operator=(const Option& other) requires kIsCopyable {
+    constexpr Option& operator=(const Option& other) requires kIsCopyable {
         if (this == &other) return *this;
         reset();
         if (other.isSome()) {
@@ -58,7 +66,7 @@ public:
 
 
     constexpr auto isSome() const -> bool {
-        if constexpr (HasNiche<T>) return !NicheValue<T>::isNiche(*ptr());
+        if constexpr (HasNiche<T>) return !NicheValue<T>::matchesNiche(m_storage);
         else return m_isSome;
     }
     constexpr auto isNone() const -> bool { return !isSome(); }
@@ -95,13 +103,14 @@ public:
 
 private:
     constexpr Option() { storeNone(); }
-    constexpr Option(T value) { storeObj(std::move(value)); }
+    constexpr Option(const T& value) { storeObj(value); }
+    constexpr Option(T&& value) { storeObj(std::forward<T>(value)); }
 
     constexpr auto ptr() -> T* { return reinterpret_cast<T*>(&m_storage); }
     constexpr auto ptr() const -> const T* { return reinterpret_cast<const T*>(&m_storage); }
 
     constexpr auto storeNone() {
-        if constexpr (HasNiche<T>) new (ptr()) T(NicheValue<T>::niche());
+        if constexpr (HasNiche<T>) NicheValue<T>::setNiche(m_storage);
         else m_isSome = false;
     }
 
