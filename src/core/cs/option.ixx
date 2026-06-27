@@ -12,11 +12,10 @@ public:
     static constexpr bool kIsMovable = std::is_move_constructible_v<T>;
 
     static auto none() -> Option<T> { return Option<T>(); }
-    static auto some(const T& value) -> Option<T> { return Option<T>(value); }
-    static auto some(T&& value) -> Option<T> { return Option<T>(std::forward<T>(value)); }
+    static auto some(T value) -> Option<T> { return Option<T>(std::move(value)); }
 
     Option(const Option& other) requires kIsCopyable {
-        if (other.m_isSome) {
+        if (other.isSome()) {
             storeObj(*other.ptr());
         } else {
             storeNone();
@@ -65,12 +64,25 @@ public:
     constexpr auto isNone() const -> bool { return !isSome(); }
     constexpr explicit operator bool() const { return isSome(); }
 
-    constexpr auto unwrap() const -> const T& {
+    constexpr auto unwrap() const& -> const T& {
         if (isNone()) __builtin_trap();
         return *ptr();
     }
-    constexpr auto unwrap() -> T& {
+    constexpr auto unwrap() & -> T& {
         if (isNone()) __builtin_trap();
+        return *ptr();
+    }
+    constexpr auto unwrap() && -> T {
+        if (isNone()) __builtin_trap();
+        return std::move(*ptr());
+    }
+
+    constexpr auto unwrapOr(const T& other) const -> const T& {
+        if (isNone()) return other;
+        return *ptr();
+    }
+    constexpr auto unwrapOr(T&& other) -> T& {
+        if (isNone()) return other;
         return *ptr();
     }
 
@@ -83,8 +95,7 @@ public:
 
 private:
     constexpr Option() { storeNone(); }
-    constexpr explicit Option(const T& value) { storeObj(value); }
-    constexpr explicit Option(T&& value) { storeObj(std::move(value)); }
+    constexpr Option(T value) { storeObj(std::move(value)); }
 
     constexpr auto ptr() -> T* { return reinterpret_cast<T*>(&m_storage); }
     constexpr auto ptr() const -> const T* { return reinterpret_cast<const T*>(&m_storage); }

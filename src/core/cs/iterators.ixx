@@ -5,6 +5,27 @@ import :core.cs.nonzero_ptr;
 import :core.cs.option;
 import :core.log;
 
+// ---- Helper Concepts ----------------------------------------------------------------------------------------------------------------------------------------
+
+template <typename Fn, typename ReturnType, typename... Args> concept TypedInvocable = std::invocable<Fn, Args...> && std::same_as<std::invoke_result_t<Fn, Args...>, ReturnType>;
+template <typename Fn, typename... Args> concept TypedInvocableNoRet = std::invocable<Fn, Args...>;
+
+template <typename> struct IsOption : std::false_type {};
+template <typename T> struct IsOption<Option<T>> : std::true_type {};
+template <typename T> concept OptionType = IsOption<std::remove_cvref_t<T>>::value;
+
+template <typename T> concept Ord = requires(T t) {
+    { t <  t } -> std::convertible_to<bool>;
+};
+
+template <typename T, typename Other, typename Output> concept Add = requires(T t, Other other, Output output) {
+    { t + other } -> std::convertible_to<Output>;
+};
+
+template <typename T, typename Other, typename Output> concept Prod = requires(T t, Other other, Output output) {
+    { t * other } -> std::convertible_to<Output>;
+};
+
 // ---- Iterator Trait  ----------------------------------------------------------------------------------------------------------------------------------------
 
 export template <typename T> concept Iterator = requires(T t) {
@@ -13,6 +34,42 @@ export template <typename T> concept Iterator = requires(T t) {
 };
 
 // ---- Iterator Builtins --------------------------------------------------------------------------------------------------------------------------------------
+
+export template <typename T> struct IteratorInternalPtr {
+    T* ptr;
+    explicit constexpr IteratorInternalPtr(T* ptr) : ptr(ptr) {}
+
+    constexpr auto get()        const noexcept -> T* { return ptr; }
+    constexpr auto operator*()  const noexcept -> T& { return *ptr; }
+    constexpr auto operator->() const noexcept -> T* { return ptr; }
+
+    constexpr auto operator==(const IteratorInternalPtr& other) const noexcept -> bool { return ptr == other.ptr; }
+    constexpr auto operator!=(const IteratorInternalPtr& other) const noexcept -> bool { return ptr != other.ptr; }
+    constexpr auto operator< (const IteratorInternalPtr& other) const noexcept -> bool { return ptr <  other.ptr; }
+};
+
+export template <typename T> class IteratorInternalNonNullPtr {
+public:
+    NonNullPtr<T> ptr;
+    explicit constexpr IteratorInternalNonNullPtr(NonNullPtr<T> ptr) : ptr(ptr) {}
+
+    constexpr auto get()        const noexcept -> T* { return ptr; }
+    constexpr auto operator*()  const noexcept -> T& { return *ptr; }
+    constexpr auto operator->() const noexcept -> T* { return ptr; }
+
+    constexpr auto operator==(const IteratorInternalNonNullPtr& other) const noexcept -> bool { return ptr == other.ptr; }
+    constexpr auto operator!=(const IteratorInternalNonNullPtr& other) const noexcept -> bool { return ptr != other.ptr; }
+    constexpr auto operator< (const IteratorInternalNonNullPtr& other) const noexcept -> bool { return ptr <  other.ptr; }
+
+private:
+    friend struct NicheValue<IteratorInternalNonNullPtr<T>>;
+};
+
+
+template <typename T> struct NicheValue<IteratorInternalNonNullPtr<T>> {
+    static IteratorInternalNonNullPtr<T> niche() { return IteratorInternalNonNullPtr<T>(NicheValue<NonNullPtr<T>>::niche()); }
+    static bool isNiche(const IteratorInternalNonNullPtr<T>& ptr) { return NicheValue<NonNullPtr<T>>::isNiche(ptr.ptr); }
+};
 
 template <typename T> struct Enumerand {
     usize index; T value;
@@ -41,80 +98,73 @@ template <typename K, typename V> requires (!HasNiche<K> && HasNiche<V>) struct 
 
 // ---- Reference Resolve --------------------------------------------------------------------------------------------------------------------------------------
 
-export template <typename T> struct AsLvalueRef;
-template <typename T> struct AsLvalueRef<T&> {
-    using type = T&;
+export template <typename T> struct IteratorElementResolveBehavior;
+template <typename T> struct IteratorElementResolveBehavior {
+    using IntoLambdaByRef  = T&;
+    using IntoLambdaByMove = T&&;
+    using OwnedType        = T;
 
-    constexpr static auto asLvalueRef(T& x) -> type { return x; }
+    constexpr static auto intoLambdaByRef(T& x) -> IntoLambdaByRef { return x; }
+    constexpr static auto intoLambdaByMove(T&& x) -> IntoLambdaByMove { return std::forward<T>(x); }
+    constexpr static auto ownedType(T&& x) -> OwnedType { return std::forward<T>(x); }
 };
-template <typename T> struct AsLvalueRef<T*> {
-    using type = T&;
+template <typename T> struct IteratorElementResolveBehavior<IteratorInternalPtr<T>> {
+    using IntoLambdaByRef =  T&;
+    using IntoLambdaByMove = T&;
+    using OwnedType        = T;
 
-    constexpr static auto asLvalueRef(T* x) -> type { return *x; }
+    constexpr static auto intoLambdaByRef(IteratorInternalPtr<T> x) -> IntoLambdaByRef { return *x; }
+    constexpr static auto intoLambdaByMove(IteratorInternalPtr<T> x) -> IntoLambdaByMove { return *x; }
+    constexpr static auto ownedType(IteratorInternalPtr<T> x) -> OwnedType { return *x; }
 };
-template <typename T> struct AsLvalueRef<NonNullPtr<T>> {
-    using type = T&;
+template <typename T> struct IteratorElementResolveBehavior<IteratorInternalNonNullPtr<T>> {
+    using IntoLambdaByRef =  T&;
+    using IntoLambdaByMove = T&;
+    using OwnedType        = T;
 
-    constexpr static auto asLvalueRef(NonNullPtr<T> x) -> type { return *x; }
+    constexpr static auto intoLambdaByRef(IteratorInternalNonNullPtr<T> x) -> IntoLambdaByRef { return *x; }
+    constexpr static auto intoLambdaByMove(IteratorInternalNonNullPtr<T> x) -> IntoLambdaByMove { return *x; }
+    constexpr static auto ownedType(IteratorInternalNonNullPtr<T> x) -> OwnedType { return *x; }
 };
-template <typename T> struct AsLvalueRef<Enumerand<T>> {
-    using type = Enumerand<typename AsLvalueRef<T>::type>;
+template <typename T> struct IteratorElementResolveBehavior<Enumerand<T>> {
+    using Inner = IteratorElementResolveBehavior<T>;
+    using IntoLambdaByRef  = Enumerand<typename Inner::IntoLambdaByRef>;
+    using IntoLambdaByMove = Enumerand<typename Inner::IntoLambdaByMove>;
+    using OwnedType        = Enumerand<typename Inner::OwnedType>;
 
-    constexpr static auto asLvalueRef(Enumerand<T> x) -> type { return {x.index, AsLvalueRef<T>::asLvalueRef(x.value) }; }
+    constexpr static auto intoLambdaByRef(Enumerand<T> x) -> IntoLambdaByRef { return { x.index, Inner::intoLambdaByRef(x.value) }; }
+    constexpr static auto intoLambdaByMove(Enumerand<T> x) -> IntoLambdaByMove { return { x.index, Inner::intoLambdaByMove(std::move(x.value)) }; }
+    constexpr static auto ownedType(Enumerand<T> x) -> OwnedType { return { x.index, Inner::ownedType(std::move(x.value)) }; }
 };
-template <typename K, typename V> struct AsLvalueRef<KeyValue<K, V>> {
-    using type = KeyValue<typename AsLvalueRef<K>::type, typename AsLvalueRef<V>::type>;
+template <typename K, typename V> struct IteratorElementResolveBehavior<KeyValue<K, V>> {
+    using InnerK = IteratorElementResolveBehavior<K>;
+    using InnerV = IteratorElementResolveBehavior<V>;
+    using IntoLambdaByRef  = KeyValue<typename InnerK::IntoLambdaByRef, typename InnerV::IntoLambdaByRef>;
+    using IntoLambdaByMove = KeyValue<typename InnerK::IntoLambdaByMove, typename InnerV::IntoLambdaByMove>;
+    using OwnedType        = KeyValue<typename InnerK::OwnedType, typename InnerV::OwnedType>;
 
-    constexpr static auto asLvalueRef(KeyValue<K, V> x) -> type { return {AsLvalueRef<K>::asLvalueRef(x.key), AsLvalueRef<V>::asLvalueRef(x.value) }; }
+    constexpr static auto intoLambdaByRef(KeyValue<K, V> x) -> IntoLambdaByRef { return { InnerK::intoLambdaByRef(x.key), InnerV::intoLambdaByRef(x.value) }; }
+    constexpr static auto intoLambdaByMove(KeyValue<K, V> x) -> IntoLambdaByMove { return { InnerK::intoLambdaByMove(std::move(x.key)), InnerV::intoLambdaByMove(std::move(x.value)) }; }
+    constexpr static auto ownedType(KeyValue<K, V> x) -> OwnedType { return { InnerK::ownedType(std::move(x.key)), InnerV::ownedType(std::move(x.value)) }; }
 };
-template <typename T> using AsLvalueRefT = typename AsLvalueRef<T>::type;
+template <typename T> using IntoLambdaByRefT = typename IteratorElementResolveBehavior<T>::IntoLambdaByRef;
+template <typename T> using IntoLambdaByMoveT = typename IteratorElementResolveBehavior<T>::IntoLambdaByMove;
+template <typename T> using OwnedTypeT = typename IteratorElementResolveBehavior<T>::OwnedType;
 
-template <typename T> constexpr auto asLvalueRef(T& x) -> AsLvalueRefT<T> {
-    return AsLvalueRef<T>::asLvalueRef(x);
-}
+template <typename T> constexpr auto intoLambdaByRef(T& x) -> IntoLambdaByRefT<T> { return IteratorElementResolveBehavior<T>::intoLambdaByRef(x); }
+template <typename T> constexpr auto intoLambdaByMove(T&& x) -> IntoLambdaByMoveT<T> { return IteratorElementResolveBehavior<T>::intoLambdaByMove(std::forward<T>(x)); }
+template <typename T> constexpr auto ownedType(T&& x) -> OwnedTypeT<T> { return IteratorElementResolveBehavior<T>::ownedType(std::forward<T>(x)); }
 
 // ---- Pointer/Optional Resolve -------------------------------------------------------------------------------------------------------------------------------
 
-export template <typename T> struct Deref { using type = std::remove_pointer_t<std::remove_reference_t<T>>; };
-template<typename T> struct Deref<NonNullPtr<T>> { using type = T; };
-template <typename T> using DerefT = typename Deref<T>::type;
+export template <typename T> struct IteratorInternalDeref { using type = T; };
+template <typename T> struct IteratorInternalDeref<IteratorInternalPtr<T>> { using type = T; };
+template <typename T> struct IteratorInternalDeref<IteratorInternalNonNullPtr<T>> { using type = T; };
+template <typename T> using IteratorInternalDerefT = typename IteratorInternalDeref<T>::type;
 
 template <typename T> struct UnwrapOption;
 template <typename T> struct UnwrapOption<Option<T>> { using type = T; };
 template <typename T> using UnwrapOptionT = typename UnwrapOption<T>::type;
-
-// ---- Arg Reference Resolve ----------------------------------------------------------------------------------------------------------------------------------
-
-template <typename T> struct AsArgMapRef;
-template <typename T> struct AsArgMapRef<T&&> {
-    using type = T&&;
-
-    constexpr static auto asArgMapRef(T&& x) -> type { return std::forward<T>(x); }
-};
-template <typename T> struct AsArgMapRef<T*> {
-    using type = T&;
-
-    constexpr static auto asArgMapRef(T* x) -> type { return *x; }
-};
-template <typename T> struct AsArgMapRef<NonNullPtr<T>> {
-    using type = T&;
-
-    constexpr static auto asArgMapRef(NonNullPtr<T> x) -> type { return *x; }
-};
-template <typename T> struct AsArgMapRef<Enumerand<T>> {
-    using type = Enumerand<typename AsArgMapRef<T>::type>;
-
-    constexpr static auto asArgMapRef(Enumerand<T> x) -> type { return {x.index, AsArgMapRef<T>::asArgMapRef(x.value)}; }
-};
-template <typename K, typename V> struct AsArgMapRef<KeyValue<K, V>> {
-    using type = KeyValue<typename AsArgMapRef<K>::type, typename AsArgMapRef<V>::type>;
-
-    constexpr static auto asArgMapRef(KeyValue<K, V> x) -> type { return {AsArgMapRef<K>::asArgMapRef(x.key), AsArgMapRef<V>::asArgMapRef(x.value)}; }
-};
-template <typename T> using AsArgMapRefT = typename AsArgMapRef<T>::type;
-
-template <typename T> constexpr auto mapArgs(T&& x) -> AsArgMapRefT<T> { return AsArgMapRef<T>::asArgMapRef(std::forward<T>(x)); }
-
 
 // ---- Basic Iterators ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -122,11 +172,11 @@ export template <typename Derived> class IteratorBase;
 
 template <Iterator Inner, typename F> class MapIter : public IteratorBase<MapIter<Inner, F>> {
 public:
-    using Item = std::invoke_result_t<F, AsLvalueRefT<typename Inner::Item>>;
+    using Item = std::invoke_result_t<F, IntoLambdaByMoveT<typename Inner::Item>>;
 
     constexpr MapIter(Inner inner, F f) : m_inner(std::move(inner)), m_f(std::move(f)) {}
     constexpr auto next() -> Option<Item> {
-        if (auto next = m_inner.next()) return Option<Item>::some(m_f(mapArgs(std::move(next.unwrap()))));
+        if (auto next = m_inner.next()) return Option<Item>::some(m_f(intoLambdaByMove(std::move(next.unwrap()))));
         return Option<Item>::none();
     }
 
@@ -141,7 +191,7 @@ public:
 
     constexpr FilterIter(Inner inner, P p) : m_inner(std::move(inner)), m_p(std::move(p)) {}
     constexpr auto next() -> Option<Item> {
-        while (auto next = m_inner.next()) { if (m_p(asLvalueRef(next.unwrap()))) return Option<Item>::some(std::move(next.unwrap())); }
+        while (auto next = m_inner.next()) { if (m_p(intoLambdaByRef(next.unwrap()))) return Option<Item>::some(std::move(next.unwrap())); }
         return Option<Item>::none();
     }
 
@@ -152,11 +202,11 @@ private:
 
 template <Iterator Inner, typename P> class FilterMapIter : public IteratorBase<FilterMapIter<Inner, P>> {
 public:
-    using Item = UnwrapOptionT<std::invoke_result_t<P, AsLvalueRefT<typename Inner::Item>>>;
+    using Item = UnwrapOptionT<std::invoke_result_t<P, IntoLambdaByMoveT<typename Inner::Item>>>;
 
     constexpr FilterMapIter(Inner inner, P p) : m_inner(std::move(inner)), m_p(std::move(p)) {}
     constexpr auto next() -> Option<Item> {
-        while (auto next = m_inner.next()) { if (auto mapped = m_p(mapArgs(std::move(next.unwrap())))) return Option<Item>::some(std::move(mapped.unwrap())); }
+        while (auto next = m_inner.next()) { if (auto mapped = m_p(intoLambdaByMove(std::move(next.unwrap())))) return Option<Item>::some(std::move(mapped.unwrap())); }
         return Option<Item>::none();
     }
 
@@ -206,7 +256,7 @@ public:
     constexpr InspectIter(Inner inner, F f) : m_inner(std::move(inner)), m_f(std::move(f)) {}
     constexpr auto next() -> Option<Item> {
         if (auto next = m_inner.next()) {
-            m_f(asLvalueRef(next.unwrap()));
+            m_f(intoLambdaByRef(next.unwrap()));
             return Option<Item>::some(std::move(next.unwrap()));
         }
         return Option<Item>::none();
@@ -225,14 +275,14 @@ public:
     using value_type        = std::remove_reference_t<typename Iter::Item>;
     using difference_type   = std::ptrdiff_t;
     using pointer           = value_type*;
-    using reference         = AsLvalueRefT<value_type>;
+    using reference         = IntoLambdaByRefT<value_type>;
 
     class EndSentinel {};
 
     explicit constexpr CxxIterInner(Iter inner) : m_inner(std::move(inner)) { ++*this; }
 
     constexpr auto operator++() -> CxxIterInner& { m_current = m_inner.next(); return *this; }
-    constexpr auto operator*() -> reference { return asLvalueRef(m_current.unwrap()); }
+    constexpr auto operator*() -> reference { return intoLambdaByRef(m_current.unwrap()); }
     constexpr auto operator->() -> pointer { return &m_current.unwrap(); }
     constexpr auto operator->() const -> pointer { return &m_current.unwrap(); }
     constexpr auto operator!=(const EndSentinel&) const -> bool { return m_current.isSome(); }
@@ -249,118 +299,135 @@ public:
 
     // ---- Iterator Extensions --------------------------------------------------------------------------------------------------------------------------------
 
-    template <typename F> constexpr auto map(F&& f) && { return MapIter<Derived, std::decay_t<F>>(std::move(self()), std::forward<F>(f)); }
-    template <typename P> constexpr auto filter(P&& p) && { return FilterIter<Derived, std::decay_t<P>>(std::move(self()), std::forward<P>(p)); }
-    template <typename P> constexpr auto filterMap(P&& p) && { return FilterMapIter<Derived, std::decay_t<P>>(std::move(self()), std::forward<P>(p)); }
+    template <typename F> constexpr auto map(F&& f) && requires TypedInvocableNoRet<F, IntoLambdaByMoveT<typename Derived::Item>>
+        { return MapIter<Derived, F>(std::move(self()), std::forward<F>(f)); }
+
+    template <typename P> constexpr auto filter(P&& p) &&requires TypedInvocable<P, bool, IntoLambdaByRefT<typename Derived::Item>>
+        { return FilterIter<Derived, P>(std::move(self()), std::forward<P>(p)); }
+
+    template <typename P> constexpr auto filterMap(P&& p) &&
+        requires TypedInvocableNoRet<P, IntoLambdaByMoveT<typename Derived::Item>> && OptionType<std::invoke_result_t<P, IntoLambdaByMoveT<typename Derived::Item>>>
+        { return FilterMapIter<Derived, P>(std::move(self()), std::forward<P>(p)); }
+
     constexpr auto enumerate() && { return EnumerateIter<Derived>(std::move(self())); }
+
     template <typename I2> requires Iterator<I2> constexpr auto zip(I2&& i2) && { return ZipIter<Derived, I2>(std::move(self()), std::forward<I2>(i2)); }
-    template <typename F> constexpr auto inspect(F&& f) && { return InspectIter<Derived, std::decay_t<F>>(std::move(self()), std::forward<F>(f)); }
+
+    template <typename F> constexpr auto inspect(F&& f) && requires TypedInvocableNoRet<F, IntoLambdaByRefT<typename Derived::Item>>
+        { return InspectIter<Derived, F>(std::move(self()), std::forward<F>(f)); }
 
     // ---- Iterator Reductions --------------------------------------------------------------------------------------------------------------------------------
 
-    constexpr auto sum() {
+    constexpr auto sum() requires Add<OwnedTypeT<typename Derived::Item>, IntoLambdaByMoveT<typename Derived::Item>, OwnedTypeT<typename Derived::Item>> {
         using Item = typename Derived::Item;
-        using ValueType = DerefT<Item>;
+        using ValueType = OwnedTypeT<Item>;
         ValueType sum = ValueType(0);
-        while (auto v = self().next()) sum = std::move(sum) + mapArgs(std::move(v.unwrap()));
+        while (auto v = self().next()) sum = std::move(sum) + intoLambdaByMove(std::move(v.unwrap()));
         return sum;
     }
 
-    constexpr auto prod() {
+    constexpr auto prod() requires Prod<OwnedTypeT<typename Derived::Item>, IntoLambdaByMoveT<typename Derived::Item>, OwnedTypeT<typename Derived::Item>> {
         using Item = typename Derived::Item;
-        using ValueType = DerefT<Item>;
+        using ValueType = OwnedTypeT<Item>;
         ValueType prod = ValueType(1);
-        while (auto v = self().next()) prod = std::move(prod) * mapArgs(std::move(v.unwrap()));
+        while (auto v = self().next()) prod = std::move(prod) * intoLambdaByMove(std::move(v.unwrap()));
         return prod;
     }
 
-    template <typename P> constexpr auto all(P&& pred) -> bool {
+    template <typename P> constexpr auto all(P&& pred) -> bool requires TypedInvocable<P, bool, IntoLambdaByRefT<typename Derived::Item>> {
         while (auto v = self().next()) {
-            if (!pred(asLvalueRef(v.unwrap()))) return false;
+            if (!pred(intoLambdaByRef(v.unwrap()))) return false;
         }
         return true;
     }
 
-    template <typename P> constexpr auto any(P&& pred) -> bool {
+    template <typename P> constexpr auto any(P&& pred) -> bool requires TypedInvocable<P, bool, IntoLambdaByRefT<typename Derived::Item>> {
         while (auto v = self().next()) {
-            if (pred(asLvalueRef(v.unwrap()))) return true;
+            if (pred(intoLambdaByRef(v.unwrap()))) return true;
         }
         return false;
     }
 
-    constexpr auto min() {
+    // TODO: re-NIH a reference type and use that instead of doing the below for pointers
+
+    constexpr auto min() requires Ord<IntoLambdaByRefT<typename Derived::Item>> {
         using Item = typename Derived::Item;
-        using ValueType = Item;
-        using KeyValueType = DerefT<ValueType>;
+        using ValueType = OwnedTypeT<Item>;
 
-        auto firstOpt = std::move(self().next());
-        if (!firstOpt) return Option<KeyValueType>::none();
-
-        KeyValueType best = std::move(firstOpt.unwrap());
+        auto result = Option<ValueType>::none();
 
         while (auto v = self().next()) {
-            if (asLvalueRef(v.unwrap()) < asLvalueRef(best)) best = std::move(v.unwrap());
+            if (result.isNone()) { result = Option<ValueType>::some(ownedType(std::move(v.unwrap()))); continue; }
+            if (intoLambdaByRef(v.unwrap()) < intoLambdaByRef(result.unwrap())) result = Option<ValueType>::some(ownedType(std::move(v.unwrap())));
         }
 
-        return Option<KeyValueType>::some(std::move(best));
+        return result;
     }
 
 
-    constexpr auto max() {
+    constexpr auto max() requires Ord<IntoLambdaByRefT<typename Derived::Item>> {
         using Item = typename Derived::Item;
-        using ValueType = Item;
-        using KeyValueType = DerefT<ValueType>;
+        using ValueType = OwnedTypeT<Item>;
 
-        auto firstOpt = std::move(self().next());
-        if (!firstOpt) return Option<KeyValueType>::none();
-
-        KeyValueType best = std::move(firstOpt.unwrap());
+        auto result = Option<ValueType>::none();
 
         while (auto v = self().next()) {
-            if (asLvalueRef(v.unwrap()) > asLvalueRef(best)) best = std::move(v.unwrap());
+            if (result.isNone()) { result = Option<ValueType>::some(ownedType(std::move(v.unwrap()))); continue; }
+            if (intoLambdaByRef(v.unwrap()) > intoLambdaByRef(result.unwrap())) result = Option<ValueType>::some(ownedType(std::move(v.unwrap())));
         }
 
-        return Option<KeyValueType>::some(std::move(best));
+        return result;
     }
 
-    template <typename F> constexpr auto minByKey(F&& f) {
+    template <typename F> constexpr auto minByKey(F&& f)
+        requires TypedInvocableNoRet<F, IntoLambdaByRefT<typename Derived::Item>>
+        && Ord<std::invoke_result_t<F, IntoLambdaByRefT<typename Derived::Item>>>
+    {
         using Item = typename Derived::Item;
-        using ValueType = Item;
-        using KeyValueType = DerefT<ValueType>;
+        using ValueType = OwnedTypeT<Item>;
 
-        auto firstOpt = std::move(self().next());
-        if (!firstOpt) return Option<ValueType>::none();
-
-        ValueType best = std::move(firstOpt.unwrap());
+        auto result = Option<ValueType>::none();
 
         while (auto v = self().next()) {
-            if (f(asLvalueRef(v.unwrap())) < f(asLvalueRef(best))) best = std::move(v.unwrap());
+            if (result.isNone()) { result = Option<ValueType>::some(ownedType(std::move(v.unwrap()))); continue; }
+            if (f(intoLambdaByRef(v.unwrap())) < f(intoLambdaByRef(result.unwrap()))) result = Option<ValueType>::some(ownedType(std::move(v.unwrap())));
         }
-        return Option<ValueType>::some(std::move(best));
+        return result;
     }
 
-    template <typename F> constexpr auto maxByKey(F&& f) {
+    template <typename F> constexpr auto maxByKey(F&& f)
+        requires TypedInvocableNoRet<F, IntoLambdaByRefT<typename Derived::Item>>
+        && Ord<std::invoke_result_t<F, IntoLambdaByRefT<typename Derived::Item>>>
+    {
         using Item = typename Derived::Item;
-        using ValueType = Item;
-        using KeyValueType = DerefT<ValueType>;
+        using ValueType = OwnedTypeT<Item>;
 
-        auto firstOpt = std::move(self().next());
-        if (!firstOpt) return Option<ValueType>::none();
-
-        ValueType best = std::move(firstOpt.unwrap());
+        auto result = Option<ValueType>::none();
 
         while (auto v = self().next()) {
-            if (f(asLvalueRef(v.unwrap())) > f(asLvalueRef(best))) best = std::move(v.unwrap());
+            if (result.isNone()) { result = Option<ValueType>::some(ownedType(std::move(v.unwrap()))); continue; }
+            if (f(intoLambdaByRef(v.unwrap())) > f(intoLambdaByRef(result.unwrap()))) result = Option<ValueType>::some(ownedType(std::move(v.unwrap())));
         }
-        return Option<ValueType>::some(std::move(best));
+        return result;
     }
 
+    // ---- Iterator Find --------------------------------------------------------------------------------------------------------------------------------------
+
+    template <typename P> constexpr auto find(P&& pred) requires TypedInvocable<P, bool, IntoLambdaByRefT<typename Derived::Item>> {
+        using Item = typename Derived::Item;
+        using ValueType = OwnedTypeT<Item>;
+
+        while (auto v = self().next()) {
+            if (pred(intoLambdaByRef(v.unwrap()))) return Option<ValueType>::some(intoLambdaByMove(std::move(v.unwrap())));
+        }
+        return Option<ValueType>::none();
+    }
 
     // ---- Collector ------------------------------------------------------------------------------------------------------------------------------------------
 
     template <template <typename> class Container> constexpr auto collect() {
         using Item = typename Derived::Item;
-        using T = std::remove_const_t<Item>;
+        using T = OwnedTypeT<Item>;
         auto out = Container<T>::create();
         while (auto v = self().next()) out.emplace(std::move(v.unwrap()));
         return out;

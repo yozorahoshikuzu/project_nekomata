@@ -162,8 +162,8 @@ public:
     static auto query(const vk::raii::PhysicalDevice& vkPhysicalDevice, const vk::raii::SurfaceKHR& vkSurface) -> VulkanPhysicalDeviceSurfaceProperties;
 
     vk::SurfaceCapabilitiesKHR m_capabilities;
-    std::vector<vk::SurfaceFormatKHR> m_surfaceFormats;
-    std::vector<vk::PresentModeKHR> m_presentModes;
+    Vec<vk::SurfaceFormatKHR> m_surfaceFormats = Vec<vk::SurfaceFormatKHR>::create();
+    Vec<vk::PresentModeKHR> m_presentModes     = Vec<vk::PresentModeKHR>::create();
 };
 
 } // namespace nekomata2

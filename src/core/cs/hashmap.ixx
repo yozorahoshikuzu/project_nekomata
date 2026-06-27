@@ -367,7 +367,7 @@ private:
 
 export template <typename K, typename V, typename H> class HashMapKeysIter : public IteratorBase<HashMapKeysIter<K, V, H>> {
 public:
-    using Item = NonNullPtr<const K>;
+    using Item = IteratorInternalNonNullPtr<const K>;
     constexpr HashMapKeysIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
     constexpr auto next() -> Option<Item> {
@@ -375,7 +375,7 @@ public:
         auto i = m_index;
         m_index++;
         skipEmpty();
-        return Option<Item>::some(NonNullPtr<const K>(&m_hashmap->m_entries[i].key));
+        return Option<Item>::some(IteratorInternalNonNullPtr(NonNullPtr<const K>(&m_hashmap->m_entries[i].key)));
     }
 
 private:
@@ -389,7 +389,7 @@ private:
 
 export template <typename K, typename V, typename H> class HashMapValuesIter : public IteratorBase<HashMapValuesIter<K, V, H>> {
 public:
-    using Item = NonNullPtr<V>;
+    using Item = IteratorInternalNonNullPtr<V>;
     constexpr HashMapValuesIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
     constexpr auto next() -> Option<Item> {
@@ -397,7 +397,7 @@ public:
         auto i = m_index;
         m_index++;
         skipEmpty();
-        return Option<Item>::some(NonNullPtr<V>(&m_hashmap->m_entries[i].value));
+        return Option<Item>::some(IteratorInternalNonNullPtr(NonNullPtr<V>(&m_hashmap->m_entries[i].value)));
     }
 
 private:
@@ -411,7 +411,7 @@ private:
 
 export template <typename K, typename V, typename H> class HashMapIter : public IteratorBase<HashMapIter<K, V, H>> {
 public:
-    using Item = KeyValue<NonNullPtr<const K>, NonNullPtr<V>>;
+    using Item = KeyValue<IteratorInternalNonNullPtr<const K>, IteratorInternalNonNullPtr<V>>;
     constexpr HashMapIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
     constexpr auto next() -> Option<Item> {
@@ -419,7 +419,7 @@ public:
         auto i = m_index;
         m_index++;
         skipEmpty();
-        return Option<Item>::some(Item(NonNullPtr<const K>(&m_hashmap->m_entries[i].key), NonNullPtr<V>(&m_hashmap->m_entries[i].value)));
+        return Option<Item>::some(Item(IteratorInternalNonNullPtr(NonNullPtr<const K>(&m_hashmap->m_entries[i].key)), IteratorInternalNonNullPtr(NonNullPtr<V>(&m_hashmap->m_entries[i].value))));
     }
 
 private:

@@ -128,7 +128,7 @@ public:
         m_renderingCreateInfo = m_renderingCreateInfo.setColorAttachmentFormats(m_renderingColorAttachmentFormats);
 
         auto stagesRaw = m_shaderStages.iter()
-            .map([](const vk::StructureChain<vk::PipelineShaderStageCreateInfo, vk::ShaderModuleCreateInfo>& chain) -> vk::PipelineShaderStageCreateInfo { return chain.get<vk::PipelineShaderStageCreateInfo>(); })
+            .map([](auto&& chain) -> vk::PipelineShaderStageCreateInfo { return chain.template get<vk::PipelineShaderStageCreateInfo>(); })
             .collect<Vec>();
 
         auto pipelineInfo = vk::GraphicsPipelineCreateInfo{}

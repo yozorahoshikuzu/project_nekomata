@@ -24,13 +24,16 @@ VulkanSwapchain::VulkanSwapchain(vk::raii::SwapchainKHR&& swapchain, vk::Extent2
 auto VulkanSwapchain::create(vk::Extent2D windowDrawableExtent, std::optional<VulkanSwapchain>&& oldSwapchain, bool vsyncEnable) -> VulkanSwapchain {
     auto surfaceProps = VulkanPhysicalDeviceSurfaceProperties::query(VulkanContext::get().vkPhysicalDevice(), VulkanContext::get().vkSurface());
 
-    auto surfaceFormatIt = std::ranges::find_if(surfaceProps.m_surfaceFormats, [&](const vk::SurfaceFormatKHR& sformat) -> bool {
-        return (sformat.format == vk::Format::eR8G8B8A8Srgb || sformat.format == vk::Format::eB8G8R8A8Srgb) && sformat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear; 
-    });
-    auto surfaceFormat = surfaceFormatIt != surfaceProps.m_surfaceFormats.end() ? *surfaceFormatIt : surfaceProps.m_surfaceFormats[0];
+    auto surfaceFormat = surfaceProps.m_surfaceFormats.iter()
+        .find([](const auto& sformat) {
+            return (sformat.format == vk::Format::eB8G8R8A8Srgb || sformat.format == vk::Format::eR8G8B8A8Srgb)
+                && sformat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
+        })
+        .unwrapOr(surfaceProps.m_surfaceFormats[0]);
+
 
     auto& presentModePriority = vsyncEnable ? PRESENT_MODE_PRIORITY_VSYNC : PRESENT_MODE_PRIORITY_NO_VSYNC;
-    auto presentMode = *std::ranges::find_if(presentModePriority, [&](const vk::PresentModeKHR& pmode) -> bool {
+    auto presentMode = *std::ranges::find_if(presentModePriority, [&](const auto& pmode) -> bool {
         return std::ranges::contains(surfaceProps.m_presentModes, pmode);
     });
 
@@ -73,7 +76,7 @@ auto VulkanSwapchain::create(vk::Extent2D windowDrawableExtent, std::optional<Vu
     auto swapchain = VulkanContext::get().vkDevice().createSwapchainKHR(swapchainCreateInfo);
     auto preparedSwapchainImages = Vec<vk::Image>::fromStdVector(swapchain.getImages());
     auto swapchainImages = preparedSwapchainImages.iter()
-        .map([&](const auto& img) { return SwapchainImage::from(img, imageExtent, surfaceFormat.format); })
+        .map([&](auto&& img) { return SwapchainImage::from(img, imageExtent, surfaceFormat.format); })
         .collect<Vec>();
 
     return VulkanSwapchain(std::move(swapchain), imageExtent, std::move(swapchainImages));

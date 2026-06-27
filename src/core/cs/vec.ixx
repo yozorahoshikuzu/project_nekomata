@@ -17,12 +17,12 @@ template <typename T> inline constexpr bool TTriviallyRelocatableValue = TTrivia
 
 template <typename T> class VecSliceIter : public IteratorBase<VecSliceIter<T>> {
 public:
-    using Item = NonNullPtr<T>;
+    using Item = IteratorInternalNonNullPtr<T>;
 
     constexpr VecSliceIter(T* begin, T* end) : m_begin(begin), m_end(end) {}
     constexpr auto next() -> Option<Item> {
         if (m_begin == m_end) return Option<Item>::none();
-        return Option<Item>::some(NonNullPtr<T>(m_begin++));
+        return Option<Item>::some(IteratorInternalNonNullPtr(NonNullPtr<T>(m_begin++)));
     }
 
 private:

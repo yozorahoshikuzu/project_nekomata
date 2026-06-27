@@ -144,13 +144,13 @@ auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debu
 
     auto availableInstanceLayerProps = Vec<vk::LayerProperties>::fromStdVector(vk::enumerateInstanceLayerProperties());
     auto availableInstanceLayerNames = availableInstanceLayerProps.iter()
-        .map([](const auto& layer) { return std::string(layer.layerName); })
+        .map([](auto&& layer) { return std::string(layer.layerName); })
         .collect<Vec>();
 
     auto instanceExtensions = nekomata2::SdlWindow::vulkanInstanceExtensions();
     
     auto instanceExtensionsC = instanceExtensions.iter()
-        .map([](const auto& ext) { return ext.c_str(); })
+        .map([](auto&& ext) { return ext.c_str(); })
         .collect<Vec>();
 
     auto instanceLayersC = Vec<const char*>::create();
@@ -180,7 +180,7 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
     if (physicalDevices.isEmpty()) throw std::logic_error("no vulkan physical devices");
 
     auto props = physicalDevices.iter()
-        .map([&](const auto& vkPhysicalDevice) { return VulkanPhysicalDeviceProperties::query(vkPhysicalDevice, vkSurface); })
+        .map([&](auto&& vkPhysicalDevice) { return VulkanPhysicalDeviceProperties::query(vkPhysicalDevice, vkSurface); })
         .enumerate()
         .collect<Vec>();
 
@@ -221,7 +221,7 @@ auto VulkanContext::createVkDevice(const vk::raii::PhysicalDevice& vkPhysicalDev
 
     auto deviceExtensionsC = vkPhysicalDeviceProps.m_enabledExtensions.iter()
         .inspect([](const auto& x) { log::info("  Enabling device extension: {}", x); })
-        .map([](const auto& x) { return x.c_str(); })
+        .map([](auto&& x) { return x.c_str(); })
         .collect<Vec>();
 
     auto queueCreateInfos = vkPhysicalDeviceProps.queueCreateInfos();

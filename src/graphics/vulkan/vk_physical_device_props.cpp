@@ -176,7 +176,8 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     -> std::expected<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError> {
     auto supportedExtensionProperties = Vec<vk::ExtensionProperties>::fromStdVector(vkPhysicalDevice.enumerateDeviceExtensionProperties());
     auto supportedExtensionNames = supportedExtensionProperties.iter()
-        .map([](const auto& ext) { return std::string(ext.extensionName); })
+        .map([](auto&& ext) { return std::string(ext.extensionName); })
+        .inspect([](const auto& x) { log::info("Supported extension: {}", x); })
         .collect<Vec>();
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -398,9 +399,9 @@ auto VulkanPhysicalDeviceSurfaceProperties::query(const vk::raii::PhysicalDevice
     auto presentModes = vkPhysicalDevice.getSurfacePresentModesKHR(vkSurface);
 
     VulkanPhysicalDeviceSurfaceProperties props;
-    props.m_surfaceFormats = surfaceFormats;
+    props.m_surfaceFormats = Vec<vk::SurfaceFormatKHR>::fromStdVector(std::move(surfaceFormats));
     props.m_capabilities = capabilities;
-    props.m_presentModes = presentModes;
+    props.m_presentModes = Vec<vk::PresentModeKHR>::fromStdVector(std::move(presentModes));
     return props;
 }
 
