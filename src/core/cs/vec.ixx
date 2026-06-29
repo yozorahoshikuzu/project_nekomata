@@ -231,7 +231,6 @@ private:
             m_data = ptr;
         } else {
             auto ptr = Mem::allocChecked<T>(newCapacity);
-            if (!ptr) throw std::bad_alloc();
             for (usize i = 0; i < m_len; i++) {
                 new (ptr + i) T(std::move(m_data[i]));
                 if constexpr (kNeedsFinalizer) m_data[i].~T();

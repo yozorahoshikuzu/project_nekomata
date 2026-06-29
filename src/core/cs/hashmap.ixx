@@ -84,7 +84,7 @@ public:
         __m128i empty = _mm_set1_epi8(kCtrlSentinelEmpty);
 
         for (usize step = 0; step < m_capacity; step += 16) {
-            usize base = (step + index) & (m_capacity - 1);
+            usize base = step + index;
 
             __m128i group = _mm_loadu_si128(reinterpret_cast<const __m128i*>(m_ctrls + base));
             u32 matches = _mm_movemask_epi8(_mm_cmpeq_epi8(group, needle));
@@ -123,7 +123,7 @@ public:
         __m128i empty = _mm_set1_epi8(kCtrlSentinelEmpty);
 
         for (usize step = 0; step < m_capacity; step += 16) {
-            usize base = (step + index) & (m_capacity - 1);
+            usize base = step + index;
 
             __m128i group = _mm_loadu_si128(reinterpret_cast<const __m128i*>(m_ctrls + base));
 

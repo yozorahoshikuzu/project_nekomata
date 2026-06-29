@@ -9,25 +9,27 @@ Well, maybe in the future..
 
 - Multithreading (Main and render thread split)
 - ECS-based world
+- Basic input handling
+- Custom standard library containers and algorithms replacement to bring Rust-style ergonomics
 - Mesh rendering
 - Mesh LODs
 - Async insertion of mesh LODs
 - Textures
 - Async loading of KTX2 textures
 - Bindless textures and samplers
-- Font rendering with on-the-fly font atlas generation (currently kind of hardcoded and not exposed to user code yet)
+- Bitmap font rendering with on-the-fly font atlas generation
 - Basic script system
+- `vk::PipelineCache`-based pipeline caching
 
 ## Planned Features
 
 - Lighting, deferred lighting, and PBR
 - Shadow mapping
 - A more full UI solution
+- MSDF font rendering
 - Model loading (most likely glTF)
-- Input handling
 - Physics
 - `VK_EXT_descriptor_heap`-based texture and sampler tables
-- Pipeline caching via both `vk::PipelineCache` and via `VK_KHR_pipeline_binary`
 - Ray tracing
 - Render graph
 - Post-processing effects (SMAA, bloom, etc.)
@@ -60,7 +62,7 @@ mkdir build
 cd build
 cmake ..
 cmake --build .
-./nekomata2
+./nekomata2_main
 ```
 
 If you generate makefiles instead of a build.ninja file, add `-j(number of cores + 1)` to the `cmake --build .` command to parallelize the build.

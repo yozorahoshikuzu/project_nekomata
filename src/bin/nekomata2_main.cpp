@@ -49,19 +49,87 @@ public:
         m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity)
             .m_transform3d.m_position = { 2.0f, 1.0f, 1.0f };
 
-        auto posText = nekomata2::ui::UiNode::create();
-        posText->position = { 10.0f, 280.0f };
-        posText->extent = { 100.0f, 100.0f };
-        posText->element = nekomata2::ui::UiText{"hai :3", 18.0f, std::move(m_fontFace)};
+        auto& ts = nekomata2::graphics::texturesystem::TextureManager::get();
+
+        auto samplerSettings = nekomata2::graphics::texturesystem::SamplerParams::defaultValues()
+            .setAnisotropy(16.0f);
+
+        nekomata2::graphics::texturesystem::Texture ts1 = ts.loadKtx2TextureAsync("../Assets/ui_test.ktx2", samplerSettings);
+        nekomata2::graphics::texturesystem::Texture ts2 = ts.loadKtx2TextureAsync("../Assets/ui_test2.ktx2", samplerSettings);
+        nekomata2::graphics::texturesystem::Texture ts3 = ts.loadKtx2TextureAsync("../Assets/ui_test3.ktx2", samplerSettings);
+        nekomata2::graphics::texturesystem::Texture ts4 = ts.loadKtx2TextureAsync("../Assets/ui_test4.ktx2", samplerSettings);
+        nekomata2::graphics::texturesystem::Texture ts5 = ts.loadKtx2TextureAsync("../Assets/ui_test5.ktx2", samplerSettings);
+
+        auto posText = nekomata2::ui::UiNode::builder()
+            .position({10.0f, 280.0f})
+            .text("hai :3", 18.0f, std::move(m_fontFace))
+            .build();
+
         m_text = posText.get();
         nekomata2::ui::UiSystem::get().getRoot().addChild(std::move(posText));
 
-        auto statusText = nekomata2::ui::UiNode::create();
-        statusText->position = { 10.0f, 300.0f };
-        statusText->extent = { 100.0f, 100.0f };
-        statusText->element = nekomata2::ui::UiText{"", 18.0f, std::move(m_fontFace)};
-        m_statusText = statusText.get();
-        nekomata2::ui::UiSystem::get().getRoot().addChild(std::move(statusText));
+        // ---- Escape Overlay Memes ---------------------------------------------------------------------------------------------------------------------------
+
+        auto escapeOverlayMeme1 = nekomata2::ui::UiNode::builder()
+            .position({800.0f, 50.0f})
+            .extent({250.0f, 250.0f})
+            .texture(ts1)
+            .build();
+
+        auto escapeOverlayMeme2 = nekomata2::ui::UiNode::builder()
+            .position({800.0f, 310.0f})
+            .extent({320.0f, 320.0f})
+            .texture(ts2)
+            .build();
+
+        auto escapeOverlayMeme3 = nekomata2::ui::UiNode::builder()
+            .position({800.0f, 640.0f})
+            .extent({250.0f, 275.0f})
+            .texture(ts3)
+            .build();
+
+        auto escapeOverlayMeme4 = nekomata2::ui::UiNode::builder()
+            .position({1200.0f, 200.0f})
+            .extent({400.0f, 350.0f})
+            .texture(ts4)
+            .build();
+
+        auto escapeOverlayMeme5 = nekomata2::ui::UiNode::builder()
+            .position({1200.0f, 600.0f})
+            .extent({400.0f, 380.0f})
+            .texture(ts5)
+            .build();
+
+        // ---- Escape Overlay Menu ----------------------------------------------------------------------------------------------------------------------------
+
+        auto escapeOverlayMenuText = nekomata2::ui::UiNode::builder()
+            .position({20.0f, 20.0f})
+            .extentX(460.0f)
+            .extentPercentY(100.0f)
+            .text("Mouse Released\n(this is a placeholder menu)\n\nClick - close, Alt+F12 - toggle overlay", 18.0f, std::move(m_fontFace))
+            .build();
+
+        auto escapeOverlayMenuRect = nekomata2::ui::UiNode::builder()
+            .position({250.0f, 0.0f})
+            .extentX(500.0f)
+            .extentPercentY(100.0f)
+            .rect(Vector4f{0.0f, 0.0f, 0.0f, 0.85f})
+            .children(std::move(escapeOverlayMenuText))
+            .build();
+
+        auto escapeOverlay = nekomata2::ui::UiNode::builder()
+            .position({0.0f, 0.0f})
+            .extentPercent({100.0f, 100.0f})
+            .rect(Vector4f{0.0f, 0.0f, 0.0f, 0.25f})
+            .visible(false)
+            .children(
+                std::move(escapeOverlayMeme1), std::move(escapeOverlayMeme2), std::move(escapeOverlayMeme3), std::move(escapeOverlayMeme4),
+                std::move(escapeOverlayMeme5), std::move(escapeOverlayMenuRect)
+            )
+            .build();
+
+        m_escOverlay = escapeOverlay.get();
+        nekomata2::ui::UiSystem::get().getRoot().addChild(std::move(escapeOverlay));
     }
 
     void onDestroy() override {}
@@ -108,16 +176,16 @@ public:
             m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position += delta;
         }
 
-        if (Input::get().isKeyDown(Key::Escape)) {
+        if (Input::get().isKeyPressed(Key::Escape)) {
             Input::get().setMouseMode(MouseMode::Normal);
             m_handleMouseMovement = false;
-            std::get<nekomata2::ui::UiText>(m_statusText->element).text = "(Mouse Released)";
+            m_escOverlay->visible = true;
         }
 
-        if (Input::get().isKeyDown(Key::MouseLeft)) {
+        if (Input::get().isKeyReleased(Key::MouseLeft)) {
             Input::get().setMouseMode(MouseMode::Captured);
             m_handleMouseMovement = true;
-            std::get<nekomata2::ui::UiText>(m_statusText->element).text = "";
+            m_escOverlay->visible = false;
         }
 
         auto camPos = m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position;
@@ -130,7 +198,7 @@ public:
 
     nekomata2::graphics::fonts::FontFace m_fontFace;
     nekomata2::ui::UiNode* m_text = nullptr;
-    nekomata2::ui::UiNode* m_statusText = nullptr;
+    nekomata2::ui::UiNode* m_escOverlay = nullptr;
 };
 
 

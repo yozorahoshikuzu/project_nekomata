@@ -174,31 +174,37 @@ endfunction()
 # ----------------------------------------------------------------------------------------------------------------------
 #     Sources
 
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
+file(GLOB_RECURSE nekomata2_LIBRARY_SOURCES CONFIGURE_DEPENDS
         ${CMAKE_SOURCE_DIR}/src/*.cpp
 )
-file(GLOB_RECURSE MODULE_SOURCES CONFIGURE_DEPENDS
+file(GLOB_RECURSE nekomata2_LIBRARY_MODULE_SOURCES CONFIGURE_DEPENDS
         ${CMAKE_SOURCE_DIR}/src/*.ixx
 )
 
-file(GLOB_RECURSE SHADER_SOURCES CONFIGURE_DEPENDS
+list(FILTER nekomata2_LIBRARY_SOURCES EXCLUDE REGEX ".*/(bin)/.*")
+list(FILTER nekomata2_LIBRARY_MODULE_SOURCES EXCLUDE REGEX ".*/(bin)/.*")
+
+file(GLOB_RECURSE nekomata2_SHADER_SOURCES CONFIGURE_DEPENDS
         ${CMAKE_SOURCE_DIR}/src/graphics/shaders/*.slang
 )
 
-add_executable(nekomata2)
-target_sources(nekomata2
-        PRIVATE ${SOURCES}
+file(GLOB_RECURSE nekomata2_BINARIES CONFIGURE_DEPENDS
+        ${CMAKE_SOURCE_DIR}/src/bin/*.cpp
+)
+
+# ----------------------------------------------------------------------------------------------------------------------
+#     Build Setup
+
+add_library(nekomata2_Library STATIC)
+target_sources(nekomata2_Library
+        PRIVATE ${nekomata2_LIBRARY_SOURCES}
         PUBLIC
         FILE_SET CXX_MODULES FILES
-        ${MODULE_SOURCES}
+        ${nekomata2_LIBRARY_MODULE_SOURCES}
 )
-add_slang_shaders(nekomata2_spv TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR}/spirv SOURCES ${SHADER_SOURCES})
-add_dependencies(nekomata2 nekomata2_spv)
-
-target_include_directories(nekomata2 PRIVATE ${CMAKE_SOURCE_DIR}/src)
-
+target_include_directories(nekomata2_Library PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(
-        nekomata2
+        nekomata2_Library
         PRIVATE
         ${TCMALLOC_LIB}
         VulkanModule
@@ -210,9 +216,9 @@ target_link_libraries(
         xxhash
         utf8::cpp
 )
-
 target_compile_options(
-        nekomata2 PRIVATE
+        nekomata2_Library PRIVATE
+        -flto=thin
         -ftls-model=local-exec
         -fvisibility=hidden
         -fvisibility-inlines-hidden
@@ -238,12 +244,40 @@ target_compile_options(
 
         -Werror=tautological-compare
 )
+add_slang_shaders(nekomata2_spv TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR}/spirv SOURCES ${nekomata2_SHADER_SOURCES})
+add_dependencies(nekomata2_Library nekomata2_spv)
 
-target_link_options(
-        nekomata2 PRIVATE
+foreach(BINARY_ENTRY ${nekomata2_BINARIES})
+        get_filename_component(BINARY_ENTRY_NAME ${BINARY_ENTRY} NAME_WE)
+        add_executable(${BINARY_ENTRY_NAME} ${BINARY_ENTRY})
+        target_link_libraries(${BINARY_ENTRY_NAME} PRIVATE nekomata2_Library)
 
+        target_compile_options(
+                ${BINARY_ENTRY_NAME} PRIVATE
+                -flto=thin
+                -ftls-model=local-exec
+                -fvisibility=hidden
+                -fvisibility-inlines-hidden
+                -fno-semantic-interposition
 
-        -Wl,--gc-sections
-        -Wl,-z,now
-        -Wl,-z,relro
-)
+                -Wall
+                -Wextra
+                -Wpedantic
+                -Wshadow
+                -Wdouble-promotion
+                -Wimplicit-fallthrough
+                -Wmisleading-indentation
+                -Werror=return-type
+                -Werror=non-virtual-dtor
+                -Werror=uninitialized
+                -Werror=conditional-uninitialized
+                -Werror=init-self
+                -Werror=array-bounds
+                -Werror=sequence-point
+                -Werror=delete-non-virtual-dtor
+                -Werror=infinite-recursion
+                -Werror=overloaded-virtual
+
+                -Werror=tautological-compare
+        )
+endforeach()

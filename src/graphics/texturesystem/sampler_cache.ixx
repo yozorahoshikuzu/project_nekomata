@@ -6,6 +6,7 @@ import std;
 import vulkan;
 import :core.platform.int_def;
 import :graphics.vulkan.vk_sampler;
+import :core.cs.hashmap;
 
 export namespace nekomata2::graphics::texturesystem {
 
@@ -74,7 +75,7 @@ struct SamplerParams {
 };
 
 struct SamplerParamsHash {
-    size_t operator()(const SamplerParams& k) const {
+    static u64 hash(const SamplerParams& k) {
         return XXH3_64bits(&k, sizeof(k));
     }
 };
@@ -99,7 +100,7 @@ private:
 
     static auto createSampler(const SamplerParams& params) -> SamplerCacheEntry;
 
-    std::unordered_map<SamplerParams, SamplerCacheEntry, SamplerParamsHash> m_hashmap;
+    HashMap<SamplerParams, SamplerCacheEntry, SamplerParamsHash> m_hashmap = HashMap<SamplerParams, SamplerCacheEntry, SamplerParamsHash>::create();
     std::shared_mutex m_hashmapMutex;
 };
 

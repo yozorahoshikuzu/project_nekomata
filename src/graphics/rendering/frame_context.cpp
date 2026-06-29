@@ -155,7 +155,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
             auto barriers = VulkanPipelineBarriers::builder();
             for (const auto& atlasImageIndex : bufferImageCopyRegions.keys()) {
                 // For images that are newly created, transition from eUndefined instead
-                if (std::ranges::find(newImageIndices, atlasImageIndex) != newImageIndices.end()) {
+                if (newImageIndices.contains(atlasImageIndex)) {
                     barriers.insertImageMemoryBarrier(sharedRenderingResources.m_fontAtlas.m_atlasTextures[atlasImageIndex].image,
                         vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eNone, vk::AccessFlagBits2::eNone,
                         vk::ImageLayout::eTransferDstOptimal, vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferWrite

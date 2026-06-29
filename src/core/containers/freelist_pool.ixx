@@ -65,6 +65,8 @@ public:
         return getNodeByIndex(index).resource;
     }
 
+    auto allocatedCount() const -> usize { return m_allocatedNodesCount; }
+
 private:
     struct Node {
         union { T resource; Index nextFree; };

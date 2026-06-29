@@ -141,6 +141,8 @@ private:
     Vec<Entity> m_aliveEntities;
 
     HashMap<std::type_index, std::unique_ptr<IComponentSet>> m_components   = HashMap<std::type_index, std::unique_ptr<IComponentSet>>::create();
+
+
     HashMap<Entity, Vec<std::unique_ptr<ScriptBase>>, EntityHash> m_scripts = HashMap<Entity, Vec<std::unique_ptr<ScriptBase>>, EntityHash>::create();
 };
 
