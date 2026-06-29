@@ -123,8 +123,7 @@ auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesy
     KTX_error_code result = ktxTexture2_CreateFromNamedFile(path.c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &ktxData);
 
     if (result != KTX_SUCCESS) {
-        log::crit("Failed to load texture: {}", path.string());
-        throw std::runtime_error("failed to load texture");
+        panic("failed to load texture: {}", path.string());
     }
 
     bool needsTranscoding = ktxTexture2_NeedsTranscoding(ktxData);
@@ -132,8 +131,7 @@ auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesy
         KTX_error_code transcodeResult = ktxTexture2_TranscodeBasis(ktxData, KTX_TTF_BC7_RGBA, 0);
         log::info("Transcoding texture: {}", path.string());
         if (transcodeResult != KTX_SUCCESS) {
-            log::crit("Failed to transcode texture!");
-            throw std::runtime_error("failed to transcode texture");
+            panic("failed to transcode texture");
         }
     }
 

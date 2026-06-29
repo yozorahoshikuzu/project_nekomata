@@ -51,7 +51,7 @@ auto VulkanQueue::submitOneCommandBuffer(const vk::raii::CommandBuffer& buf, con
         vk::SubmitInfo2{}.setCommandBufferInfos(commandBuffer).setSignalSemaphoreInfos(semaphoreSubmitInfo).setWaitSemaphoreInfos(semaphoreWaitInfos);
 
     if (fence.has_value()) {
-        m_vkQueue.submit2(submitInfo, fence->get().vkFence());
+        vkCheckResult(m_vkQueue.submit2(submitInfo, fence->get().vkFence()));
     } else {
         m_vkQueue.submit2(submitInfo);
     }
@@ -104,9 +104,9 @@ auto VulkanQueue::submitOneCommandBufferWithBinarySemaphores(const vk::raii::Com
         vk::SubmitInfo2{}.setCommandBufferInfos(commandBuffer).setSignalSemaphoreInfos(semaphoreSignalInfos).setWaitSemaphoreInfos(semaphoreWaitInfos);
 
     if (fence.has_value()) {
-        m_vkQueue.submit2(submitInfo, fence->get().vkFence());
+        vkCheckResult(m_vkQueue.submit2(submitInfo, fence->get().vkFence()));
     } else {
-        m_vkQueue.submit2(submitInfo);
+        vkCheckResult(m_vkQueue.submit2(submitInfo));
     }
 
     auto asyncOp = GPUFuture(m_timelineSemaphore, signalValue);
@@ -125,7 +125,10 @@ auto VulkanQueue::submitPresent(const VulkanSwapchain& swapchain, const VulkanBi
 }
 
 auto VulkanQueue::waitIdle() -> void {
-    m_vkQueue.waitIdle();
+    vkCheckResult(m_vkQueue.waitIdle());
+}
+auto VulkanQueue::currentTimelineValue() const -> u64 {
+    return vkCheckResult(m_timelineSemaphore.getCounterValue());
 }
 
 } // namespace nekomata2

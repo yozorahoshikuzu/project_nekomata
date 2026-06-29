@@ -20,7 +20,7 @@ auto BufferPool::Slab::create(const BufferPoolConfig& cfg) -> Slab {
     auto vbCreateInfo = vma::VirtualBlockCreateInfo{}
         .setSize(cfg.slabSize);
 
-    auto block = vma::raii::createVirtualBlock(vbCreateInfo);
+    auto block = vkCheckResult(vma::raii::createVirtualBlock(vbCreateInfo));
     return Slab(std::move(buffer), std::move(block));
 }
 
@@ -37,13 +37,7 @@ std::optional<BufferPoolSuballocation> BufferPool::trySuballocate(u32 slabIndex,
         .setSize(byteSize)
         .setAlignment(alignment);
 
-    vma::raii::VirtualAllocation va = nullptr;
-
-    try {
-        va = slab.virtualBlock.allocate(vaCreateInfo);
-    } catch (const vk::SystemError& e) {
-        return std::nullopt;
-    }
+    vma::raii::VirtualAllocation va = vkCheckResult(slab.virtualBlock.allocate(vaCreateInfo));
 
     slab.usedBytes += byteSize;
 
@@ -117,14 +111,14 @@ auto BufferPool::allocate(u64 byteSize, u64 alignment) -> BufferPoolSuballocatio
     // Path 3 - Grow slabs
 
     if (m_slabs.size() >= m_cfg.maxSlabCount) {
-        throw std::runtime_error("Ran out of slabs space!");
+        panic("ran out of slabs space");
     }
 
     m_slabs.push_back(Slab::create(m_cfg));
 
     if (auto suballocation = trySuballocate(m_slabs.size() - 1, byteSize, alignment)) return std::move(*suballocation);
 
-    throw std::runtime_error("Ran out of slabs space!");
+    panic("ran out of slabs space");
 }
 
 auto BufferPool::free(BufferPoolSuballocation& alloc, u64 currentFrameIndex) -> void {

@@ -9,7 +9,7 @@ VulkanBinarySemaphore::VulkanBinarySemaphore(vk::raii::Semaphore&& vkSemaphore) 
 auto VulkanBinarySemaphore::create() -> VulkanBinarySemaphore {
     auto semaphoreCreateInfo = vk::SemaphoreCreateInfo{};
 
-    auto handle = VulkanContext::get().vkDevice().createSemaphore(semaphoreCreateInfo);
+    auto handle = vkCheckResult(VulkanContext::get().vkDevice().createSemaphore(semaphoreCreateInfo));
     return VulkanBinarySemaphore(std::move(handle));
 }
 

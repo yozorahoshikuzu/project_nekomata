@@ -26,7 +26,7 @@ auto VulkanCommandPool::createWithQueueFamilyIndex(u32 queueFamilyIndex, bool tr
     
     if (transientCommandBuffers) createInfo.flags |= vk::CommandPoolCreateFlagBits::eTransient;
 
-    auto handle = VulkanContext::get().vkDevice().createCommandPool(createInfo);
+    auto handle = vkCheckResult(VulkanContext::get().vkDevice().createCommandPool(createInfo));
     return VulkanCommandPool(std::move(handle));
 }
 
@@ -40,8 +40,8 @@ auto VulkanCommandPool::allocateCommandBuffer(vk::CommandBufferLevel level) -> V
         .setCommandBufferCount(1)
         .setLevel(level);
     
-    auto buf = std::move(vk::raii::CommandBuffers(VulkanContext::get().vkDevice(), allocInfo)[0]);
-    return VulkanCommandBuffer(std::move(buf));
+    auto buffers = vkCheckResult(VulkanContext::get().vkDevice().allocateCommandBuffers(allocInfo));
+    return VulkanCommandBuffer(std::move(buffers[0]));
 }
 
 }

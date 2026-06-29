@@ -4,6 +4,7 @@ module;
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
 #define VMA_HPP_CXX_MODULE
+#include <cassert>
 #include <vk_mem_alloc.hpp>
 #include <vk_mem_alloc_raii.hpp>
 export module vk_mem_alloc;

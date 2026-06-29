@@ -18,10 +18,10 @@ VulkanResourceDeletionQueue::~VulkanResourceDeletionQueue() {
         .setSemaphore(graphicsQueueSemaphore)
         .setValue(std::numeric_limits<u64>::max());
 
-    VulkanContext::get().vkDevice().signalSemaphore(signalInfo);
+    vkCheckResult(VulkanContext::get().vkDevice().signalSemaphore(signalInfo));
 
     signalInfo.semaphore = asyncComputeQueueSemaphore;
-    VulkanContext::get().vkDevice().signalSemaphore(signalInfo);
+    vkCheckResult(VulkanContext::get().vkDevice().signalSemaphore(signalInfo));
 
 
     m_endSyncBarrier.arrive_and_wait();
@@ -66,11 +66,11 @@ auto VulkanResourceDeletionQueue::workerRoutine() -> void {
                     .setValues(values);
 
                 // log::info(" ** Vulkan OBRM thread waiting:    current graphics = {}, async compute = {}, expected graphics = {}, async compute = {}", current_graphics_queue_retire_value, current_async_compute_queue_retire_value, obj->graphics_queue_retire_value, obj->async_compute_queue_retire_value);
-                VulkanContext::get().vkDevice().waitSemaphores(waitInfo, std::numeric_limits<u64>::max());
+                vkCheckResult(VulkanContext::get().vkDevice().waitSemaphores(waitInfo, std::numeric_limits<u64>::max()));
 
 
-                currentGraphicsQueueRetireValue = graphicsQueueSemaphore.getCounterValue();
-                currentAsyncComputeQueueRetireValue = asyncComputeQueueSemaphore.getCounterValue(); 
+                currentGraphicsQueueRetireValue = vkCheckResult(graphicsQueueSemaphore.getCounterValue());
+                currentAsyncComputeQueueRetireValue = vkCheckResult(asyncComputeQueueSemaphore.getCounterValue());
                 // log::info(" ** Vulkan OBRM thread continuing:     new graphics = {}, async compute = {}", current_graphics_queue_retire_value, current_async_compute_queue_retire_value);
             }
 

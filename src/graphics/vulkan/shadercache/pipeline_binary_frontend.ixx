@@ -66,7 +66,7 @@ public:
             m_binaryKeysToBinaryObjects(pipelineCacheDirectory / "bin", storesNibblesPerLevel, storesLevelCount) {}
 
     void checkGlobalKeyAndInvalidateStale() {
-        auto globalKey = VulkanContext::get().vkDevice().getPipelineKeyKHR();
+        auto globalKey = vkCheckResult(VulkanContext::get().vkDevice().getPipelineKeyKHR());
         std::span<const u8> gpkKey = { globalKey.key.data(), globalKey.keySize };
         std::vector<u8> byteBuffer;
         if (!getGlobalKeyFromStorage(byteBuffer)) {
@@ -93,7 +93,7 @@ public:
             .setPNext(&chain.template get<vk::GraphicsPipelineCreateInfo>());
 
 
-        auto pipelineKey = VulkanContext::get().vkDevice().getPipelineKeyKHR(pipelineCreateInfo);
+        auto pipelineKey = vkCheckResult(VulkanContext::get().vkDevice().getPipelineKeyKHR(pipelineCreateInfo));
         std::vector<vk::PipelineBinaryKeyKHR> binaryKeys;
         if (!getBinaryKeysForPipelineKey(pipelineKey, binaryKeys)) {
             return handleCreateGraphicsPipelineUncached(chain, pipelineKey);
@@ -110,7 +110,7 @@ public:
         chain.template get<vk::PipelineBinaryInfoKHR>()
             .setPipelineBinaries(binaryHandles);
 
-        return VulkanContext::get().vkDevice().createGraphicsPipeline(nullptr, chain.template get<vk::GraphicsPipelineCreateInfo>());
+        return vkCheckResult(VulkanContext::get().vkDevice().createGraphicsPipeline(nullptr, chain.template get<vk::GraphicsPipelineCreateInfo>()));
     }
 
 private:
@@ -174,7 +174,7 @@ private:
         auto binaryCreateInfo = vk::PipelineBinaryCreateInfoKHR{}
             .setPKeysAndDataInfo(&binaryAndDataInfo);
 
-        buffer = VulkanContext::get().vkDevice().createPipelineBinariesKHR(binaryCreateInfo);
+        buffer = vkCheckResult(VulkanContext::get().vkDevice().createPipelineBinariesKHR(binaryCreateInfo));
 
         return true;
     }
@@ -227,14 +227,14 @@ private:
     auto handleCreateGraphicsPipelineUncached(vk::StructureChain<ScElements...>& chain, vk::PipelineBinaryKeyKHR pipelineKey) -> vk::raii::Pipeline {
         chain.template get<vk::PipelineCreateFlags2CreateInfo>().flags |= vk::PipelineCreateFlagBits2::eCaptureDataKHR;
 
-        auto pipeline = VulkanContext::get().vkDevice().createGraphicsPipeline(nullptr, chain.template get<vk::GraphicsPipelineCreateInfo>());
+        auto pipeline = vkCheckResult(VulkanContext::get().vkDevice().createGraphicsPipeline(nullptr, chain.template get<vk::GraphicsPipelineCreateInfo>()));
 
         // -----------------------------------------------------------------------------------------------------------------------------------------------------
         // Binary Extraction
 
         auto binaryCreateInfo = vk::PipelineBinaryCreateInfoKHR{}
             .setPipeline(pipeline);
-        auto binaries = VulkanContext::get().vkDevice().createPipelineBinariesKHR(binaryCreateInfo);
+        auto binaries = vkCheckResult(VulkanContext::get().vkDevice().createPipelineBinariesKHR(binaryCreateInfo));
 
         bool silentlyFailPipelineKeyWrite = false;
         std::vector<vk::PipelineBinaryKeyKHR> binaryKeys;
@@ -242,7 +242,7 @@ private:
             auto binaryDataInfo = vk::PipelineBinaryDataInfoKHR{}
                 .setPipelineBinary(binary);
 
-            auto [binaryDataKey, binaryData] = VulkanContext::get().vkDevice().getPipelineBinaryDataKHR(binaryDataInfo);
+            auto [binaryDataKey, binaryData] = vkCheckResult(VulkanContext::get().vkDevice().getPipelineBinaryDataKHR(binaryDataInfo));
             binaryKeys.emplace_back(binaryDataKey);
 
             std::span<const u8> binaryDataKeySpan = { binaryDataKey.key.data(), binaryDataKey.keySize };

@@ -9,6 +9,7 @@ import :graphics.vulkan.context;
 import :core.runtime.shared_data;
 import :core.runtime.mainthread;
 import :core.runtime.graphicsthread;
+import :core.cs.panic;
 
 namespace nekomata2 {
 
@@ -19,15 +20,7 @@ auto entryAfterSdlInit(const std::function<void(std::unique_ptr<ecs::World>&)>& 
 
     // NOTE: This creates the vk::SurfaceKHR so this MUST be called here to respect SDL thread safety rules. Creating the renderer on the graphics thread is
     // NOTE: fine though.
-    std::unique_ptr<VulkanContext> vulkanContext = nullptr;
-    try {
-        vulkanContext = VulkanContext::create(window);
-    } catch (const std::runtime_error& e) {
-        auto errorMsg = std::string("Failed to initialize the Vulkan context: ") + std::string(e.what());
-        log::crit("{}", errorMsg);
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", errorMsg.c_str(), nullptr);
-        return;
-    }
+    std::unique_ptr<VulkanContext> vulkanContext = VulkanContext::create(window);
     auto windowCurrentRes = window.vulkanGetDrawableSize();
 
     auto threadSharedData = std::make_shared<MRThreadsSharedData>(windowCurrentRes);
@@ -49,6 +42,7 @@ auto entryAfterSdlInit(const std::function<void(std::unique_ptr<ecs::World>&)>& 
 }
 
 auto entry(const std::function<void(std::unique_ptr<ecs::World>&)>& initFn) -> void {
+    setupBacktrace();
     sdlPlatformInit();
     entryAfterSdlInit(initFn);
     sdlPlatformDeinit();

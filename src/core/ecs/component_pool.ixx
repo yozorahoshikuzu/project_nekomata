@@ -4,6 +4,7 @@ import :core.ecs.entity;
 import :core.platform.int_def;
 import :core.platform.assert;
 import :core.cs.vec;
+import :core.cs.panic;
 
 export namespace nekomata2::ecs {
 
@@ -46,7 +47,7 @@ public:
         resizeSparseToFit(index);
 
         if (m_sparseToStorage[index] != INVALID_INDEX)
-            throw std::runtime_error("attempted to add component to entity that already has that component");
+            panic("attempted to add component to entity that already has that component");
 
         m_sparseToStorage[index] = static_cast<u32>(m_storage.len());
         m_storage.emplace(std::forward<Args>(args)...);

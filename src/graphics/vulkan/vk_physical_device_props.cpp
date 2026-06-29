@@ -174,7 +174,7 @@ auto dedupQueueIndices(std::vector<u32>& queueIndices) {
 
 auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhysicalDevice, const vk::raii::SurfaceKHR& vkSurface)
     -> std::expected<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError> {
-    auto supportedExtensionProperties = Vec<vk::ExtensionProperties>::fromStdVector(vkPhysicalDevice.enumerateDeviceExtensionProperties());
+    auto supportedExtensionProperties = Vec<vk::ExtensionProperties>::fromStdVector(vkCheckResult(vkPhysicalDevice.enumerateDeviceExtensionProperties()));
     auto supportedExtensionNames = supportedExtensionProperties.iter()
         .map([](auto&& ext) { return std::string(ext.extensionName); })
         .inspect([](const auto& x) { log::info("Supported extension: {}", x); })
@@ -293,7 +293,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
 
         if (family.queueFlags & vk::QueueFlagBits::eGraphics) graphicsIndices.emplace_back(queueIndex);
         if (family.queueFlags & vk::QueueFlagBits::eCompute && !(family.queueFlags & vk::QueueFlagBits::eGraphics)) asyncComputeIndices.emplace_back(queueIndex);
-        if (vkPhysicalDevice.getSurfaceSupportKHR(queueIndex, vkSurface)) presentIndices.emplace_back(queueIndex);
+        if (vkCheckResult(vkPhysicalDevice.getSurfaceSupportKHR(queueIndex, vkSurface))) presentIndices.emplace_back(queueIndex);
     }
 
     std::unordered_set<u32> usedQueueIndices;
@@ -394,9 +394,9 @@ auto VulkanPhysicalDeviceProperties::printInfo() const -> void {
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 auto VulkanPhysicalDeviceSurfaceProperties::query(const vk::raii::PhysicalDevice &vkPhysicalDevice, const vk::raii::SurfaceKHR &vkSurface) -> VulkanPhysicalDeviceSurfaceProperties {
-    auto capabilities = vkPhysicalDevice.getSurfaceCapabilitiesKHR(vkSurface);
-    auto surfaceFormats = vkPhysicalDevice.getSurfaceFormatsKHR(vkSurface);
-    auto presentModes = vkPhysicalDevice.getSurfacePresentModesKHR(vkSurface);
+    auto capabilities = vkCheckResult(vkPhysicalDevice.getSurfaceCapabilitiesKHR(vkSurface));
+    auto surfaceFormats = vkCheckResult(vkPhysicalDevice.getSurfaceFormatsKHR(vkSurface));
+    auto presentModes = vkCheckResult(vkPhysicalDevice.getSurfacePresentModesKHR(vkSurface));
 
     VulkanPhysicalDeviceSurfaceProperties props;
     props.m_surfaceFormats = Vec<vk::SurfaceFormatKHR>::fromStdVector(std::move(surfaceFormats));

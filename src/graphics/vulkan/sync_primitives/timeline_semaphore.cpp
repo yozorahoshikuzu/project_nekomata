@@ -17,7 +17,7 @@ auto VulkanTimelineSemaphore::create(u64 initialValue) -> VulkanTimelineSemaphor
         semaphoreTypeInfo
     };
 
-    auto handle = VulkanContext::get().vkDevice().createSemaphore(chain.get<vk::SemaphoreCreateInfo>());
+    auto handle = vkCheckResult(VulkanContext::get().vkDevice().createSemaphore(chain.get<vk::SemaphoreCreateInfo>()));
     return VulkanTimelineSemaphore(std::move(handle));
 }
 

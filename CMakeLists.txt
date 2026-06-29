@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 4.3)
 set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
 
 add_compile_options(
+        -fno-exceptions
         -flto=thin
         -fno-plt
 
@@ -94,6 +95,11 @@ else()
     message(FATAL_ERROR "couldn't find tcmalloc")
 endif()
 
+# Find libbacktrace
+
+find_path(LIBBACKTRACE_INCLUDE_DIR backtrace.h)
+find_library(LIBBACKTRACE_LIBRARY backtrace)
+
 # ----------------------------------------------------------------------------------------------------------------------
 #     Vulkan and VMA Modules
 
@@ -102,6 +108,7 @@ target_compile_definitions(
         VulkanModule PUBLIC
         VK_NO_PROTOTYPES
         VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1
+        VULKAN_HPP_NO_EXCEPTIONS
 )
 target_link_libraries(VulkanModule PUBLIC Vulkan::Headers)
 target_sources(VulkanModule
@@ -216,6 +223,12 @@ target_link_libraries(
         xxhash
         utf8::cpp
 )
+if (LIBBACKTRACE_INCLUDE_DIR AND LIBBACKTRACE_LIBRARY)
+        target_include_directories(nekomata2_Library PRIVATE ${LIBBACKTRACE_INCLUDE_DIR})
+        target_link_libraries(nekomata2_Library PRIVATE ${LIBBACKTRACE_LIBRARY})
+
+        target_compile_definitions(nekomata2_Library PRIVATE PROJNEKOMATA_USE_LIBBACKTRACE)
+endif()
 target_compile_options(
         nekomata2_Library PRIVATE
         -flto=thin

@@ -18,6 +18,7 @@ import :graphics.vulkan.vk_commands_barriers;
 import :core.ecs.entity;
 import :core.overloaded;
 import :graphics.rendering.frame_context;
+import :core.cs.panic;
 
 namespace nekomata2::graphics {
 
@@ -122,8 +123,8 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     auto& cb = m_frameRenderingResources.commandBuffer().vkCommandBuffer();
 
     auto beginInfo = vk::CommandBufferBeginInfo{}
-    .setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-    cb.begin(beginInfo);
+        .setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+    vkCheckResult(cb.begin(beginInfo));
 
     // Temporary:: prepare font
 
@@ -432,7 +433,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         )
         .flush(m_frameRenderingResources.commandBuffer());
 
-    cb.end();
+    vkCheckResult(cb.end());
 
     VulkanContext::get().vkQueueGraphics().submitOneCommandBufferWithBinarySemaphores(
         cb,

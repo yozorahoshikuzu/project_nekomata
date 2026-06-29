@@ -66,7 +66,7 @@ auto VulkanContext::create(nekomata2::SdlWindow& sdlWindow) -> std::unique_ptr<V
             semaphoreTypeInfo
         };
 
-        auto handle = VulkanContext::get().vkDevice().createSemaphore(chain.get<vk::SemaphoreCreateInfo>());
+        auto handle = vkCheckResult(VulkanContext::get().vkDevice().createSemaphore(chain.get<vk::SemaphoreCreateInfo>()));
         auto queue = std::make_unique<VulkanQueue>(std::move(vkQueue), std::move(handle), lastTimelineSubmissionValue);
 
         vkContext->m_vkQueues.emplace_back(std::move(queue));
@@ -142,7 +142,7 @@ auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debu
         .setEngineVersion(vk::makeApiVersion(0, 0, 1, 0))
         .setApiVersion(vk::ApiVersion14);
 
-    auto availableInstanceLayerProps = Vec<vk::LayerProperties>::fromStdVector(vk::enumerateInstanceLayerProperties());
+    auto availableInstanceLayerProps = Vec<vk::LayerProperties>::fromStdVector(vkCheckResult(vk::enumerateInstanceLayerProperties()));
     auto availableInstanceLayerNames = availableInstanceLayerProps.iter()
         .map([](auto&& layer) { return std::string(layer.layerName); })
         .collect<Vec>();
@@ -163,7 +163,7 @@ auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debu
         .setPEnabledExtensionNames(instanceExtensionsC)
         .setPEnabledLayerNames(instanceLayersC);
     
-    auto instance = vk::raii::Instance(vkRaiiContext, instanceInfo);
+    auto instance = vkCheckResult(vkRaiiContext.createInstance(instanceInfo));
 
     return instance;
 }
@@ -175,9 +175,9 @@ auto VulkanContext::createVkSurface(const vk::raii::Instance& vkInstance, nekoma
 }
 
 auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, const vk::raii::SurfaceKHR& vkSurface) -> std::tuple<vk::raii::PhysicalDevice, VulkanPhysicalDeviceProperties> {
-    auto physicalDevices = Vec<vk::raii::PhysicalDevice>::fromStdVector(vkInstance.enumeratePhysicalDevices());
+    auto physicalDevices = Vec<vk::raii::PhysicalDevice>::fromStdVector(vkCheckResult(vkInstance.enumeratePhysicalDevices()));
 
-    if (physicalDevices.isEmpty()) throw std::logic_error("no vulkan physical devices");
+    if (physicalDevices.isEmpty()) panic("no GPUs found");
 
     auto props = physicalDevices.iter()
         .map([&](auto&& vkPhysicalDevice) { return VulkanPhysicalDeviceProperties::query(vkPhysicalDevice, vkSurface); })
@@ -189,7 +189,7 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
         for (auto& [i, prop] : props) {
             log::crit("  GPU #{}: {}", i, prop.error().toString());
         }
-        throw std::logic_error("no GPUs shown by loader are supported");
+        panic("no GPUs shown by loader are supported");
     }
 
     auto scores = Vec<u32>::fromValue(props.size(), 0);
@@ -252,7 +252,7 @@ auto VulkanContext::createVkDevice(const vk::raii::PhysicalDevice& vkPhysicalDev
         chain.unlink<vk::PhysicalDeviceAntiLagFeaturesAMD>();
     }
 
-    auto device = vkPhysicalDevice.createDevice(chain.get<vk::DeviceCreateInfo>());
+    auto device = vkCheckResult(vkPhysicalDevice.createDevice(chain.get<vk::DeviceCreateInfo>()));
     return device;
 }
 
@@ -263,7 +263,7 @@ auto VulkanContext::createVmaAllocator(const vk::raii::Instance& vkInstance, con
         .setVulkanApiVersion(vk::ApiVersion14)
         .setFlags(vkPhysicalDeviceProps.vmaAllocatorCreateFlags());
 
-    return vma::raii::createAllocator(vkInstance, vkDevice, allocatorCreateInfo);
+    return vkCheckResult(vma::raii::createAllocator(vkInstance, vkDevice, allocatorCreateInfo));
 }
 
 }

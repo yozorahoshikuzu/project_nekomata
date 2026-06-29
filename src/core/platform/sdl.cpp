@@ -7,14 +7,14 @@ import :core.log;
 import :core.math;
 import vulkan;
 import :core.platform.sdl;
+import :core.cs.panic;
 
 namespace nekomata2 {
 
 void sdlPlatformInit() {
     log::info("Initializing SDL...");
     if (!SDL_Init(SDL_INIT_VIDEO)) {
-        log::crit("Failed to initialize SDL: {}", SDL_GetError());
-        throw std::runtime_error("failed to initialize SDL");
+        panic("Failed to initialize SDL: {}", SDL_GetError());
     }
 
     auto sdlVideodriver = SDL_GetCurrentVideoDriver();
@@ -28,8 +28,7 @@ SdlWindow::SdlWindow(const std::string& title, const uint32_t width, const uint3
     m_window = SDL_CreateWindow(title.c_str(), width, height, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
 
     if (m_window == nullptr) {
-        log::crit("Failed to create SDL window: {}", SDL_GetError());
-        throw std::runtime_error("failed to create SDL window");
+        panic("failed to create SDL window: {}", SDL_GetError());
 
     }
 }
@@ -52,8 +51,7 @@ auto SdlWindow::vulkanCreateRawSurface(const vk::Instance& vkInstance) const -> 
     VkSurfaceKHR surface;
     if (!SDL_Vulkan_CreateSurface(m_window, vkInstance, nullptr, &surface)) {
         auto msg = SDL_GetError();
-        log::crit("SDL Error when creating vk::SurfaceKHR: {}", msg);
-        throw std::logic_error(msg);
+        panic("SDL error when creating vk::SurfaceKHR: {}", msg);
     }
 
     return {surface};

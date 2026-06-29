@@ -39,8 +39,7 @@ auto BindlessDescriptorSetShaderResourceTable::create(u32 maxImageCount, u32 max
 auto BindlessDescriptorSetShaderResourceTable::allocateImageIndex() -> SRTResourceIndex {
     auto index = m_imageIndexAllocator.allocate();
     if (!index.has_value()) {
-        log::crit("Bindless descriptor set image index allocator ran out of indices!");
-        throw std::runtime_error("out of image indices");
+        panic("bindless descriptor set image index allocator ran out of indices");
     }
     return SRTResourceIndex(index.value());
 }
@@ -64,8 +63,7 @@ auto BindlessDescriptorSetShaderResourceTable::freeImageIndices(std::span<SRTRes
 auto BindlessDescriptorSetShaderResourceTable::allocateSamplerIndex() -> SRTResourceIndex {
     auto index = m_nextSamplerIndex.fetch_add(1, std::memory_order_relaxed);
     if (index >= m_maxSamplerCount) {
-        log::crit("Bindless descriptor set sampler index allocator ran out of indices!");
-        throw std::runtime_error("out of sampler indices");
+        panic("bindless descriptor set sampler index allocator ran out of indices");
     }
     return SRTResourceIndex(index);
 }

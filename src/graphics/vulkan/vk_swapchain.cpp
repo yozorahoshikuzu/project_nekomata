@@ -73,8 +73,8 @@ auto VulkanSwapchain::create(vk::Extent2D windowDrawableExtent, std::optional<Vu
         swapchainCreateInfo.oldSwapchain = oldSwapchain->vkSwapchain();
     }
 
-    auto swapchain = VulkanContext::get().vkDevice().createSwapchainKHR(swapchainCreateInfo);
-    auto preparedSwapchainImages = Vec<vk::Image>::fromStdVector(swapchain.getImages());
+    auto swapchain = vkCheckResult(VulkanContext::get().vkDevice().createSwapchainKHR(swapchainCreateInfo));
+    auto preparedSwapchainImages = Vec<vk::Image>::fromStdVector(vkCheckResult(swapchain.getImages()));
     auto swapchainImages = preparedSwapchainImages.iter()
         .map([&](auto&& img) { return SwapchainImage::from(img, imageExtent, surfaceFormat.format); })
         .collect<Vec>();
@@ -95,7 +95,7 @@ auto VulkanSwapchain::acquireNextImage(u64 timeoutNanos, const VulkanBinarySemap
         return { std::nullopt, true };
     }
 
-    throw std::logic_error("acquire next image failed");
+    panic("vkAcquireNextImageKHR failed");
 }
 
 }

@@ -54,7 +54,7 @@ public:
         return vk::PipelineLayoutCreateInfo{}.setSetLayouts(m_descriptorSetLayouts).setPushConstantRanges(m_pushConstantRanges);
     }
     [[nodiscard]] constexpr auto build() const -> VulkanPipelineLayout {
-        auto pipelineLayout = VulkanContext::get().vkDevice().createPipelineLayout(buildCreateInfo());
+        auto pipelineLayout = vkCheckResult(VulkanContext::get().vkDevice().createPipelineLayout(buildCreateInfo()));
 
         return VulkanPipelineLayout(std::move(pipelineLayout));
     }

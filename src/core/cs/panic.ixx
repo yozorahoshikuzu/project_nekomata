@@ -1,0 +1,99 @@
+module;
+#include <stdlib.h>
+#include <unistd.h>
+#if defined(__linux__)
+#include <execinfo.h>
+
+#if defined(PROJNEKOMATA_USE_LIBBACKTRACE)
+#include <backtrace.h>
+#include <cxxabi.h>
+#endif
+
+#endif
+export module nekomata2:core.cs.panic;
+import std;
+import :core.log;
+import :core.platform.thread;
+
+constexpr bool kPanicPrintsStackTrace = true;
+
+#if defined(PROJNEKOMATA_USE_LIBBACKTRACE)
+inline backtrace_state* state;
+#endif
+
+export inline void setupBacktrace() {
+#if defined(PROJNEKOMATA_USE_LIBBACKTRACE)
+    state = backtrace_create_state(
+        nullptr,
+        1,
+        nullptr,
+        nullptr);
+#endif
+}
+
+#if defined(PROJNEKOMATA_USE_LIBBACKTRACE)
+inline std::string demangleCxxName(const char* name) {
+    if (!name) return "[unknown function]";
+
+    int status = 0;
+    char* demangled = abi::__cxa_demangle(name, nullptr, nullptr, &status);
+
+    std::string result = (status == 0 && demangled) ? demangled : name;
+
+    free(demangled);
+    return result;
+}
+int backtracePrintlineCallback(void* data, uintptr_t pc, const char* filename, i32 lineno, const char* function) {
+    nekomata2::log::crit("  #{}: {}",
+        *static_cast<i32*>(data), function ? demangleCxxName(function) : "[unknown function]"
+    );
+    nekomata2::log::crit("    at {}:{}", filename ? filename : "[unknown source]", lineno);
+    return 0;
+}
+void backtraceErrorCallback(void* data, const char* errorMsg, int errnum) {
+    nekomata2::log::crit("  #{}: (failed to resolve: {})", *static_cast<i32*>(data), errorMsg);
+}
+#endif
+
+template<typename... Args>
+[[noreturn]]
+void panic_impl(std::source_location loc, std::string_view fmt, Args&&... args) {
+    nekomata2::log::crit("thread {} (id {}) panicked at {}:{}: {}", nekomata2::getThreadName(), nekomata2::getThreadId(), loc.file_name(), loc.line(), std::vformat(fmt, std::make_format_args(args...)));
+
+#if defined(__linux__) && defined(PROJNEKOMATA_USE_LIBBACKTRACE)
+    if constexpr (kPanicPrintsStackTrace) {
+        void* stack[128];
+        i32 frameCount = backtrace(stack, 128);
+
+        nekomata2::log::crit("stack trace:");
+        for (i32 i = 0; i < frameCount; i++) {
+            backtrace_pcinfo(
+                state,
+                (uintptr_t)stack[i],
+                backtracePrintlineCallback,
+                backtraceErrorCallback,
+                static_cast<void*>(&i)
+            );
+        }
+    } else {
+        nekomata2::log::crit("stack trace printing was disabled by kPanicPrintsStackTrace");
+    }
+#else
+    nekomata2::log::crit("stack trace printing is not supported");
+#endif
+
+    abort();
+}
+
+export template<typename... Args>
+struct panic {
+    [[noreturn]] panic(std::string_view fmt,
+          Args&&... args,
+          std::source_location loc = std::source_location::current())
+    {
+        panic_impl(loc, fmt, std::forward<Args>(args)...);
+    }
+};
+
+export template<typename... Args>
+[[noreturn]] panic(std::string_view, Args&&...) -> panic<Args...>;

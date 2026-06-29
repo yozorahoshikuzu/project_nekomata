@@ -27,7 +27,7 @@ auto VulkanBuffer::create(u64 size, vk::BufferUsageFlags usage, VulkanBufferMemo
         .setRequiredFlags(memoryRequiredFlags)
         .setFlags(mappedMemoryBit);
 
-    auto [allocation, buffer] = VulkanContext::get().vmaAllocator().createBuffer(bufferCreateInfo, allocationCreateInfo).split();
+    auto [allocation, buffer] = vkCheckResult(VulkanContext::get().vmaAllocator().createBuffer(bufferCreateInfo, allocationCreateInfo)).split();
 
     auto memoryDevicePtr = vk::DeviceAddress(nullptr);
     if (usage & vk::BufferUsageFlagBits::eShaderDeviceAddress) {

@@ -6,8 +6,22 @@ import :core.platform.int_def;
 import :core.platform.sdl;
 import :graphics.vulkan.vk_physical_device_props;
 import :graphics.vulkan.vk_queue;
+import :core.cs.panic;
 
 export namespace nekomata2 {
+
+template <typename T> inline auto vkCheckResult(vk::ResultValue<T> x) {
+    if (x.result != vk::Result::eSuccess) {
+        panic("Vulkan result check failed: returned {}", vk::to_string(x.result));
+    }
+    return std::move(x.value);
+}
+
+inline auto vkCheckResult(vk::Result x) {
+    if (x != vk::Result::eSuccess) {
+        panic("Vulkan result check failed: returned {}", vk::to_string(x));
+    }
+}
 
 enum class AntiLagMethod {
     None,

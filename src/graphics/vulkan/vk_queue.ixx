@@ -49,9 +49,7 @@ public:
     auto lastTimelineSubmissionValue() const -> u64 {
         return m_lastTimelineSubmissionValue.load(std::memory_order_relaxed);
     }
-    auto currentTimelineValue() const -> u64 {
-        return m_timelineSemaphore.getCounterValue();
-    }
+    auto currentTimelineValue() const -> u64;
 
 private:
     mutable std::mutex m_queueMutex;

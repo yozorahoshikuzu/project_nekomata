@@ -17,7 +17,7 @@ auto VulkanDescriptorPool::create(u32 maxSets, std::span<const vk::DescriptorPoo
         .setPoolSizes(sizes)
         .setFlags(flags);
 
-    auto handle = VulkanContext::get().vkDevice().createDescriptorPool(descriptorPoolCreateInfo);
+    auto handle = vkCheckResult(VulkanContext::get().vkDevice().createDescriptorPool(descriptorPoolCreateInfo));
     return VulkanDescriptorPool(std::move(handle));
 }
 
@@ -35,7 +35,7 @@ auto VulkanDescriptorPool::allocateDescriptorSet(const VulkanDescriptorSetLayout
         .setDescriptorPool(m_vkDescriptorPool.vkHandle())
         .setSetLayouts(*descriptorSetLayout.vkDescriptorSetLayout());
 
-    auto descriptorSet = std::move(VulkanContext::get().vkDevice().allocateDescriptorSets(descriptorSetAllocInfo)[0]);
+    auto descriptorSet = std::move(vkCheckResult(VulkanContext::get().vkDevice().allocateDescriptorSets(descriptorSetAllocInfo))[0]);
     return VulkanDescriptorSet(std::move(descriptorSet));
 }
 

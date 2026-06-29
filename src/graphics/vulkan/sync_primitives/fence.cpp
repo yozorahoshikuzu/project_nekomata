@@ -13,7 +13,7 @@ auto VulkanFence::create(bool signaled) -> VulkanFence {
         createInfo.setFlags(vk::FenceCreateFlagBits::eSignaled);
     }
     
-    auto handle = VulkanContext::get().vkDevice().createFence(createInfo);
+    auto handle = vkCheckResult(VulkanContext::get().vkDevice().createFence(createInfo));
     return VulkanFence(std::move(handle));
 }
 
@@ -22,7 +22,7 @@ auto VulkanFence::waitForSignal(u64 timeoutNanos) const -> void {
 }
 
 auto VulkanFence::reset() const -> void {
-    VulkanContext::get().vkDevice().resetFences(*m_vkFence.vkHandle());
+    vkCheckResult(VulkanContext::get().vkDevice().resetFences(*m_vkFence.vkHandle()));
 }
 
 }

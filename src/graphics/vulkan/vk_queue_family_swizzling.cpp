@@ -43,7 +43,7 @@ VulkanQueueFamilySwizzling::VulkanQueueFamilySwizzling(u32 graphicsQueueFamilyIn
         }
 
         if (m_queueFamilyIndexPermutationTableSize + searchPatternSize >= m_queueFamilyIndexPermutationTable.size()) {
-            throw std::runtime_error("Ran out of space for queue family index permutations!");
+            panic("ran out of space for queue family index permutations");
         }
 
         u32* copyDst = m_queueFamilyIndexPermutationTable.data() + m_queueFamilyIndexPermutationTableSize;

@@ -25,7 +25,8 @@ auto VulkanSampler::create(vk::Filter minFilter, vk::Filter magFilter, vk::Sampl
         .setMipLodBias(mipLodBias)
         .setCompareEnable(false);
 
-    return VulkanSampler(VulkanContext::get().vkDevice().createSampler(samplerCreateInfo));
+    auto sampler = vkCheckResult(VulkanContext::get().vkDevice().createSampler(samplerCreateInfo));
+    return VulkanSampler(std::move(sampler));
 }
 
 } // namespace nekomata2

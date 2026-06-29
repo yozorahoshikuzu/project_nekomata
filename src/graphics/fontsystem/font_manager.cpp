@@ -12,8 +12,7 @@ namespace nekomata2::graphics::fonts {
 FontManager::FontManager(std::nullptr_t) {  }
 FontManager::FontManager() {
     if (FT_Init_FreeType(&m_ftLibrary)) {
-        log::crit("Failed to load FreeType library!");
-        throw std::runtime_error("Failed to load FreeType library!");
+        panic("failed to load freetype library");
     }
 }
 
@@ -37,8 +36,7 @@ auto FontManager::loadFont(const std::filesystem::path& path) -> FontFace {
     {
         std::scoped_lock ftLock(m_ftLibraryMutex);
         if (FT_New_Face(m_ftLibrary, path.string().c_str(), 0, &fontEntry.face)) {
-            log::crit("Failed to load font face!");
-            throw std::runtime_error("Failed to load font face!");
+            panic("failed to load font face");
         }
     }
 

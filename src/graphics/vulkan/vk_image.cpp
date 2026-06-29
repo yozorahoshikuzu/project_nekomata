@@ -74,7 +74,7 @@ auto VulkanImage::create(vk::ImageType type, vk::Extent3D extent, u32 arrayLayer
         .setUsage(memoryUsage)
         .setRequiredFlags(memoryRequiredFlags);
 
-    auto [allocation, image] = VulkanContext::get().vmaAllocator().createImage(imageCreateInfo, allocationCreateInfo).split();
+    auto [allocation, image] = vkCheckResult(VulkanContext::get().vmaAllocator().createImage(imageCreateInfo, allocationCreateInfo)).split();
 
     auto imageViewType = selectImageViewType(type, arrayLayerCount);
     auto imageViewSubresRange = vk::ImageSubresourceRange{}
@@ -90,7 +90,7 @@ auto VulkanImage::create(vk::ImageType type, vk::Extent3D extent, u32 arrayLayer
         .setFormat(format)
         .setSubresourceRange(imageViewSubresRange);
     
-    auto imageView = VulkanContext::get().vkDevice().createImageView(imageViewCreateInfo);
+    auto imageView = vkCheckResult(VulkanContext::get().vkDevice().createImageView(imageViewCreateInfo));
     return VulkanImage(std::move(image), std::move(allocation), std::move(imageView), imageViewSubresRange, extent, arrayLayerCount, mipLevelCount, format, type);
 }
 
@@ -109,7 +109,7 @@ auto VulkanImage::createImageView(u32 baseMipLevel, u32 mipLevelCount, u32 baseA
         .setFormat(m_vkImageFormat)
         .setSubresourceRange(subresourceRange);
 
-    return VulkanImageView(VulkanContext::get().vkDevice().createImageView(imageViewCreateInfo));
+    return VulkanImageView(vkCheckResult(VulkanContext::get().vkDevice().createImageView(imageViewCreateInfo)));
 }
 auto VulkanImage::createImageViewWithMinLod(u32 baseMipLevel, u32 mipLevelCount, u32 baseArrayLayer, u32 arrayLayerCount, float minLod) -> VulkanImageView {
     auto subresourceRange = vk::ImageSubresourceRange{}
@@ -129,7 +129,7 @@ auto VulkanImage::createImageViewWithMinLod(u32 baseMipLevel, u32 mipLevelCount,
     auto minLodInfo = vk::ImageViewMinLodCreateInfoEXT{}
         .setMinLod(minLod);
     auto sc = vk::StructureChain{imageViewCreateInfo, minLodInfo};
-    return VulkanImageView(VulkanContext::get().vkDevice().createImageView(sc.get<vk::ImageViewCreateInfo>()));
+    return VulkanImageView(vkCheckResult(VulkanContext::get().vkDevice().createImageView(sc.get<vk::ImageViewCreateInfo>())));
 }
 
 auto VulkanImage::selectImageViewType(vk::ImageType type, u32 arrayLayerCount) -> vk::ImageViewType {

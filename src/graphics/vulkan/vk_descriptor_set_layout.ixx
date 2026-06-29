@@ -70,7 +70,7 @@ public:
             descriptorBindingFlagsInfo
         };
 
-        return VulkanDescriptorSetLayout(VulkanContext::get().vkDevice().createDescriptorSetLayout(sc.get<vk::DescriptorSetLayoutCreateInfo>()));
+        return VulkanDescriptorSetLayout(vkCheckResult(VulkanContext::get().vkDevice().createDescriptorSetLayout(sc.get<vk::DescriptorSetLayoutCreateInfo>())));
     }
 
 private:
