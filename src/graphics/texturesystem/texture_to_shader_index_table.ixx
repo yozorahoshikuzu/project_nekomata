@@ -1,9 +1,9 @@
-export module nekomata2:graphics.texturesystem.texture_to_shader_index_table;
+export module projnekomata:graphics.texturesystem.texture_to_shader_index_table;
 import std;
 import :core.platform.int_def;
 import :core.cs.vec;
 
-export namespace nekomata2::graphics::texturesystem {
+export namespace projnekomata::graphics::texturesystem {
 
 /// The reason why we need to translate texture indices to shader indices is as follows:
 ///  - Amendments of images/image views (necessary for mip streaming).

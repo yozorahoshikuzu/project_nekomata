@@ -1,8 +1,8 @@
-module nekomata2;
+module projnekomata;
 import :graphics.vulkan.context;
 import :graphics.vulkan.vk_image;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 VulkanImage::VulkanImage(std::nullptr_t) {}
 VulkanImage::VulkanImage(vk::raii::Image&& image, vma::raii::Allocation&& allocation, vk::raii::ImageView imageViewWholeSize, vk::ImageSubresourceRange imageSubresourceRangeFull, vk::Extent3D extents, u32 arrayLayerCount, u32 mipLevelCount, vk::Format format, vk::ImageType type)
@@ -146,4 +146,4 @@ auto VulkanImage::selectImageViewType(vk::ImageType type, u32 arrayLayerCount) -
     return imageViewType;
 }
 
-} // namespace nekomata2
+} // namespace projnekomata

@@ -1,4 +1,4 @@
-export module nekomata2:graphics.vulkan.context;
+export module projnekomata:graphics.vulkan.context;
 import std;
 import vulkan;
 import vk_mem_alloc;
@@ -8,7 +8,7 @@ import :graphics.vulkan.vk_physical_device_props;
 import :graphics.vulkan.vk_queue;
 import :core.cs.panic;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 template <typename T> inline auto vkCheckResult(vk::ResultValue<T> x) {
     if (x.result != vk::Result::eSuccess) {
@@ -65,9 +65,9 @@ private:
     // TODO: Document
     static auto initVkRaiiContext() -> vk::raii::Context;
     // TODO: Document
-    static auto createVkInstance(vk::raii::Context& vkRaiiContext, bool debugEnable, nekomata2::SdlWindow& sdlWindow) -> vk::raii::Instance;
+    static auto createVkInstance(vk::raii::Context& vkRaiiContext, bool debugEnable, projnekomata::SdlWindow& sdlWindow) -> vk::raii::Instance;
     // TODO: Document
-    static auto createVkSurface(const vk::raii::Instance& vkInstance, nekomata2::SdlWindow& sdlWindow) -> vk::raii::SurfaceKHR;
+    static auto createVkSurface(const vk::raii::Instance& vkInstance, projnekomata::SdlWindow& sdlWindow) -> vk::raii::SurfaceKHR;
     // TODO: Document
     static auto pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, const vk::raii::SurfaceKHR& vkSurface) -> std::tuple<vk::raii::PhysicalDevice, VulkanPhysicalDeviceProperties>;
     // TODO: Document
@@ -102,4 +102,4 @@ inline VulkanContext* g_vkContext = nullptr;
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-} // namespace nekomata2
+} // namespace projnekomata

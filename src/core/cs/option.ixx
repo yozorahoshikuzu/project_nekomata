@@ -1,4 +1,4 @@
-export module nekomata2:core.cs.option;
+export module projnekomata:core.cs.option;
 import std;
 import :core.platform.int_def;
 import :core.cs.niche;

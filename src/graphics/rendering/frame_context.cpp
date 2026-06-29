@@ -1,6 +1,6 @@
 module;
 #include <string.h>
-module nekomata2;
+module projnekomata;
 import vulkan;
 import vk_mem_alloc;
 import :core.log;
@@ -20,9 +20,9 @@ import :core.overloaded;
 import :graphics.rendering.frame_context;
 import :core.cs.panic;
 
-namespace nekomata2::graphics {
+namespace projnekomata::graphics {
 
-using namespace nekomata2::math;
+using namespace projnekomata::math;
 
 FrameContext::FrameContext(std::nullptr_t) {  }
 FrameContext::FrameContext() {
@@ -453,4 +453,4 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     return { .shouldRecreateSwapchain = false, .stepPerFrameResources = true };
 }
 
-} // namespace nekomata2::graphics
+} // namespace projnekomata::graphics

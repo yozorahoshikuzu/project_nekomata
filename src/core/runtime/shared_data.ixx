@@ -1,4 +1,4 @@
-export module nekomata2:core.runtime.shared_data;
+export module projnekomata:core.runtime.shared_data;
 import std;
 import vulkan;
 import :core.platform.int_def;
@@ -9,7 +9,7 @@ import :core.ecs.world.renderable;
 import :core.containers.double_buffer;
 import :core.ui.ui_drawcmds;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 struct MRThreadsSharedDataLeaf {
     MRThreadsSharedDataLeaf() = default;

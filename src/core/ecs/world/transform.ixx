@@ -1,9 +1,9 @@
-export module nekomata2:core.ecs.world.transform;
+export module projnekomata:core.ecs.world.transform;
 import :core.math;
 
-using namespace nekomata2::math;
+using namespace projnekomata::math;
 
-export namespace nekomata2::ecs::components {
+export namespace projnekomata::ecs::components {
 
 class Transform {
 public:

@@ -1,4 +1,4 @@
-export module nekomata2;
+export module projnekomata;
 export import :core.platform.int_def;
 export import :core.math;
 export import :core.log;

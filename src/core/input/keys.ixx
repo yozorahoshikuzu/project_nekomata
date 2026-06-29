@@ -1,11 +1,11 @@
 module;
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keycode.h>
-export module nekomata2:core.input.keys;
+export module projnekomata:core.input.keys;
 import :core.platform.int_def;
 import :core.log;
 
-export namespace nekomata2::core::input {
+export namespace projnekomata::core::input {
 
 enum class Key {
     Digit0, Digit1, Digit2, Digit3, Digit4, Digit5, Digit6, Digit7, Digit8, Digit9,

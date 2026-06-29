@@ -1,8 +1,8 @@
-module nekomata2;
+module projnekomata;
 import :graphics.vulkan.context;
 import :graphics.vulkan.sync_primitives.timeline_semaphore;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 VulkanTimelineSemaphore::VulkanTimelineSemaphore(std::nullptr_t) {}
 VulkanTimelineSemaphore::VulkanTimelineSemaphore(vk::raii::Semaphore&& vkSemaphore) : m_vkSemaphore(std::move(vkSemaphore)) {}

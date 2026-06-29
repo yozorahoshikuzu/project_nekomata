@@ -1,8 +1,8 @@
-export module nekomata2:core.math.consts;
+export module projnekomata:core.math.consts;
 import std;
 import :core.platform.int_def;
 
-export namespace nekomata2::math::consts {
+export namespace projnekomata::math::consts {
 
 template <typename T> constexpr T epsilonValue() noexcept {
     if constexpr (std::is_same_v<T, float>) return 1e-6f;

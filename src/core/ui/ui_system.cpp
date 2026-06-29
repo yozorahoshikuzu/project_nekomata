@@ -1,7 +1,7 @@
-module nekomata2;
+module projnekomata;
 import :core.ui.ui_system;
 
-namespace nekomata2::ui {
+namespace projnekomata::ui {
 
 UiSystem::UiSystem(std::nullptr_t) {  }
 auto UiSystem::create(math::Vector2f initialViewport) -> std::unique_ptr<UiSystem> {
@@ -21,4 +21,4 @@ auto UiSystem::create(math::Vector2f initialViewport) -> std::unique_ptr<UiSyste
 auto UiSystem::handleViewportResize(math::Vector2f newViewportSize) -> void {
 }
 
-} // namespace nekomata2::ui
+} // namespace projnekomata::ui

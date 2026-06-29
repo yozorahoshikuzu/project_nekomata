@@ -10,11 +10,11 @@ module;
 #include <unistd.h>
 #endif
 
-export module nekomata2:core.platform.thread;
+export module projnekomata:core.platform.thread;
 import std;
 import :core.platform.int_def;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 inline thread_local std::string tl_threadName = "(unnamed thread)";
 

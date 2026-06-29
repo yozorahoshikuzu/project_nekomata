@@ -1,9 +1,9 @@
-export module nekomata2:core.math.quaternion;
+export module projnekomata:core.math.quaternion;
 import std;
 import :core.math.matrix_types;
 import :core.math.consts;
 
-export namespace nekomata2::math {
+export namespace projnekomata::math {
 
 class Quaternion {
 public:

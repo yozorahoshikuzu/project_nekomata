@@ -1,4 +1,4 @@
-export module nekomata2:graphics.texturesystem.texture_manager;
+export module projnekomata:graphics.texturesystem.texture_manager;
 import std;
 import vulkan;
 import :core.platform.int_def;
@@ -8,7 +8,7 @@ import :core.containers.freelist_pool;
 import :graphics.texturesystem.sampler_cache;
 import :graphics.texturesystem.texture_to_shader_index_table;
 
-export namespace nekomata2::graphics::texturesystem {
+export namespace projnekomata::graphics::texturesystem {
 
 inline class TextureManager* g_textureManager = nullptr;
 

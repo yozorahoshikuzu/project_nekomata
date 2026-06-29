@@ -1,10 +1,10 @@
-export module nekomata2:core.math.base_matrix;
+export module projnekomata:core.math.base_matrix;
 import std;
 import :core.platform.assert;
 import :core.math.consts;
 import :core.platform.int_def;
 
-export namespace nekomata2::math {
+export namespace projnekomata::math {
 
 template <typename T, usize NRows> class MatrixStorageVector {
 public:
@@ -512,4 +512,4 @@ public:
     }
 };
 
-} // namespace nekomata2::math
+} // namespace projnekomata::math

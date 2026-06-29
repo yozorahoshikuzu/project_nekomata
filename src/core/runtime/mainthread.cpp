@@ -1,6 +1,6 @@
 module;
 #include <SDL3/SDL_events.h>
-module nekomata2;
+module projnekomata;
 import vulkan;
 import :core.log;
 import :graphics.cmd_alloc;
@@ -11,7 +11,7 @@ import :core.ecs.world.transform;
 import :core.ecs.world.camera;
 import :core.runtime.mainthread;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 MainThread::MainThread(std::shared_ptr<MRThreadsSharedData> mrSharedData, std::unique_ptr<VulkanContext>&& vkContext, SdlWindow&& sdlWindow)
     : m_sdlWindow(std::move(sdlWindow)), m_mrSharedData(std::move(std::move(mrSharedData))), m_vkContext(std::move(vkContext)) {

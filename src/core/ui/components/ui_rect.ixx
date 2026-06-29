@@ -1,7 +1,7 @@
-export module nekomata2:core.ui.components.ui_rect;
+export module projnekomata:core.ui.components.ui_rect;
 import :core.math;
 
-export namespace nekomata2::ui {
+export namespace projnekomata::ui {
 
 struct UiRect {
     UiRect() = default;

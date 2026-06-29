@@ -1,4 +1,4 @@
-export module nekomata2:graphics.rendering.frame_context;
+export module projnekomata:graphics.rendering.frame_context;
 import std;
 import :graphics.rendering.transient_rendering_resources;
 import :graphics.rendering.shared_rendering_resources;
@@ -6,7 +6,7 @@ import :graphics.vulkan.vk_swapchain;
 import :core.runtime.shared_data;
 import :graphics.rendering.frame_rendering_resources;
 
-export namespace nekomata2::graphics {
+export namespace projnekomata::graphics {
 
 struct FrameResult {
     bool shouldRecreateSwapchain = false;

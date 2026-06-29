@@ -10,7 +10,7 @@ module;
 #endif
 
 #endif
-export module nekomata2:core.cs.panic;
+export module projnekomata:core.cs.panic;
 import std;
 import :core.log;
 import :core.platform.thread;
@@ -44,28 +44,28 @@ inline std::string demangleCxxName(const char* name) {
     return result;
 }
 int backtracePrintlineCallback(void* data, uintptr_t pc, const char* filename, i32 lineno, const char* function) {
-    nekomata2::log::crit("  #{}: {}",
+    projnekomata::log::crit("  #{}: {}",
         *static_cast<i32*>(data), function ? demangleCxxName(function) : "[unknown function]"
     );
-    nekomata2::log::crit("    at {}:{}", filename ? filename : "[unknown source]", lineno);
+    projnekomata::log::crit("    at {}:{}", filename ? filename : "[unknown source]", lineno);
     return 0;
 }
 void backtraceErrorCallback(void* data, const char* errorMsg, int errnum) {
-    nekomata2::log::crit("  #{}: (failed to resolve: {})", *static_cast<i32*>(data), errorMsg);
+    projnekomata::log::crit("  #{}: (failed to resolve: {})", *static_cast<i32*>(data), errorMsg);
 }
 #endif
 
 template<typename... Args>
 [[noreturn]]
 void panic_impl(std::source_location loc, std::string_view fmt, Args&&... args) {
-    nekomata2::log::crit("thread {} (id {}) panicked at {}:{}: {}", nekomata2::getThreadName(), nekomata2::getThreadId(), loc.file_name(), loc.line(), std::vformat(fmt, std::make_format_args(args...)));
+    projnekomata::log::crit("thread {} (id {}) panicked at {}:{}: {}", projnekomata::getThreadName(), projnekomata::getThreadId(), loc.file_name(), loc.line(), std::vformat(fmt, std::make_format_args(args...)));
 
 #if defined(__linux__) && defined(PROJNEKOMATA_USE_LIBBACKTRACE)
     if constexpr (kPanicPrintsStackTrace) {
         void* stack[128];
         i32 frameCount = backtrace(stack, 128);
 
-        nekomata2::log::crit("stack trace:");
+        projnekomata::log::crit("stack trace:");
         for (i32 i = 0; i < frameCount; i++) {
             backtrace_pcinfo(
                 state,
@@ -76,10 +76,10 @@ void panic_impl(std::source_location loc, std::string_view fmt, Args&&... args) 
             );
         }
     } else {
-        nekomata2::log::crit("stack trace printing was disabled by kPanicPrintsStackTrace");
+        projnekomata::log::crit("stack trace printing was disabled by kPanicPrintsStackTrace");
     }
 #else
-    nekomata2::log::crit("stack trace printing is not supported");
+    projnekomata::log::crit("stack trace printing is not supported");
 #endif
 
     abort();

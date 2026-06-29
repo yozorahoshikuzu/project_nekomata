@@ -1,8 +1,8 @@
-export module nekomata2:core.ecs.entity;
+export module projnekomata:core.ecs.entity;
 import std;
 import :core.platform.int_def;
 
-export namespace nekomata2::ecs {
+export namespace projnekomata::ecs {
 
 class Entity {
 public:

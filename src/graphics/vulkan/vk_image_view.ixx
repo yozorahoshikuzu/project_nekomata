@@ -1,8 +1,8 @@
-export module nekomata2:graphics.vulkan.vk_image_view;
+export module projnekomata:graphics.vulkan.vk_image_view;
 import vulkan;
 import :graphics.vulkan.vk_gpu_obrm;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 class VulkanImageView {
 public:

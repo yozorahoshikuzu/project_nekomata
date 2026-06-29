@@ -1,11 +1,11 @@
-module nekomata2;
+module projnekomata;
 import vulkan;
 import vk_mem_alloc;
 import :core.platform.int_def;
 import :graphics.vulkan.context;
 import :graphics.rendering.transient_rendering_resources;
 
-namespace nekomata2::graphics {
+namespace projnekomata::graphics {
 
 TransientRenderingResources::TransientRenderingResources(std::nullptr_t) {  }
 
@@ -23,4 +23,4 @@ auto TransientRenderingResources::setupRenderingAttachments(vk::Extent2D renderI
     m_finalDrawBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
 }
 
-} // namespace nekomata2::graphics
+} // namespace projnekomata::graphics

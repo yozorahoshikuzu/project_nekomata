@@ -1,7 +1,7 @@
-export module nekomata2:core.ecs.script_base;
+export module projnekomata:core.ecs.script_base;
 import :core.ecs.entity;
 
-export namespace nekomata2::ecs {
+export namespace projnekomata::ecs {
 
 class ScriptBase {
 public:

@@ -1,7 +1,7 @@
-module nekomata2;
+module projnekomata;
 import :graphics.fontsystem.dynamic_font_atlas;
 
-namespace nekomata2::graphics::rendering {
+namespace projnekomata::graphics::rendering {
 
 AtlasShelfPacker::AtlasShelfPacker(std::nullptr_t) {}
 AtlasShelfPacker::AtlasShelfPacker(i32 width, i32 height)
@@ -40,4 +40,4 @@ std::optional<math::Vector2i> AtlasShelfPacker::pack(i32 width, i32 height) {
     return std::nullopt;
 }
 
-} // namespace nekomata2::graphics::rendering
+} // namespace projnekomata::graphics::rendering

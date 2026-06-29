@@ -1,4 +1,4 @@
-export module nekomata2:graphics.srt.bindless_descriptor_set_srt;
+export module projnekomata:graphics.srt.bindless_descriptor_set_srt;
 import std;
 import vulkan;
 import :core.platform.int_def;
@@ -12,7 +12,7 @@ import :graphics.vulkan.vk_sampler;
 import :graphics.vulkan.vk_pipeline_layout;
 import :core.containers.abia;
 
-export namespace nekomata2::graphics::srt {
+export namespace projnekomata::graphics::srt {
 
 class BindlessDescriptorSetShaderResourceTable : public IShaderResourceTable {
 public:

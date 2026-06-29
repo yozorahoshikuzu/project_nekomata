@@ -3,7 +3,7 @@ module;
 #include <vulkan/vulkan.h>
 #include <ktxvulkan.h>
 #include <cstring>
-module nekomata2;
+module projnekomata;
 import vk_mem_alloc;
 import :core.platform.assert;
 import :core.log;
@@ -15,7 +15,7 @@ import :graphics.srt.bindless_descriptor_set_srt;
 import :graphics.vulkan.context;
 import :graphics.texturesystem.texture_manager;
 
-namespace nekomata2::graphics::texturesystem {
+namespace projnekomata::graphics::texturesystem {
 
 TextureResources::TextureResources(std::nullptr_t) {}
 TextureResources::TextureResources(VulkanImage&& image)
@@ -242,4 +242,4 @@ auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesy
     TextureManager::get().m_textureToShaderIndexTable.setTextureShaderSamplerIndex(texture.index, TextureManager::get().m_samplerCache.acquireSampler(samplerParams));
 }
 
-} // namespace nekomata2::texturesystem
+} // namespace projnekomata::texturesystem

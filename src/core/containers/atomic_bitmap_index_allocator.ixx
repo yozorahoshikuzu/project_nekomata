@@ -1,8 +1,8 @@
-export module nekomata2:core.containers.abia;
+export module projnekomata:core.containers.abia;
 import std;
 import :core.platform.int_def;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 class AtomicBitmapIndexAllocator {
 public:

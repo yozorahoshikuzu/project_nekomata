@@ -1,10 +1,10 @@
-module nekomata2;
+module projnekomata;
 import :graphics.vulkan.context;
 import :graphics.vulkan.vk_queue_family_swizzling;
 import :core.platform.assert;
 import :graphics.meshsystem.mesh_asset_storage;
 
-namespace nekomata2::meshsystem {
+namespace projnekomata::meshsystem {
 
 auto MeshAssetStorage::makeMeshPoolConfig() -> MeshPoolConfig {
     MeshPoolConfig poolConfig{};
@@ -41,4 +41,4 @@ auto MeshAssetStorage::tickGC(u64 currentFrameIndex) -> void {
     m_meshPool.tickGC(currentFrameIndex);
 }
 
-} // namespace nekomata2::meshsystem
+} // namespace projnekomata::meshsystem

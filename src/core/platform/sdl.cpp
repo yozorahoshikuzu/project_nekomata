@@ -1,7 +1,7 @@
 module;
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_vulkan.h>
-module nekomata2;
+module projnekomata;
 import std;
 import :core.log;
 import :core.math;
@@ -9,7 +9,7 @@ import vulkan;
 import :core.platform.sdl;
 import :core.cs.panic;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 void sdlPlatformInit() {
     log::info("Initializing SDL...");
@@ -73,5 +73,5 @@ auto SdlWindow::getDisplayScale() const -> float {
     return SDL_GetWindowDisplayScale(m_window);
 }
 
-} // namespace nekomata2
+} // namespace projnekomata
 

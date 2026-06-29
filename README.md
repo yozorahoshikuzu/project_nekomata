@@ -1,4 +1,4 @@
-# nekomata2
+# Project Nekomata
 
 Just a plain 3D game engine using modern Vulkan.
 
@@ -11,6 +11,7 @@ Well, maybe in the future..
 - ECS-based world
 - Basic input handling
 - Custom standard library containers and algorithms replacement to bring Rust-style ergonomics
+- Code built fully with `-fno-exceptions`
 - Mesh rendering
 - Mesh LODs
 - Async insertion of mesh LODs
@@ -62,7 +63,7 @@ mkdir build
 cd build
 cmake ..
 cmake --build .
-./nekomata2_main
+./projnekomata_main
 ```
 
 If you generate makefiles instead of a build.ninja file, add `-j(number of cores + 1)` to the `cmake --build .` command to parallelize the build.

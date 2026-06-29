@@ -1,9 +1,9 @@
-module nekomata2;
+module projnekomata;
 import std;
 import vulkan;
 import :graphics.vulkan.context;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 auto GPUFuture::await(u64 timeout) const -> void {
     auto semWaitInfo = vk::SemaphoreWaitInfo{}
@@ -131,4 +131,4 @@ auto VulkanQueue::currentTimelineValue() const -> u64 {
     return vkCheckResult(m_timelineSemaphore.getCounterValue());
 }
 
-} // namespace nekomata2
+} // namespace projnekomata

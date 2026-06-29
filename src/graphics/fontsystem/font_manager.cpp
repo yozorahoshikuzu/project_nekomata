@@ -1,13 +1,13 @@
 module;
 #include <freetype/freetype.h>
 #include <utf8cpp/utf8.h>
-module nekomata2;
+module projnekomata;
 import :core.log;
 import :core.platform.assert;
 import :graphics.fontsystem.dynamic_font_atlas;
 import :graphics.fontsystem.font_manager;
 
-namespace nekomata2::graphics::fonts {
+namespace projnekomata::graphics::fonts {
 
 FontManager::FontManager(std::nullptr_t) {  }
 FontManager::FontManager() {
@@ -273,4 +273,4 @@ u32 FontManager::getFreeFontIndex() {
     return m_fontEntries.size() - 1;
 }
 
-} // namespace nekomata2::graphics::fonts
+} // namespace projnekomata::graphics::fonts

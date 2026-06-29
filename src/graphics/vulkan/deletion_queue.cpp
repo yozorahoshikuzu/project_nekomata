@@ -1,8 +1,8 @@
-module nekomata2;
+module projnekomata;
 import :graphics.vulkan.context;
 import :core.platform.thread;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 VulkanResourceDeletionQueue::~VulkanResourceDeletionQueue() {
     VulkanContext::get().vkQueueGraphics().waitIdle();

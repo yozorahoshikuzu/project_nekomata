@@ -1,7 +1,7 @@
-export module nekomata2:graphics.fontsystem.font_face;
+export module projnekomata:graphics.fontsystem.font_face;
 import :core.platform.int_def;
 
-export namespace nekomata2::graphics::fonts {
+export namespace projnekomata::graphics::fonts {
 
 struct FontFace {
     u32 handleIndex;

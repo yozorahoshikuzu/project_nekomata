@@ -1,7 +1,7 @@
-module nekomata2;
+module projnekomata;
 import :graphics.vulkan.context;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 VulkanBinarySemaphore::VulkanBinarySemaphore(std::nullptr_t) {}
 VulkanBinarySemaphore::VulkanBinarySemaphore(vk::raii::Semaphore&& vkSemaphore) : m_vkSemaphore(std::move(vkSemaphore)) {}

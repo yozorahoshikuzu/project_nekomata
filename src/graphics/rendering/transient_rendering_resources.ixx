@@ -1,8 +1,8 @@
-export module nekomata2:graphics.rendering.transient_rendering_resources;
+export module projnekomata:graphics.rendering.transient_rendering_resources;
 import vulkan;
 import :graphics.vulkan.vk_image;
 
-export namespace nekomata2::graphics {
+export namespace projnekomata::graphics {
 
 /// Transient rendering resources house all the data used in a single render step.
 ///

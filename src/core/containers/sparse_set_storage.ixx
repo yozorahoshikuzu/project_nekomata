@@ -1,9 +1,9 @@
-export module nekomata2:core.containers.sparse_set_storage;
+export module projnekomata:core.containers.sparse_set_storage;
 import std;
 import :core.platform.int_def;
 import :core.cs.vec;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 template<typename T> class SparseSetStorage {
 public:

@@ -1,6 +1,6 @@
 module;
 #include <freetype/freetype.h>
-export module nekomata2:graphics.fontsystem.font_manager;
+export module projnekomata:graphics.fontsystem.font_manager;
 import std;
 import vulkan;
 import :core.platform.int_def;
@@ -8,7 +8,7 @@ import :core.math;
 import :graphics.fontsystem.font_face;
 import :graphics.fontsystem.dynamic_font_atlas;
 
-export namespace nekomata2::graphics::fonts {
+export namespace projnekomata::graphics::fonts {
 class FontManager;
 
 inline FontManager* g_fontManager = nullptr;

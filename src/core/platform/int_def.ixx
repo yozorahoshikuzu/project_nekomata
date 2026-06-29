@@ -1,4 +1,4 @@
-export module nekomata2:core.platform.int_def;
+export module projnekomata:core.platform.int_def;
 import std;
 
 export using i8  = std::int8_t;

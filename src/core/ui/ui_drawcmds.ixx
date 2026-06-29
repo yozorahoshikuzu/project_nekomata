@@ -1,10 +1,10 @@
-export module nekomata2:core.ui.ui_drawcmds;
+export module projnekomata:core.ui.ui_drawcmds;
 import std;
 import :core.math;
 import :graphics.texturesystem.texture_manager;
 import :graphics.fontsystem.font_face;
 
-export namespace nekomata2::ui {
+export namespace projnekomata::ui {
 
 struct UiRectDrawCmd {
     math::Vector2f ndcBegin;

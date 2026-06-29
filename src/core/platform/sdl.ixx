@@ -1,13 +1,13 @@
 module;
 #include <SDL3/SDL.h>
-export module nekomata2:core.platform.sdl;
+export module projnekomata:core.platform.sdl;
 import std;
 import vulkan;
 import :core.math;
 import :core.platform.int_def;
 import :core.cs.vec;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 // TODO: Document
 void sdlPlatformInit();
@@ -41,4 +41,4 @@ private:
     SDL_Window* m_window = nullptr;
 };
 
-} // namespace nekomata2
+} // namespace projnekomata

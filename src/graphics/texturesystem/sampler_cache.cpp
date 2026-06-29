@@ -1,7 +1,7 @@
-module nekomata2;
+module projnekomata;
 import :graphics.texturesystem.texture_manager;
 
-namespace nekomata2::graphics::texturesystem {
+namespace projnekomata::graphics::texturesystem {
 
 SamplerCache::SamplerCache() {}
 
@@ -29,4 +29,4 @@ auto SamplerCache::createSampler(const SamplerParams& params) -> SamplerCacheEnt
     return entry;
 }
 
-} // namespace nekomata2::graphics::texturesystem
+} // namespace projnekomata::graphics::texturesystem

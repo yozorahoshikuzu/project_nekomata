@@ -1,4 +1,4 @@
-export module nekomata2:graphics.vulkan.vk_swapchain;
+export module projnekomata:graphics.vulkan.vk_swapchain;
 import std;
 import vulkan;
 import :core.platform.int_def;
@@ -7,7 +7,7 @@ import :graphics.vulkan.sync_primitives.binary_semaphore;
 import :graphics.vulkan.vk_image_trait;
 import :core.cs.vec;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 class SwapchainImage {
 public:

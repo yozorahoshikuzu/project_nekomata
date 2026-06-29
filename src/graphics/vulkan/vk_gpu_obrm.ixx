@@ -1,10 +1,10 @@
-export module nekomata2:graphics.vulkan.vk_gpu_obrm;
+export module projnekomata:graphics.vulkan.vk_gpu_obrm;
 import std;
 import vulkan;
 import :graphics.vulkan.deletion_queue;
 import :graphics.vulkan.vk_gpu_obrm_structs;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 template <typename T>
 concept AnyVulkanRaiiHandle = requires {
@@ -37,4 +37,4 @@ private:
     T m_vkHandle = nullptr;
 };
 
-} // namespace nekomata2
+} // namespace projnekomata

@@ -1,7 +1,7 @@
-module nekomata2;
+module projnekomata;
 import :graphics.vulkan.vk_descriptor_set;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 VulkanDescriptorSet::VulkanDescriptorSet(std::nullptr_t) {  }
 VulkanDescriptorSet::VulkanDescriptorSet(vk::raii::DescriptorSet&& vkDescriptorSet)
@@ -13,4 +13,4 @@ VulkanDescriptorSet::~VulkanDescriptorSet() {
     }
 }
 
-} // namespace nekomata2
+} // namespace projnekomata

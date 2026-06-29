@@ -1,7 +1,7 @@
-export module nekomata2:core.math.matrix_types;
+export module projnekomata:core.math.matrix_types;
 import :core.math.base_matrix;
 
-export namespace nekomata2::math {
+export namespace projnekomata::math {
 
 using Vector2f   = Matrix<float, 1, 2>;
 using Vector3f   = Matrix<float, 1, 3>;

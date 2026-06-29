@@ -1,1 +1,1 @@
-module nekomata2;
+module projnekomata;

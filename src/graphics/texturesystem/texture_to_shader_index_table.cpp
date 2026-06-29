@@ -1,8 +1,8 @@
-module nekomata2;
+module projnekomata;
 import :core.platform.assert;
 import :graphics.texturesystem.texture_to_shader_index_table;
 
-namespace nekomata2::graphics::texturesystem {
+namespace projnekomata::graphics::texturesystem {
 
 TextureToShaderIndexTable::TextureToShaderIndexTable(std::nullptr_t) {}
 TextureToShaderIndexTable::TextureToShaderIndexTable(usize maxTextureCount)
@@ -37,4 +37,4 @@ auto TextureToShaderIndexTable::snapshotTables(Vec<u32>& dstTextureToShaderImage
     }
 
 }
-} // namespace nekomata2::graphics::texturesystem
+} // namespace projnekomata::graphics::texturesystem

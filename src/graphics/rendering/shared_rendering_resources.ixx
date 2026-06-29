@@ -1,4 +1,4 @@
-export module nekomata2:graphics.rendering.shared_rendering_resources;
+export module projnekomata:graphics.rendering.shared_rendering_resources;
 import :core.platform.int_def;
 import :graphics.meshsystem.mesh_asset_storage;
 import :graphics.vulkan.vk_pipeline_layout;
@@ -6,7 +6,7 @@ import :graphics.vulkan.vk_pipeline_graphics;
 import :graphics.fontsystem.font_face;
 import :graphics.fontsystem.dynamic_font_atlas;
 
-export namespace nekomata2::graphics {
+export namespace projnekomata::graphics {
 
 struct MeshHysteresisState {
     u32 currentLod = meshsystem::kMaxLodCount - 1;
@@ -61,4 +61,4 @@ private:
     std::vector<MeshHysteresisState> m_meshHysteresisStates;
 };
 
-} // namespace nekomata2::graphics
+} // namespace projnekomata::graphics

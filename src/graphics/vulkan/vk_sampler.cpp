@@ -1,8 +1,8 @@
-module nekomata2;
+module projnekomata;
 import :graphics.vulkan.context;
 import :graphics.vulkan.vk_sampler;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 VulkanSampler::VulkanSampler(std::nullptr_t) {  }
 VulkanSampler::VulkanSampler(vk::raii::Sampler&& vkSampler)
@@ -29,4 +29,4 @@ auto VulkanSampler::create(vk::Filter minFilter, vk::Filter magFilter, vk::Sampl
     return VulkanSampler(std::move(sampler));
 }
 
-} // namespace nekomata2
+} // namespace projnekomata

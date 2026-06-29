@@ -1,4 +1,4 @@
-export module nekomata2:core.ui.ui_node;
+export module projnekomata:core.ui.ui_node;
 import :core.math;
 import :core.log;
 import :core.ui.components.ui_rect;
@@ -7,7 +7,7 @@ import :core.ui.components.ui_texture;
 import :core.overloaded;
 import :core.ui.ui_drawcmds;
 
-export namespace nekomata2::ui {
+export namespace projnekomata::ui {
 
 inline float unormToNdc(float x) {
     return x * 2.0f - 1.0f;
@@ -149,7 +149,7 @@ private:
     Extent m_extX     = ExtentPercent{100.f};
     Extent m_extY     = ExtentPercent{100.f};
     bool m_visible    = true;
-    
+
 
     UiElement m_element = std::monostate{};
 

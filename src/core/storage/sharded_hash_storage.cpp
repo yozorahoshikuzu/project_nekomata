@@ -1,9 +1,9 @@
-module nekomata2;
+module projnekomata;
 import std;
 import :core.log;
 import :core.storage.sharded_hash_storage;
 
-namespace nekomata2::storage {
+namespace projnekomata::storage {
 
 ShardedHashStorage::ShardedHashStorage(const std::filesystem::path& directory, u32 nibblesPerLevel, u32 levelCount)
     : m_directory(directory), m_nibblesPerLevel(nibblesPerLevel), m_levelCount(levelCount) {}
@@ -65,4 +65,4 @@ auto ShardedHashStorage::buildPathFromHash(const std::span<const u8>& hash) cons
     return fullpath / hashHexStr;
 }
 
-} // namespace nekomata2::storage
+} // namespace projnekomata::storage

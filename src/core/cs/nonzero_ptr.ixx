@@ -1,4 +1,4 @@
-export module nekomata2:core.cs.nonzero_ptr;
+export module projnekomata:core.cs.nonzero_ptr;
 import :core.cs.niche;
 import :core.cs.option;
 

@@ -1,6 +1,6 @@
-export module nekomata2:core.input.mousemodes;
+export module projnekomata:core.input.mousemodes;
 
-export namespace nekomata2::core::input {
+export namespace projnekomata::core::input {
 
 enum class MouseMode {
     Normal,

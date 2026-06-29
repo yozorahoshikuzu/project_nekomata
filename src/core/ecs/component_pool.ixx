@@ -1,4 +1,4 @@
-export module nekomata2:core.ecs.component_pool;
+export module projnekomata:core.ecs.component_pool;
 import std;
 import :core.ecs.entity;
 import :core.platform.int_def;
@@ -6,7 +6,7 @@ import :core.platform.assert;
 import :core.cs.vec;
 import :core.cs.panic;
 
-export namespace nekomata2::ecs {
+export namespace projnekomata::ecs {
 
 constexpr u32 INVALID_INDEX = 0xffffffff;
 

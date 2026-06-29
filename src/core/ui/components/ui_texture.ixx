@@ -1,8 +1,8 @@
-export module nekomata2:core.ui.components.ui_texture;
+export module projnekomata:core.ui.components.ui_texture;
 import :core.math;
 import :graphics.texturesystem.texture_manager;
 
-export namespace nekomata2::ui {
+export namespace projnekomata::ui {
 
 struct UiTexture {
     UiTexture() = default;

@@ -1,9 +1,9 @@
-export module nekomata2:core.input.inputmanager;
+export module projnekomata:core.input.inputmanager;
 import :core.input.keys;
 import :core.input.mousemodes;
 import :core.platform.sdl;
 
-export namespace nekomata2::core::input {
+export namespace projnekomata::core::input {
 
 inline class Input* g_input = nullptr;
 

@@ -1,4 +1,4 @@
-export module nekomata2:graphics.vulkan.vk_queue;
+export module projnekomata:graphics.vulkan.vk_queue;
 import std;
 import vulkan;
 import :core.platform.int_def;
@@ -6,7 +6,7 @@ import :graphics.vulkan.vk_swapchain;
 import :graphics.vulkan.sync_primitives.fence;
 import :graphics.vulkan.sync_primitives.binary_semaphore;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 class GPUFuture {
 public:
@@ -58,4 +58,4 @@ private:
     std::atomic<u64> m_lastTimelineSubmissionValue = 0;
 };
 
-} // namespace nekomata2
+} // namespace projnekomata

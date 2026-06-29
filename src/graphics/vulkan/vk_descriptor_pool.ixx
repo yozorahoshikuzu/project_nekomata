@@ -1,4 +1,4 @@
-export module nekomata2:graphics.vulkan.vk_descriptor_pool;
+export module projnekomata:graphics.vulkan.vk_descriptor_pool;
 import std;
 import vulkan;
 import :core.platform.int_def;
@@ -6,7 +6,7 @@ import :graphics.vulkan.vk_gpu_obrm;
 import :graphics.vulkan.vk_descriptor_set_layout;
 import :graphics.vulkan.vk_descriptor_set;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 class VulkanDescriptorPoolBuilder;
 
 class VulkanDescriptorPool {

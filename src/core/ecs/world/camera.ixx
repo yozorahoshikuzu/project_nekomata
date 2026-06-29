@@ -1,10 +1,10 @@
-export module nekomata2:core.ecs.world.camera;
+export module projnekomata:core.ecs.world.camera;
 import std;
 import :core.math;
 
-using namespace nekomata2::math;
+using namespace projnekomata::math;
 
-export namespace nekomata2::ecs::components {
+export namespace projnekomata::ecs::components {
 
 struct Camera {
     Camera() = default;

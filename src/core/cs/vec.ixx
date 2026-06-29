@@ -1,7 +1,7 @@
 module;
 #include <cstdlib>
 #include <malloc.h>
-export module nekomata2:core.cs.vec;
+export module projnekomata:core.cs.vec;
 import std;
 import :core.log;
 import :core.platform.int_def;

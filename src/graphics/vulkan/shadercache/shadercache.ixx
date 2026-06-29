@@ -1,11 +1,11 @@
-export module nekomata2:graphics.vulkan.shadercache;
+export module projnekomata:graphics.vulkan.shadercache;
 import std;
 import vulkan;
 import :core.platform.int_def;
 import :core.overloaded;
 import :graphics.vulkan.shadercache.pipeline_binary_frontend;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 using ShaderCacheFrontend = std::variant<std::monostate, ShaderCachePipelineBinaryFrontend>;
 

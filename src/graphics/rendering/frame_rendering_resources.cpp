@@ -1,13 +1,13 @@
 module;
 #include <string.h>
-module nekomata2;
+module projnekomata;
 import vulkan;
 import vk_mem_alloc;
 import :graphics.vulkan.context;
 import :graphics.vulkan.vk_queue_family_swizzling;
 import :graphics.rendering.frame_rendering_resources;
 
-namespace nekomata2::graphics {
+namespace projnekomata::graphics {
 
 FrameRenderingResources::FrameRenderingResources(std::nullptr_t) {  }
 
@@ -42,4 +42,4 @@ auto FrameRenderingResources::prepareTransformsBuffer(MRThreadsSharedDataLeaf& r
     }
 }
 
-} // namespace nekomata2::graphics
+} // namespace projnekomata::graphics

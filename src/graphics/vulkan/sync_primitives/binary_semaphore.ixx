@@ -1,8 +1,8 @@
-export module nekomata2:graphics.vulkan.sync_primitives.binary_semaphore;
+export module projnekomata:graphics.vulkan.sync_primitives.binary_semaphore;
 import vulkan;
 import :graphics.vulkan.vk_gpu_obrm;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 class VulkanBinarySemaphore {
 public:

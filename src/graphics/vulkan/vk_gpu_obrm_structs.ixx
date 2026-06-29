@@ -1,7 +1,7 @@
-export module nekomata2:graphics.vulkan.vk_gpu_obrm_structs;
+export module projnekomata:graphics.vulkan.vk_gpu_obrm_structs;
 import :core.platform.int_def;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 struct GpuResourceRetireTimelineValues {
     u64 m_graphicsQueueRetireValue = 0;
@@ -16,4 +16,4 @@ struct GpuResourceRetireTimelineValues {
     static auto queueCurrentValues() -> GpuResourceRetireTimelineValues;
 };
 
-} // namespace nekomata2
+} // namespace projnekomata

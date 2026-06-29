@@ -1,4 +1,4 @@
-module nekomata2;
+module projnekomata;
 import :core.log;
 import :graphics.cmd_alloc;
 import :graphics.vulkan.context;
@@ -6,7 +6,7 @@ import :graphics.meshsystem.mesh_asset_storage;
 import :core.runtime.graphicsthread;
 import :graphics.fontsystem.font_manager;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 RenderThread::RenderThread(const std::shared_ptr<MRThreadsSharedData>& mrSharedData)
     : m_mrSharedData(mrSharedData) {

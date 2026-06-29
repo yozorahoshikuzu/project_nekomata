@@ -1,8 +1,8 @@
-export module nekomata2:core.storage.sharded_hash_storage;
+export module projnekomata:core.storage.sharded_hash_storage;
 import std;
 import :core.platform.int_def;
 
-export namespace nekomata2::storage {
+export namespace projnekomata::storage {
 
 enum class HashStorageWriteError {
     FileOpenError,

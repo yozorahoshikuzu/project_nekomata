@@ -1,14 +1,14 @@
 module;
 #include <xxhash.h>
 #include <string.h>
-export module nekomata2:graphics.texturesystem.sampler_cache;
+export module projnekomata:graphics.texturesystem.sampler_cache;
 import std;
 import vulkan;
 import :core.platform.int_def;
 import :graphics.vulkan.vk_sampler;
 import :core.cs.hashmap;
 
-export namespace nekomata2::graphics::texturesystem {
+export namespace projnekomata::graphics::texturesystem {
 
 struct SamplerParams {
     SamplerParams() = default;

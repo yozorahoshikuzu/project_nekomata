@@ -1,6 +1,6 @@
 module;
 #include <cstddef>
-export module nekomata2:core.cs.iterators;
+export module projnekomata:core.cs.iterators;
 import std;
 import :core.platform.int_def;
 import :core.cs.nonzero_ptr;

@@ -1,6 +1,6 @@
 module;
 #include <SDL3/SDL_messagebox.h>
-module nekomata2;
+module projnekomata;
 import std;
 import :core.log;
 import :core.platform.sdl;
@@ -11,12 +11,13 @@ import :core.runtime.mainthread;
 import :core.runtime.graphicsthread;
 import :core.cs.panic;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 auto entryAfterSdlInit(const std::function<void(std::unique_ptr<ecs::World>&)>& initFn) -> void {
+    setThreadName("MainThread");
     // TODO: A system to remember player preferences to use here instead.
 
-    auto window = nekomata2::SdlWindow("Project Nekomata", 1920, 1080);
+    auto window = projnekomata::SdlWindow("Project Nekomata", 1920, 1080);
 
     // NOTE: This creates the vk::SurfaceKHR so this MUST be called here to respect SDL thread safety rules. Creating the renderer on the graphics thread is
     // NOTE: fine though.
@@ -27,7 +28,6 @@ auto entryAfterSdlInit(const std::function<void(std::unique_ptr<ecs::World>&)>& 
     threadSharedData->m_sdlVideoDriverName = SDL_GetCurrentVideoDriver();
 
     MainThread mainthread(threadSharedData, std::move(vulkanContext), std::move(window));
-    setThreadName("MainThread");
 
     auto renderThreadHandle = std::thread([&]() {
         RenderThread renderThread(threadSharedData);

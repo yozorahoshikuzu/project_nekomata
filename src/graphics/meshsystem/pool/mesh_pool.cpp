@@ -1,7 +1,7 @@
-module nekomata2;
+module projnekomata;
 import :graphics.meshsystem.pool.mesh_pool;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 BufferPool::BufferPool(std::nullptr_t) {  }
 BufferPool::BufferPool(const BufferPoolConfig& cfg) : m_cfg(cfg) {}
@@ -244,4 +244,4 @@ auto MeshPool::makeIndexBufferPool(const MeshPoolConfig& cfg) -> BufferPool {
     return BufferPool(indexBufferPoolCfg);
 }
 
-} // namespace nekomata2
+} // namespace projnekomata

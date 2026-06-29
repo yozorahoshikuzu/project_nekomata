@@ -1,7 +1,7 @@
-module nekomata2;
+module projnekomata;
 import :graphics.vulkan.shadercache;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 ShaderCache::ShaderCache(bool usePipelineBinaries) {
     if (usePipelineBinaries) {
@@ -21,4 +21,4 @@ auto ShaderCache::makeShaderCacheDirectoryPath() -> std::filesystem::path {
     return "./shadercache_placeholder_name/";
 }
 
-} // namespace nekomata2
+} // namespace projnekomata

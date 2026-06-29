@@ -1,8 +1,8 @@
-module nekomata2;
+module projnekomata;
 import :graphics.vulkan.context;
 import :graphics.vulkan.vk_commands;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 VulkanCommandBuffer::VulkanCommandBuffer(std::nullptr_t) {}
 VulkanCommandBuffer::VulkanCommandBuffer(vk::raii::CommandBuffer&& vkCommandBuffer) : m_vkCommandBuffer(std::move(vkCommandBuffer)) {}

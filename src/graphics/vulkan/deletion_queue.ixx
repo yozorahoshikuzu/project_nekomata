@@ -1,4 +1,4 @@
-export module nekomata2:graphics.vulkan.deletion_queue;
+export module projnekomata:graphics.vulkan.deletion_queue;
 import std;
 import vulkan;
 import vk_mem_alloc;
@@ -6,7 +6,7 @@ import :core.platform.int_def;
 import :core.containers.mpsc_queue;
 import :graphics.vulkan.vk_gpu_obrm_structs;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 using AnyVulkanObject = std::variant<vk::raii::CommandPool, vk::raii::CommandBuffer, vk::raii::Image, vk::raii::ImageView, vk::raii::SwapchainKHR,
                                      vk::raii::Semaphore, vk::raii::Fence, vma::raii::Allocation, vk::raii::PipelineLayout, vk::raii::Pipeline,

@@ -1,7 +1,7 @@
-export module nekomata2:graphics.vulkan.shadercache.pipeline_sc_concept;
+export module projnekomata:graphics.vulkan.shadercache.pipeline_sc_concept;
 import vulkan;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 template <typename... StructChain> concept PipelineBinaryCacheableGraphicsPipelineCreateStructChain
     = (std::same_as<StructChain, vk::GraphicsPipelineCreateInfo> || ...)

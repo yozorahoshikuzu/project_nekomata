@@ -1,6 +1,6 @@
 module;
 #include <string.h>
-export module nekomata2:graphics.vulkan.shadercache.pipeline_binary_frontend;
+export module projnekomata:graphics.vulkan.shadercache.pipeline_binary_frontend;
 import std;
 import vulkan;
 import :core.log;
@@ -9,7 +9,7 @@ import :core.storage.sharded_hash_storage;
 import :graphics.vulkan.context;
 import :graphics.vulkan.shadercache.pipeline_sc_concept;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 constexpr u32 uint32Le(u32 x) {
     if constexpr (std::endian::native == std::endian::little) {

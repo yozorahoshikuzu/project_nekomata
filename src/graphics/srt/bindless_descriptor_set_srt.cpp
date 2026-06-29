@@ -1,8 +1,8 @@
-module nekomata2;
+module projnekomata;
 import :core.log;
 import :graphics.srt.bindless_descriptor_set_srt;
 
-namespace nekomata2::graphics::srt {
+namespace projnekomata::graphics::srt {
 
 BindlessDescriptorSetShaderResourceTable::BindlessDescriptorSetShaderResourceTable(std::nullptr_t) {}
 BindlessDescriptorSetShaderResourceTable::BindlessDescriptorSetShaderResourceTable(VulkanDescriptorPool&& descriptorPool,
@@ -93,4 +93,4 @@ auto BindlessDescriptorSetShaderResourceTable::descriptorSetLayout() const -> co
     return m_descriptorSetLayout;
 }
 
-} // namespace nekomata2::graphics::srt
+} // namespace projnekomata::graphics::srt

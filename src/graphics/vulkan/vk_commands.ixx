@@ -1,10 +1,10 @@
-export module nekomata2:graphics.vulkan.vk_commands;
+export module projnekomata:graphics.vulkan.vk_commands;
 import std;
 import vulkan;
 import :core.platform.int_def;
 import :graphics.vulkan.vk_gpu_obrm;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 struct ResettableCbuf;
 struct NoResettableCbuf;

@@ -1,30 +1,30 @@
 import std;
-import nekomata2;
+import projnekomata;
 #include <string.h>
 
-using namespace nekomata2::math;
-using namespace nekomata2::core::input;
+using namespace projnekomata::math;
+using namespace projnekomata::core::input;
 
-class MovingScript : public nekomata2::ecs::ScriptBase {
+class MovingScript : public projnekomata::ecs::ScriptBase {
 public:
     MovingScript(float time, float spinRadius, float spinThetaSpeed, float spinPhiSpeed, float spinInitialTheta, float spinInitialPhi, float rotationConstX, float rotationConstY) :
         m_time(time), m_spinRadius(spinRadius), m_spinThetaSpeed(spinThetaSpeed), m_spinPhiSpeed(spinPhiSpeed), m_spinInitialTheta(spinInitialTheta), m_spinInitialPhi(spinInitialPhi), m_rotationConstX(rotationConstX), m_rotationConstY(rotationConstY) {}
 
     void onCreate() override {
-        m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity)
+        m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity)
             .m_transform3d = Transform3D::identity();
     }
     void onDestroy() override {}
     void onUpdate(float dt) override {
         m_time += dt;
 
-        m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position =
+        m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position =
             Vector3f(
                 m_spinRadius * std::cos(m_spinInitialTheta + m_spinThetaSpeed * m_time),
                 m_spinRadius * std::sin(m_spinInitialTheta + m_spinThetaSpeed * m_time),
                 -100.0f * std::cos(m_spinInitialPhi + m_spinPhiSpeed * m_time)
             );
-        m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity)
+        m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity)
             .m_transform3d.m_rotation = Quaternion::fromEulerAngles(0.8f * m_time * m_rotationConstX, 0.8f * m_time * m_rotationConstY, 0.4f * m_time * m_rotationConstX);
     }
 
@@ -39,62 +39,62 @@ public:
     float m_rotationConstY;
 };
 
-class CameraScript : public nekomata2::ecs::ScriptBase {
+class CameraScript : public projnekomata::ecs::ScriptBase {
 public:
-    CameraScript(nekomata2::graphics::fonts::FontFace face) : m_fontFace(face) {}
+    CameraScript(projnekomata::graphics::fonts::FontFace face) : m_fontFace(face) {}
 
     void onCreate() override {
-        m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity)
+        m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity)
             .m_transform3d = Transform3D::identity();
-        m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity)
+        m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity)
             .m_transform3d.m_position = { 2.0f, 1.0f, 1.0f };
 
-        auto& ts = nekomata2::graphics::texturesystem::TextureManager::get();
+        auto& ts = projnekomata::graphics::texturesystem::TextureManager::get();
 
-        auto samplerSettings = nekomata2::graphics::texturesystem::SamplerParams::defaultValues()
+        auto samplerSettings = projnekomata::graphics::texturesystem::SamplerParams::defaultValues()
             .setAnisotropy(16.0f);
 
-        nekomata2::graphics::texturesystem::Texture ts1 = ts.loadKtx2TextureAsync("../Assets/ui_test.ktx2", samplerSettings);
-        nekomata2::graphics::texturesystem::Texture ts2 = ts.loadKtx2TextureAsync("../Assets/ui_test2.ktx2", samplerSettings);
-        nekomata2::graphics::texturesystem::Texture ts3 = ts.loadKtx2TextureAsync("../Assets/ui_test3.ktx2", samplerSettings);
-        nekomata2::graphics::texturesystem::Texture ts4 = ts.loadKtx2TextureAsync("../Assets/ui_test4.ktx2", samplerSettings);
-        nekomata2::graphics::texturesystem::Texture ts5 = ts.loadKtx2TextureAsync("../Assets/ui_test5.ktx2", samplerSettings);
+        projnekomata::graphics::texturesystem::Texture ts1 = ts.loadKtx2TextureAsync("../Assets/ui_test.ktx2", samplerSettings);
+        projnekomata::graphics::texturesystem::Texture ts2 = ts.loadKtx2TextureAsync("../Assets/ui_test2.ktx2", samplerSettings);
+        projnekomata::graphics::texturesystem::Texture ts3 = ts.loadKtx2TextureAsync("../Assets/ui_test3.ktx2", samplerSettings);
+        projnekomata::graphics::texturesystem::Texture ts4 = ts.loadKtx2TextureAsync("../Assets/ui_test4.ktx2", samplerSettings);
+        projnekomata::graphics::texturesystem::Texture ts5 = ts.loadKtx2TextureAsync("../Assets/ui_test5.ktx2", samplerSettings);
 
-        auto posText = nekomata2::ui::UiNode::builder()
+        auto posText = projnekomata::ui::UiNode::builder()
             .position({10.0f, 280.0f})
             .text("hai :3", 18.0f, std::move(m_fontFace))
             .build();
 
         m_text = posText.get();
-        nekomata2::ui::UiSystem::get().getRoot().addChild(std::move(posText));
+        projnekomata::ui::UiSystem::get().getRoot().addChild(std::move(posText));
 
         // ---- Escape Overlay Memes ---------------------------------------------------------------------------------------------------------------------------
 
-        auto escapeOverlayMeme1 = nekomata2::ui::UiNode::builder()
+        auto escapeOverlayMeme1 = projnekomata::ui::UiNode::builder()
             .position({800.0f, 50.0f})
             .extent({250.0f, 250.0f})
             .texture(ts1)
             .build();
 
-        auto escapeOverlayMeme2 = nekomata2::ui::UiNode::builder()
+        auto escapeOverlayMeme2 = projnekomata::ui::UiNode::builder()
             .position({800.0f, 310.0f})
             .extent({320.0f, 320.0f})
             .texture(ts2)
             .build();
 
-        auto escapeOverlayMeme3 = nekomata2::ui::UiNode::builder()
+        auto escapeOverlayMeme3 = projnekomata::ui::UiNode::builder()
             .position({800.0f, 640.0f})
             .extent({250.0f, 275.0f})
             .texture(ts3)
             .build();
 
-        auto escapeOverlayMeme4 = nekomata2::ui::UiNode::builder()
+        auto escapeOverlayMeme4 = projnekomata::ui::UiNode::builder()
             .position({1200.0f, 200.0f})
             .extent({400.0f, 350.0f})
             .texture(ts4)
             .build();
 
-        auto escapeOverlayMeme5 = nekomata2::ui::UiNode::builder()
+        auto escapeOverlayMeme5 = projnekomata::ui::UiNode::builder()
             .position({1200.0f, 600.0f})
             .extent({400.0f, 380.0f})
             .texture(ts5)
@@ -102,14 +102,14 @@ public:
 
         // ---- Escape Overlay Menu ----------------------------------------------------------------------------------------------------------------------------
 
-        auto escapeOverlayMenuText = nekomata2::ui::UiNode::builder()
+        auto escapeOverlayMenuText = projnekomata::ui::UiNode::builder()
             .position({20.0f, 20.0f})
             .extentX(460.0f)
             .extentPercentY(100.0f)
             .text("Mouse Released\n(this is a placeholder menu)\n\nClick - close, Alt+F12 - toggle overlay", 18.0f, std::move(m_fontFace))
             .build();
 
-        auto escapeOverlayMenuRect = nekomata2::ui::UiNode::builder()
+        auto escapeOverlayMenuRect = projnekomata::ui::UiNode::builder()
             .position({250.0f, 0.0f})
             .extentX(500.0f)
             .extentPercentY(100.0f)
@@ -117,7 +117,7 @@ public:
             .children(std::move(escapeOverlayMenuText))
             .build();
 
-        auto escapeOverlay = nekomata2::ui::UiNode::builder()
+        auto escapeOverlay = projnekomata::ui::UiNode::builder()
             .position({0.0f, 0.0f})
             .extentPercent({100.0f, 100.0f})
             .rect(Vector4f{0.0f, 0.0f, 0.0f, 0.25f})
@@ -129,7 +129,7 @@ public:
             .build();
 
         m_escOverlay = escapeOverlay.get();
-        nekomata2::ui::UiSystem::get().getRoot().addChild(std::move(escapeOverlay));
+        projnekomata::ui::UiSystem::get().getRoot().addChild(std::move(escapeOverlay));
     }
 
     void onDestroy() override {}
@@ -148,7 +148,7 @@ public:
             auto yawQuat = Quaternion::fromAxisAngle(Vector3f(0.0f, 1.0f, 0.0f), degreesToRadians(m_rotationYaw));
             auto pitchQuat = Quaternion::fromAxisAngle(Vector3f(1.0f, 0.0f, 0.0f), degreesToRadians(m_rotationPitch));
 
-            m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity).m_transform3d.m_rotation = yawQuat * pitchQuat;
+            m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity).m_transform3d.m_rotation = yawQuat * pitchQuat;
         }
 
         float forwardVel = 0.0f;
@@ -169,11 +169,11 @@ public:
             auto factor = 5.0f;
             if (Input::get().isKeyDown(Key::LShift)) factor = 25.0f;
 
-            auto rotation = m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity).m_transform3d.m_rotation;
+            auto rotation = m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity).m_transform3d.m_rotation;
             auto delta = dp.normalize() * dt * factor;
             delta = rotation.rotateVector3f(delta);
 
-            m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position += delta;
+            m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position += delta;
         }
 
         if (Input::get().isKeyPressed(Key::Escape)) {
@@ -188,17 +188,17 @@ public:
             m_escOverlay->visible = false;
         }
 
-        auto camPos = m_workingWorld->get<nekomata2::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position;
-        std::get<nekomata2::ui::UiText>(m_text->element).text = std::format("pos: {:.2f}, {:.2f}, {:.2f}", camPos.x(), camPos.y(), camPos.z());
+        auto camPos = m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position;
+        std::get<projnekomata::ui::UiText>(m_text->element).text = std::format("pos: {:.2f}, {:.2f}, {:.2f}", camPos.x(), camPos.y(), camPos.z());
     }
 
     bool m_handleMouseMovement = true;
     float m_rotationPitch = 0.0f;
     float m_rotationYaw = 0.0f;
 
-    nekomata2::graphics::fonts::FontFace m_fontFace;
-    nekomata2::ui::UiNode* m_text = nullptr;
-    nekomata2::ui::UiNode* m_escOverlay = nullptr;
+    projnekomata::graphics::fonts::FontFace m_fontFace;
+    projnekomata::ui::UiNode* m_text = nullptr;
+    projnekomata::ui::UiNode* m_escOverlay = nullptr;
 };
 
 
@@ -250,17 +250,17 @@ std::pair<std::vector<Vertex>, std::vector<u32>> generateSphere(u32 latSegments,
 }
 
 
-void onGameInit(std::unique_ptr<nekomata2::ecs::World>& world) {
-    auto& ts = nekomata2::graphics::texturesystem::TextureManager::get();
+void onGameInit(std::unique_ptr<projnekomata::ecs::World>& world) {
+    auto& ts = projnekomata::graphics::texturesystem::TextureManager::get();
 
-    auto samplerSettings = nekomata2::graphics::texturesystem::SamplerParams::defaultValues()
+    auto samplerSettings = projnekomata::graphics::texturesystem::SamplerParams::defaultValues()
         .setAnisotropy(16.0f);
 
-    nekomata2::graphics::texturesystem::Texture ts1 = ts.loadKtx2TextureAsync("../Assets/abstractart.ktx2", samplerSettings);
-    auto fnt = nekomata2::graphics::fonts::FontManager::get().loadFont("/usr/share/fonts/noto/NotoSans-Regular.ttf");
+    projnekomata::graphics::texturesystem::Texture ts1 = ts.loadKtx2TextureAsync("../Assets/abstractart.ktx2", samplerSettings);
+    auto fnt = projnekomata::graphics::fonts::FontManager::get().loadFont("/usr/share/fonts/noto/NotoSans-Regular.ttf");
 
 
-    auto& mas = nekomata2::meshsystem::MeshAssetStorage::get();
+    auto& mas = projnekomata::meshsystem::MeshAssetStorage::get();
     auto mesh = mas.allocateMeshAsset();
     mas.getLodList(mesh).maxLodIndex = 3; // set all LOD levels used
     // initially bestLodIndex = ~0 => no LODs are ready (rendering thread will skip rendering).
@@ -308,23 +308,23 @@ void onGameInit(std::unique_ptr<nekomata2::ecs::World>& world) {
     std::uniform_real_distribution<float> rotationConstDist(0.05f, 0.15f);
     for (usize i = 0; i < 2000; i++) {
         auto ent = world->createEntity();
-        world->emplace<nekomata2::ecs::components::Transform>(ent);
-        world->emplace<nekomata2::ecs::components::Renderable>(ent, mesh, ts1);
+        world->emplace<projnekomata::ecs::components::Transform>(ent);
+        world->emplace<projnekomata::ecs::components::Renderable>(ent, mesh, ts1);
         world->addScript<MovingScript>(ent, 0.0f, radiusDist(gen), thetaSpeedDist(gen), phiSpeedDist(gen), thetaDist(gen), phiDist(gen), rotationConstDist(gen), rotationConstDist(gen));
     }
 
     auto cameraEnt = world->createEntity();
-    world->emplace<nekomata2::ecs::components::Camera>(cameraEnt, 0.01f, 1000.0f, 60.0f, true);
-    world->emplace<nekomata2::ecs::components::Transform>(cameraEnt);
+    world->emplace<projnekomata::ecs::components::Camera>(cameraEnt, 0.01f, 1000.0f, 60.0f, true);
+    world->emplace<projnekomata::ecs::components::Transform>(cameraEnt);
     world->addScript<CameraScript>(cameraEnt, fnt);
 
     Input::get().setMouseMode(MouseMode::Captured);
 }
 
 int main(int argc, char* argv[]) {
-    nekomata2::log::info("haii :3");
+    projnekomata::log::info("haii :3");
 
-    nekomata2::entry(onGameInit);
+    projnekomata::entry(onGameInit);
 
     return 0;
 }

@@ -1,4 +1,4 @@
-module nekomata2;
+module projnekomata;
 import std;
 import vulkan;
 import vk_mem_alloc;
@@ -7,7 +7,7 @@ import :core.overloaded;
 
 using namespace std::literals;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 using VulkanFeaturePtr = std::variant<
     vk::Bool32 vk::PhysicalDeviceFeatures::*,
@@ -405,4 +405,4 @@ auto VulkanPhysicalDeviceSurfaceProperties::query(const vk::raii::PhysicalDevice
     return props;
 }
 
-} // namespace nekomata2
+} // namespace projnekomata

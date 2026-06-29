@@ -1,4 +1,4 @@
-export module nekomata2:core.runtime.mainthread;
+export module projnekomata:core.runtime.mainthread;
 import std;
 import :core.platform.int_def;
 import :core.runtime.shared_data;
@@ -12,7 +12,7 @@ import :graphics.fontsystem.font_manager;
 import :core.ui.ui_node;
 import :core.ui.ui_system;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 class MainThread {
 public:

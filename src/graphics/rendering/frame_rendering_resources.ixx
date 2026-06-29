@@ -1,4 +1,4 @@
-export module nekomata2:graphics.rendering.frame_rendering_resources;
+export module projnekomata:graphics.rendering.frame_rendering_resources;
 import std;
 import :core.platform.int_def;
 import :graphics.vulkan.vk_commands;
@@ -9,7 +9,7 @@ import :core.runtime.shared_data;
 import :core.ecs.world.camera;
 import :core.ecs.world.transform;
 
-export namespace nekomata2::graphics {
+export namespace projnekomata::graphics {
 
 /// Per-frame rendering resources used exclusively by each frame and only by that frame.
 ///

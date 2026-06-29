@@ -1,7 +1,7 @@
 module;
 #include <cstdlib>
 #include <malloc.h>
-export module nekomata2:core.cs.mem;
+export module projnekomata:core.cs.mem;
 import :core.platform.int_def;
 
 export class Mem {

@@ -1,11 +1,11 @@
-module nekomata2;
+module projnekomata;
 import :core.log;
 import :graphics.vulkan.deletion_queue;
 import :graphics.vulkan.vk_queue;
 import :core.platform.assert;
 import :graphics.vulkan.shadercache;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 VulkanContext::VulkanContext(std::nullptr_t) {}
 VulkanContext::~VulkanContext() {
@@ -22,7 +22,7 @@ auto VulkanContext::get() -> VulkanContext& {
     return *g_vkContext;
 }
 
-auto VulkanContext::create(nekomata2::SdlWindow& sdlWindow) -> std::unique_ptr<VulkanContext> {
+auto VulkanContext::create(projnekomata::SdlWindow& sdlWindow) -> std::unique_ptr<VulkanContext> {
     debug_assert(g_vkContext == nullptr, "only one VulkanContext may live at any given time");
     auto vkContext = std::make_unique<VulkanContext>(nullptr);
     g_vkContext = vkContext.get();
@@ -134,7 +134,7 @@ auto VulkanContext::initVkRaiiContext() -> vk::raii::Context {
     return {};
 }
 
-auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debugEnable, nekomata2::SdlWindow& sdlWindow) -> vk::raii::Instance {
+auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debugEnable, projnekomata::SdlWindow& sdlWindow) -> vk::raii::Instance {
     auto appInfo = vk::ApplicationInfo{}
         .setPApplicationName("project_nekomata")
         .setPEngineName("project_nekomata")
@@ -147,7 +147,7 @@ auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debu
         .map([](auto&& layer) { return std::string(layer.layerName); })
         .collect<Vec>();
 
-    auto instanceExtensions = nekomata2::SdlWindow::vulkanInstanceExtensions();
+    auto instanceExtensions = projnekomata::SdlWindow::vulkanInstanceExtensions();
     
     auto instanceExtensionsC = instanceExtensions.iter()
         .map([](auto&& ext) { return ext.c_str(); })
@@ -168,7 +168,7 @@ auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debu
     return instance;
 }
 
-auto VulkanContext::createVkSurface(const vk::raii::Instance& vkInstance, nekomata2::SdlWindow& sdlWindow) -> vk::raii::SurfaceKHR {
+auto VulkanContext::createVkSurface(const vk::raii::Instance& vkInstance, projnekomata::SdlWindow& sdlWindow) -> vk::raii::SurfaceKHR {
     auto surface = sdlWindow.vulkanCreateRawSurface(*vkInstance);
 
     return vk::raii::SurfaceKHR(vkInstance, surface);

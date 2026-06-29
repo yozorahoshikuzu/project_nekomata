@@ -1,9 +1,9 @@
-export module nekomata2:graphics.vulkan.spv_shader_code;
+export module projnekomata:graphics.vulkan.spv_shader_code;
 import std;
 import vulkan;
 import :core.platform.int_def;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 enum class ShaderLoadError {
     FileLoadingError,

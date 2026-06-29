@@ -1,7 +1,7 @@
-module nekomata2;
+module projnekomata;
 import :graphics.cmd_alloc;
 
-namespace nekomata2::cmdalloc {
+namespace projnekomata::cmdalloc {
 
 auto VulkanCommandPoolsList::initThreadLocalCommandPools() -> void {
     tl_graphicsCommandPool = VulkanCommandPool::createForGraphics(true);
@@ -13,4 +13,4 @@ auto VulkanCommandPoolsList::destroyThreadLocalCommandPools() -> void {
     tl_asyncComputeCommandPool = nullptr;
 }
 
-} // namespace nekomata2::cmdalloc
+} // namespace projnekomata::cmdalloc

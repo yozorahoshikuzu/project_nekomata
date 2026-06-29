@@ -1,7 +1,7 @@
-export module nekomata2:core.overloaded;
+export module projnekomata:core.overloaded;
 import std;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 template <class... Arms>
 struct overloaded : Arms... {
@@ -16,4 +16,4 @@ constexpr auto match(Variant&& v, Arms&&... arms) -> decltype(auto) {
     );
 }
 
-} // namespace nekomata2
+} // namespace projnekomata

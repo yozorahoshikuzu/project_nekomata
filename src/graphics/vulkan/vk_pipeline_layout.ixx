@@ -1,4 +1,4 @@
-export module nekomata2:graphics.vulkan.vk_pipeline_layout;
+export module projnekomata:graphics.vulkan.vk_pipeline_layout;
 import std;
 import vulkan;
 import :core.platform.int_def;
@@ -8,7 +8,7 @@ import :graphics.vulkan.vk_descriptor_set_layout;
 
 using namespace std::string_view_literals;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 class VulkanPipelineLayoutBuilder;
 class VulkanPipelineLayout {
@@ -64,4 +64,4 @@ private:
     std::vector<vk::DescriptorSetLayout> m_descriptorSetLayouts;
 };
 
-} // namespace nekomata2
+} // namespace projnekomata

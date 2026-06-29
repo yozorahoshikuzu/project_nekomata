@@ -1,11 +1,11 @@
-export module nekomata2:graphics.vulkan.vk_descriptor_set_layout;
+export module projnekomata:graphics.vulkan.vk_descriptor_set_layout;
 import std;
 import vulkan;
 import :core.platform.int_def;
 import :graphics.vulkan.context;
 import :graphics.vulkan.vk_gpu_obrm;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 class VulkanDescriptorSetLayoutBuilder;
 class VulkanDescriptorSetLayout {

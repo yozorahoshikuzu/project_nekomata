@@ -1,4 +1,4 @@
-export module nekomata2:graphics.vulkan.vk_pipeline_graphics;
+export module projnekomata:graphics.vulkan.vk_pipeline_graphics;
 import std;
 import vulkan;
 import :core.platform.int_def;
@@ -8,7 +8,7 @@ import :graphics.vulkan.vk_pipeline_layout;
 import :graphics.vulkan.context;
 import :graphics.vulkan.shadercache;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 class VulkanGraphicsPipelineBuilder;
 class VulkanGraphicsPipeline {

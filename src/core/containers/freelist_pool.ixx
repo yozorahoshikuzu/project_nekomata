@@ -1,9 +1,9 @@
-export module nekomata2:core.containers.freelist_pool;
+export module projnekomata:core.containers.freelist_pool;
 import std;
 import :core.platform.int_def;
 import :core.platform.assert;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 template <typename T, usize ChunkSizePwr, usize MaxChunks, std::unsigned_integral Index = usize> class FreelistPool {
 public:

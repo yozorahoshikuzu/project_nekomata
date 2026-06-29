@@ -1,4 +1,4 @@
-export module nekomata2:graphics.srt.shader_resource_table;
+export module projnekomata:graphics.srt.shader_resource_table;
 import std;
 import vulkan;
 import :core.platform.int_def;
@@ -8,7 +8,7 @@ import :graphics.vulkan.vk_pipeline_layout;
 import :graphics.vulkan.vk_commands;
 import :graphics.vulkan.vk_descriptor_set_layout;
 
-export namespace nekomata2::graphics::srt {
+export namespace projnekomata::graphics::srt {
 
 struct SRTResourceIndex {
     u32 imageIndex;

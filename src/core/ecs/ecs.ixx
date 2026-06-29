@@ -1,4 +1,4 @@
-export module nekomata2:core.ecs;
+export module projnekomata:core.ecs;
 import std;
 export import :core.ecs.component_pool;
 export import :core.ecs.entity;
@@ -7,7 +7,7 @@ import :core.platform.int_def;
 import :core.platform.assert;
 import :core.cs.hashmap;
 
-export namespace nekomata2::ecs {
+export namespace projnekomata::ecs {
 
 class World {
 public:
@@ -146,4 +146,4 @@ private:
     HashMap<Entity, Vec<std::unique_ptr<ScriptBase>>, EntityHash> m_scripts = HashMap<Entity, Vec<std::unique_ptr<ScriptBase>>, EntityHash>::create();
 };
 
-} // namespace nekomata2::ecs
+} // namespace projnekomata::ecs

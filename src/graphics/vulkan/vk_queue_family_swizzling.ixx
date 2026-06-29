@@ -1,8 +1,8 @@
-export module nekomata2:graphics.vulkan.vk_queue_family_swizzling;
+export module projnekomata:graphics.vulkan.vk_queue_family_swizzling;
 import std;
 import :core.platform.int_def;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 enum class QueueFamily : u8 {
     Graphics     = 1 << 0,

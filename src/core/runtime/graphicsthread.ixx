@@ -1,4 +1,4 @@
-export module nekomata2:core.runtime.graphicsthread;
+export module projnekomata:core.runtime.graphicsthread;
 import std;
 import vulkan;
 import :core.platform.int_def;
@@ -8,7 +8,7 @@ import :graphics.rendering.transient_rendering_resources;
 import :graphics.rendering.shared_rendering_resources;
 import :graphics.rendering.frame_context;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 constexpr usize MAX_FRAMES_IN_FLIGHT = 2;
 

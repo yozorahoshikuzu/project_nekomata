@@ -14,7 +14,7 @@ add_compile_options(
 add_link_options(-fuse-ld=lld -flto=thin)
 
 include(FetchContent)
-project(nekomata2 VERSION 0.1.0 LANGUAGES CXX C)
+project(project_nekomata VERSION 0.1.0 LANGUAGES CXX C)
 
 set(CMAKE_CXX_MODULE_STD ON)
 set(CMAKE_CXX_STANDARD 26)
@@ -181,37 +181,37 @@ endfunction()
 # ----------------------------------------------------------------------------------------------------------------------
 #     Sources
 
-file(GLOB_RECURSE nekomata2_LIBRARY_SOURCES CONFIGURE_DEPENDS
+file(GLOB_RECURSE project_nekomata_LIBRARY_SOURCES CONFIGURE_DEPENDS
         ${CMAKE_SOURCE_DIR}/src/*.cpp
 )
-file(GLOB_RECURSE nekomata2_LIBRARY_MODULE_SOURCES CONFIGURE_DEPENDS
+file(GLOB_RECURSE project_nekomata_LIBRARY_MODULE_SOURCES CONFIGURE_DEPENDS
         ${CMAKE_SOURCE_DIR}/src/*.ixx
 )
 
-list(FILTER nekomata2_LIBRARY_SOURCES EXCLUDE REGEX ".*/(bin)/.*")
-list(FILTER nekomata2_LIBRARY_MODULE_SOURCES EXCLUDE REGEX ".*/(bin)/.*")
+list(FILTER project_nekomata_LIBRARY_SOURCES EXCLUDE REGEX ".*/(bin)/.*")
+list(FILTER project_nekomata_LIBRARY_MODULE_SOURCES EXCLUDE REGEX ".*/(bin)/.*")
 
-file(GLOB_RECURSE nekomata2_SHADER_SOURCES CONFIGURE_DEPENDS
+file(GLOB_RECURSE project_nekomata_SHADER_SOURCES CONFIGURE_DEPENDS
         ${CMAKE_SOURCE_DIR}/src/graphics/shaders/*.slang
 )
 
-file(GLOB_RECURSE nekomata2_BINARIES CONFIGURE_DEPENDS
+file(GLOB_RECURSE project_nekomata_BINARIES CONFIGURE_DEPENDS
         ${CMAKE_SOURCE_DIR}/src/bin/*.cpp
 )
 
 # ----------------------------------------------------------------------------------------------------------------------
 #     Build Setup
 
-add_library(nekomata2_Library STATIC)
-target_sources(nekomata2_Library
-        PRIVATE ${nekomata2_LIBRARY_SOURCES}
+add_library(project_nekomata_Library STATIC)
+target_sources(project_nekomata_Library
+        PRIVATE ${project_nekomata_LIBRARY_SOURCES}
         PUBLIC
         FILE_SET CXX_MODULES FILES
-        ${nekomata2_LIBRARY_MODULE_SOURCES}
+        ${project_nekomata_LIBRARY_MODULE_SOURCES}
 )
-target_include_directories(nekomata2_Library PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_include_directories(project_nekomata_Library PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(
-        nekomata2_Library
+        project_nekomata_Library
         PRIVATE
         ${TCMALLOC_LIB}
         VulkanModule
@@ -224,13 +224,13 @@ target_link_libraries(
         utf8::cpp
 )
 if (LIBBACKTRACE_INCLUDE_DIR AND LIBBACKTRACE_LIBRARY)
-        target_include_directories(nekomata2_Library PRIVATE ${LIBBACKTRACE_INCLUDE_DIR})
-        target_link_libraries(nekomata2_Library PRIVATE ${LIBBACKTRACE_LIBRARY})
+        target_include_directories(project_nekomata_Library PRIVATE ${LIBBACKTRACE_INCLUDE_DIR})
+        target_link_libraries(project_nekomata_Library PRIVATE ${LIBBACKTRACE_LIBRARY})
 
-        target_compile_definitions(nekomata2_Library PRIVATE PROJNEKOMATA_USE_LIBBACKTRACE)
+        target_compile_definitions(project_nekomata_Library PRIVATE PROJNEKOMATA_USE_LIBBACKTRACE)
 endif()
 target_compile_options(
-        nekomata2_Library PRIVATE
+        project_nekomata_Library PRIVATE
         -flto=thin
         -ftls-model=local-exec
         -fvisibility=hidden
@@ -257,13 +257,13 @@ target_compile_options(
 
         -Werror=tautological-compare
 )
-add_slang_shaders(nekomata2_spv TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR}/spirv SOURCES ${nekomata2_SHADER_SOURCES})
-add_dependencies(nekomata2_Library nekomata2_spv)
+add_slang_shaders(project_nekomata_spv TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR}/spirv SOURCES ${project_nekomata_SHADER_SOURCES})
+add_dependencies(project_nekomata_Library project_nekomata_spv)
 
-foreach(BINARY_ENTRY ${nekomata2_BINARIES})
+foreach(BINARY_ENTRY ${project_nekomata_BINARIES})
         get_filename_component(BINARY_ENTRY_NAME ${BINARY_ENTRY} NAME_WE)
         add_executable(${BINARY_ENTRY_NAME} ${BINARY_ENTRY})
-        target_link_libraries(${BINARY_ENTRY_NAME} PRIVATE nekomata2_Library)
+        target_link_libraries(${BINARY_ENTRY_NAME} PRIVATE project_nekomata_Library)
 
         target_compile_options(
                 ${BINARY_ENTRY_NAME} PRIVATE

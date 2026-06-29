@@ -1,4 +1,4 @@
-export module nekomata2:core.platform.assert;
+export module projnekomata:core.platform.assert;
 import std;
 import :core.log;
 import :core.cs.panic;

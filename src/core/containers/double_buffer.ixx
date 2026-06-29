@@ -1,4 +1,4 @@
-export module nekomata2:core.containers.double_buffer;
+export module projnekomata:core.containers.double_buffer;
 import std;
 
 export template <typename T> class DoubleBuffer {

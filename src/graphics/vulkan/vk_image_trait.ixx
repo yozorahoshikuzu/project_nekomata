@@ -1,8 +1,8 @@
-export module nekomata2:graphics.vulkan.vk_image_trait;
+export module projnekomata:graphics.vulkan.vk_image_trait;
 import std;
 import vulkan;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 template <typename T> concept CVulkanImage = requires { typename T::isCVulkanImage; } && requires (const T& t)
 {

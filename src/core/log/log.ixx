@@ -1,9 +1,9 @@
 module;
 #include <ctime>
-export module nekomata2:core.log;
+export module projnekomata:core.log;
 import std;
 
-export namespace nekomata2::log {
+export namespace projnekomata::log {
 
 enum class LogLevel { Trace, Info, Warn, Error, Crit };
 
@@ -106,4 +106,4 @@ template <typename... Args> void crit(std::format_string<Args...> fmt, Args&&...
     impl::write(LogLevel::Crit, std::format(fmt, std::forward<Args>(args)...));
 }
 
-} // namespace nekomata2::log
+} // namespace projnekomata::log

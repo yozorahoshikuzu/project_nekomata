@@ -1,4 +1,4 @@
-export module nekomata2:core.containers.mpsc_queue;
+export module projnekomata:core.containers.mpsc_queue;
 import std;
 
 export template <typename T> class AtomicMpscQueue {

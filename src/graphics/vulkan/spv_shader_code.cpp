@@ -1,9 +1,9 @@
-module nekomata2;
+module projnekomata;
 import :core.log;
 import :graphics.vulkan.spv_shader_code;
 import :core.platform.int_def;
 
-namespace nekomata2 {
+namespace projnekomata {
 
 SpirvShaderCode::SpirvShaderCode(std::nullptr_t) {}
 SpirvShaderCode::SpirvShaderCode(std::vector<u32>&& spvCode) : m_spvCode(std::move(spvCode)) {}

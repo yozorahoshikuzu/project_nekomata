@@ -1,8 +1,8 @@
-export module nekomata2:core.ui.components.ui_text;
+export module projnekomata:core.ui.components.ui_text;
 import std;
 import :graphics.fontsystem.font_face;
 
-export namespace nekomata2::ui {
+export namespace projnekomata::ui {
 
 struct UiText {
     UiText() = default;

@@ -1,10 +1,10 @@
-export module nekomata2:graphics.vulkan.vk_commands_barriers;
+export module projnekomata:graphics.vulkan.vk_commands_barriers;
 import std;
 import vulkan;
 import :graphics.vulkan.vk_image_trait;
 import :graphics.vulkan.vk_commands;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 class VulkanPipelineBarriers {
 public:

@@ -1,8 +1,8 @@
-export module nekomata2:core.ui.ui_system;
+export module projnekomata:core.ui.ui_system;
 import std;
 import :core.ui.ui_node;
 
-export namespace nekomata2::ui {
+export namespace projnekomata::ui {
 
 inline class UiSystem* g_uiSystem = nullptr;
 

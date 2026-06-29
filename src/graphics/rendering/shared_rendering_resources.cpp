@@ -1,11 +1,11 @@
-module nekomata2;
+module projnekomata;
 import vulkan;
 import :graphics.texturesystem.texture_manager;
 import :graphics.vulkan.spv_shader_code;
 import :graphics.fontsystem.font_manager;
 import :graphics.rendering.shared_rendering_resources;
 
-namespace nekomata2::graphics {
+namespace projnekomata::graphics {
 
 SharedRenderingResources::SharedRenderingResources(std::nullptr_t) {}
 SharedRenderingResources::SharedRenderingResources() {
@@ -141,4 +141,4 @@ auto SharedRenderingResources::refitHysteresisStates(usize renderableSparseCount
     }
 }
 
-} // namespace nekomata2::graphics
+} // namespace projnekomata::graphics

@@ -1,11 +1,11 @@
-export module nekomata2:graphics.meshsystem.pool.mesh_pool;
+export module projnekomata:graphics.meshsystem.pool.mesh_pool;
 import std;
 import vulkan;
 import vk_mem_alloc;
 import :core.platform.int_def;
 import :graphics.vulkan.vk_buffer;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 struct SlabAllocationRef {
     /// Index of the slab within the pool allocated from
@@ -151,4 +151,4 @@ private:
     BufferPool m_indexBufferPool = nullptr;
 };
 
-} // namespace nekomata2
+} // namespace projnekomata

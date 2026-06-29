@@ -1,6 +1,6 @@
 module;
 #include <xxhash.h>
-export module nekomata2:graphics.fontsystem.dynamic_font_atlas;
+export module projnekomata:graphics.fontsystem.dynamic_font_atlas;
 import std;
 import vulkan;
 import vk_mem_alloc;
@@ -13,7 +13,7 @@ import :graphics.vulkan.vk_queue_family_swizzling;
 import :graphics.vulkan.context;
 import :core.cs.hashmap;
 
-export namespace nekomata2::graphics::rendering {
+export namespace projnekomata::graphics::rendering {
 
 class AtlasShelfPacker {
 public:

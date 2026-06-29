@@ -1,4 +1,4 @@
-export module nekomata2:graphics.vulkan.vk_physical_device_props;
+export module projnekomata:graphics.vulkan.vk_physical_device_props;
 import std;
 import vulkan;
 import vk_mem_alloc;
@@ -6,7 +6,7 @@ import :graphics.vulkan.vk_queue_family_swizzling;
 import :core.platform.int_def;
 import :core.cs.vec;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 enum class PhysicalDevicePropertyQueryErrorKind {
     MissingKhrSwapchain,
@@ -166,4 +166,4 @@ public:
     Vec<vk::PresentModeKHR> m_presentModes     = Vec<vk::PresentModeKHR>::create();
 };
 
-} // namespace nekomata2
+} // namespace projnekomata

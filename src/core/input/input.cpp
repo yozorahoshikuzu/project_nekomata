@@ -1,10 +1,10 @@
 module;
 #include <SDL3/SDL.h>
-module nekomata2;
+module projnekomata;
 import :core.input.inputmanager;
 #include <string.h>
 
-namespace nekomata2::core::input {
+namespace projnekomata::core::input {
 
 auto Input::create() -> std::unique_ptr<Input> {
     debug_assert(g_input == nullptr, "only one Input may live at any given time");
@@ -79,4 +79,4 @@ auto Input::mouseDelta() const -> math::Vector2f {
     return m_mouseDelta;
 }
 
-} // namespace nekomata2::core::input
+} // namespace projnekomata::core::input

@@ -1,11 +1,11 @@
-export module nekomata2:graphics.vulkan.vk_buffer;
+export module projnekomata:graphics.vulkan.vk_buffer;
 import std;
 import vulkan;
 import vk_mem_alloc;
 import :core.platform.int_def;
 import :graphics.vulkan.vk_gpu_obrm;
 
-export namespace nekomata2 {
+export namespace projnekomata {
 
 enum class VulkanBufferMemoryMapping {
     DontMap,
