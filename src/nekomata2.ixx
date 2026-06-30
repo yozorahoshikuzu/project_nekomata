@@ -25,3 +25,4 @@ export import :graphics.fontsystem.font_face;
 export import :core.cs.niche;
 export import :core.cs.option;
 export import :core.cs.nonzero_ptr;
+export import :core.ui.layout;

@@ -110,12 +110,40 @@ public:
             .text("Mouse Released\n(this is a placeholder menu)\n\nClick - close, Alt+F12 - toggle overlay", 18.0f, std::move(m_fontFace))
             .build();
 
+
+        auto escapeOverlayMenuButton1 = projnekomata::ui::UiNode::builder()
+            .extentPercentX(100.0f)
+            .extentY(40.0f)
+            .rect(Vector4f{.1f, .1f, .1f, 0.95f})
+            .build();
+
+        auto escapeOverlayMenuButton2 = projnekomata::ui::UiNode::builder()
+            .extentPercentX(100.0f)
+            .extentY(40.0f)
+            .rect(Vector4f{.11f, .1f, .1f, 0.95f})
+            .build();
+
+        auto escapeOverlayMenuButton3 = projnekomata::ui::UiNode::builder()
+            .extentPercentX(100.0f)
+            .extentY(40.0f)
+            .rect(Vector4f{.12f, .1f, .1f, 0.95f})
+            .build();
+
+        auto escapeOverlayButtons = projnekomata::ui::UiNode::builder()
+            .positionY(300.0f)
+            .extentPercentX(100.0f)
+            .extentY(400.0f)
+            .childrenLayout(projnekomata::ui::StackLayout(projnekomata::ui::StackDirection::VerticalTopToBottom, 10.0f))
+            .children(std::move(escapeOverlayMenuButton1), std::move(escapeOverlayMenuButton2), std::move(escapeOverlayMenuButton3))
+            .build();
+
+
         auto escapeOverlayMenuRect = projnekomata::ui::UiNode::builder()
             .position({250.0f, 0.0f})
             .extentX(500.0f)
             .extentPercentY(100.0f)
             .rect(Vector4f{0.0f, 0.0f, 0.0f, 0.85f})
-            .children(std::move(escapeOverlayMenuText))
+            .children(std::move(escapeOverlayMenuText), std::move(escapeOverlayButtons))
             .build();
 
         auto escapeOverlay = projnekomata::ui::UiNode::builder()

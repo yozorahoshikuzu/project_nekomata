@@ -6,6 +6,7 @@ import :core.ui.components.ui_text;
 import :core.ui.components.ui_texture;
 import :core.overloaded;
 import :core.ui.ui_drawcmds;
+import :core.ui.layout;
 
 export namespace projnekomata::ui {
 
@@ -50,7 +51,9 @@ struct UiNode {
 
     UiElement element = std::monostate{};
 
+    Layout                       childrenLayout = AbsoluteLayout();
     Vec<std::unique_ptr<UiNode>> children;
+
     UiNode* parent = nullptr;
 
     UiNode& addChild(std::unique_ptr<UiNode>&& child) {
@@ -59,12 +62,12 @@ struct UiNode {
         return *children.last();
     }
 
-    void buildDrawCmds(Vec<UiDrawCmd>& list, math::Vector2f screenLogicalSize, math::Vector2f parentPosition, math::Vector2f parentExtent) {
+    auto buildDrawCmds(Vec<UiDrawCmd>& list, math::Vector2f screenLogicalSize, math::Vector2f origin, math::Vector2f bounds) -> math::Vector2f {
         if (!visible)
-            return;
+            return math::Vector2f(0.0f);
 
-        auto position = resolveExtent2D(this->posX, this->posY, parentExtent) + parentPosition;
-        auto extent = resolveExtent2D(this->extentX, this->extentY, parentExtent);
+        auto position = resolveExtent2D(this->posX, this->posY, bounds) + origin;
+        auto extent = resolveExtent2D(this->extentX, this->extentY, bounds);
         auto endPos = position + extent;
 
         match(element,
@@ -99,8 +102,32 @@ struct UiNode {
             [](const std::monostate&) {}
         );
 
-        for (auto& child : children)
-            child->buildDrawCmds(list, screenLogicalSize, position, extent);
+        match(childrenLayout,
+            [&](const AbsoluteLayout& layout) {
+                for (auto& child : children)
+                    child->buildDrawCmds(list, screenLogicalSize, position, extent);
+            },
+            [&](const StackLayout& layout) {
+                auto axisCursor = 0.0_f32;
+                switch (layout.direction) {
+                case StackDirection::VerticalTopToBottom: {
+                    for (auto& child : children) {
+                        auto childExtent = child->buildDrawCmds(list, screenLogicalSize, position + math::Vector2f(0.0f, axisCursor), extent);
+                        axisCursor += childExtent.y() + layout.spacing;
+                    }
+                    break;
+                }
+                case StackDirection::HorizontalLeftToRight: {
+                    for (auto& child : children) {
+                        auto childExtent = child->buildDrawCmds(list, screenLogicalSize, position + math::Vector2f(axisCursor, 0.0f), extent);
+                        axisCursor += childExtent.x() + layout.spacing;
+                    }
+                }
+                }
+            }
+        );
+
+        return extent;
     }
 };
 
@@ -126,6 +153,7 @@ public:
     template <typename... Args> constexpr auto rect(Args&&... args) -> UiNodeBuilder& { m_element = UiRect{std::forward<Args>(args)...}; return *this; }
     template <typename... Args> constexpr auto text(Args&&... args) -> UiNodeBuilder& { m_element = UiText{std::forward<Args>(args)...}; return *this; }
     template <typename... Args> constexpr auto texture(Args&&... args) -> UiNodeBuilder& { m_element = UiTexture{std::forward<Args>(args)...}; return *this; }
+    constexpr auto childrenLayout(Layout layout) -> UiNodeBuilder& { m_childrenLayout = layout; return *this; }
     template <typename... Ts> requires ((std::same_as<std::remove_cvref_t<Ts>, std::unique_ptr<UiNode>> && ...))
     constexpr auto children(Ts&&... children) -> UiNodeBuilder& {
         (m_children.emplace(std::forward<Ts>(children)), ...);
@@ -140,6 +168,7 @@ public:
         node->extentY = m_extY;
         node->visible = m_visible;
         node->element = m_element;
+        node->childrenLayout = std::move(m_childrenLayout);
         node->children = std::move(m_children);
         return node;
     }
@@ -152,6 +181,7 @@ private:
     bool m_visible    = true;
 
 
+    Layout m_childrenLayout = AbsoluteLayout();
     UiElement m_element = std::monostate{};
 
     Vec<std::unique_ptr<UiNode>> m_children = Vec<std::unique_ptr<UiNode>>::create();
