@@ -1,6 +1,7 @@
 import std;
 import projnekomata;
 #include <string.h>
+#include <stdio.h>
 
 using namespace projnekomata::math;
 using namespace projnekomata::core::input;
@@ -317,6 +318,7 @@ void onGameInit(std::unique_ptr<projnekomata::ecs::World>& world) {
     world->emplace<projnekomata::ecs::components::Camera>(cameraEnt, 0.01f, 1000.0f, 60.0f, true);
     world->emplace<projnekomata::ecs::components::Transform>(cameraEnt);
     world->addScript<CameraScript>(cameraEnt, fnt);
+
 
     Input::get().setMouseMode(MouseMode::Captured);
 }

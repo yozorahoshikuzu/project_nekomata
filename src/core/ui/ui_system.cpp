@@ -4,7 +4,8 @@ import :core.ui.ui_system;
 namespace projnekomata::ui {
 
 UiSystem::UiSystem(std::nullptr_t) {  }
-auto UiSystem::create(math::Vector2f initialViewport) -> std::unique_ptr<UiSystem> {
+
+auto UiSystem::create() -> std::unique_ptr<UiSystem> {
     debug_assert(g_uiSystem == nullptr, "UiSystem already exists");
     auto inst = std::make_unique<UiSystem>(nullptr);
     g_uiSystem = inst.get();
@@ -17,8 +18,6 @@ auto UiSystem::create(math::Vector2f initialViewport) -> std::unique_ptr<UiSyste
     inst->m_uiRoot = std::move(viewportElem);
 
     return inst;
-}
-auto UiSystem::handleViewportResize(math::Vector2f newViewportSize) -> void {
 }
 
 } // namespace projnekomata::ui

@@ -115,18 +115,18 @@ template <typename T> struct IteratorElementResolveBehavior<IteratorInternalPtr<
     using IntoLambdaByMove = T&;
     using OwnedType        = std::remove_cvref_t<T>;
 
-    constexpr static auto intoLambdaByRef(IteratorInternalPtr<T> x) -> IntoLambdaByRef { return *x; }
-    constexpr static auto intoLambdaByMove(IteratorInternalPtr<T> x) -> IntoLambdaByMove { return *x; }
-    constexpr static auto ownedType(IteratorInternalPtr<T> x) -> OwnedType { return *x; }
+    constexpr static auto intoLambdaByRef(IteratorInternalPtr<T>& x) -> IntoLambdaByRef { return *x; }
+    constexpr static auto intoLambdaByMove(IteratorInternalPtr<T>&& x) -> IntoLambdaByMove { return *x; }
+    constexpr static auto ownedType(IteratorInternalPtr<T>&& x) -> OwnedType { return *x; }
 };
 template <typename T> struct IteratorElementResolveBehavior<IteratorInternalNonNullPtr<T>> {
     using IntoLambdaByRef =  T&;
     using IntoLambdaByMove = T&;
     using OwnedType        = std::remove_cvref_t<T>;
 
-    constexpr static auto intoLambdaByRef(IteratorInternalNonNullPtr<T> x) -> IntoLambdaByRef { return *x; }
-    constexpr static auto intoLambdaByMove(IteratorInternalNonNullPtr<T> x) -> IntoLambdaByMove { return *x; }
-    constexpr static auto ownedType(IteratorInternalNonNullPtr<T> x) -> OwnedType { return *x; }
+    constexpr static auto intoLambdaByRef(IteratorInternalNonNullPtr<T>& x) -> IntoLambdaByRef { return *x; }
+    constexpr static auto intoLambdaByMove(IteratorInternalNonNullPtr<T>&& x) -> IntoLambdaByMove { return *x; }
+    constexpr static auto ownedType(IteratorInternalNonNullPtr<T>&& x) -> OwnedType { return *x; }
 };
 template <typename T> struct IteratorElementResolveBehavior<Enumerand<T>> {
     using Inner = IteratorElementResolveBehavior<T>;
@@ -134,9 +134,9 @@ template <typename T> struct IteratorElementResolveBehavior<Enumerand<T>> {
     using IntoLambdaByMove = Enumerand<typename Inner::IntoLambdaByMove>;
     using OwnedType        = Enumerand<typename Inner::OwnedType>;
 
-    constexpr static auto intoLambdaByRef(Enumerand<T> x) -> IntoLambdaByRef { return { x.index, Inner::intoLambdaByRef(x.value) }; }
-    constexpr static auto intoLambdaByMove(Enumerand<T> x) -> IntoLambdaByMove { return { x.index, Inner::intoLambdaByMove(std::move(x.value)) }; }
-    constexpr static auto ownedType(Enumerand<T> x) -> OwnedType { return { x.index, Inner::ownedType(std::move(x.value)) }; }
+    constexpr static auto intoLambdaByRef(Enumerand<T>& x) -> IntoLambdaByRef { return { x.index, Inner::intoLambdaByRef(x.value) }; }
+    constexpr static auto intoLambdaByMove(Enumerand<T>&& x) -> IntoLambdaByMove { return { x.index, Inner::intoLambdaByMove(std::move(x.value)) }; }
+    constexpr static auto ownedType(Enumerand<T>&& x) -> OwnedType { return { x.index, Inner::ownedType(std::move(x.value)) }; }
 };
 template <typename K, typename V> struct IteratorElementResolveBehavior<KeyValue<K, V>> {
     using InnerK = IteratorElementResolveBehavior<K>;
@@ -145,9 +145,9 @@ template <typename K, typename V> struct IteratorElementResolveBehavior<KeyValue
     using IntoLambdaByMove = KeyValue<typename InnerK::IntoLambdaByMove, typename InnerV::IntoLambdaByMove>;
     using OwnedType        = KeyValue<typename InnerK::OwnedType, typename InnerV::OwnedType>;
 
-    constexpr static auto intoLambdaByRef(KeyValue<K, V> x) -> IntoLambdaByRef { return { InnerK::intoLambdaByRef(x.key), InnerV::intoLambdaByRef(x.value) }; }
-    constexpr static auto intoLambdaByMove(KeyValue<K, V> x) -> IntoLambdaByMove { return { InnerK::intoLambdaByMove(std::move(x.key)), InnerV::intoLambdaByMove(std::move(x.value)) }; }
-    constexpr static auto ownedType(KeyValue<K, V> x) -> OwnedType { return { InnerK::ownedType(std::move(x.key)), InnerV::ownedType(std::move(x.value)) }; }
+    constexpr static auto intoLambdaByRef(KeyValue<K, V>& x) -> IntoLambdaByRef { return { InnerK::intoLambdaByRef(x.key), InnerV::intoLambdaByRef(x.value) }; }
+    constexpr static auto intoLambdaByMove(KeyValue<K, V>&& x) -> IntoLambdaByMove { return { InnerK::intoLambdaByMove(std::move(x.key)), InnerV::intoLambdaByMove(std::move(x.value)) }; }
+    constexpr static auto ownedType(KeyValue<K, V>&& x) -> OwnedType { return { InnerK::ownedType(std::move(x.key)), InnerV::ownedType(std::move(x.value)) }; }
 };
 template <typename T> using IntoLambdaByRefT = typename IteratorElementResolveBehavior<T>::IntoLambdaByRef;
 template <typename T> using IntoLambdaByMoveT = typename IteratorElementResolveBehavior<T>::IntoLambdaByMove;

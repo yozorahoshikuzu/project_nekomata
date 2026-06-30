@@ -13,7 +13,7 @@ SharedRenderingResources::SharedRenderingResources() {
     m_simpleLayout = VulkanPipelineLayout::builder()
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
         .addPushConstantRange(
-            0, 32,
+            0, 28,
             vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation
             | vk::ShaderStageFlagBits::eFragment
         )

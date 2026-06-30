@@ -29,7 +29,7 @@ MainThread::MainThread(std::shared_ptr<MRThreadsSharedData> mrSharedData, std::u
     m_meshAssetStorage = meshsystem::MeshAssetStorage::create();
     m_textureManager = graphics::texturesystem::TextureManager::create();
     m_fontManager = graphics::fonts::FontManager::create();
-    m_uiSystem = ui::UiSystem::create(windowLogicalSizef);
+    m_uiSystem = ui::UiSystem::create();
 }
 
 auto MainThread::runMainLoop(const std::function<void(std::unique_ptr<ecs::World>&)>& initFn) -> void {
@@ -65,7 +65,6 @@ auto MainThread::loop(float dt) -> void {
 
     auto logicalSize = m_sdlWindow.getLogicalSize();
     auto logicalSizeFloat = math::Vector2f(logicalSize.x(), logicalSize.y());
-    ui::UiSystem::get().handleViewportResize(logicalSizeFloat);
     SDL_Event event;
     auto totalMouseDelta = math::Vector2f(0.0f);
     while (SDL_PollEvent(&event)) {

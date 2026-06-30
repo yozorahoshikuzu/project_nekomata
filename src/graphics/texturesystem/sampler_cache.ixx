@@ -13,16 +13,16 @@ export namespace projnekomata::graphics::texturesystem {
 struct SamplerParams {
     SamplerParams() = default;
 
-    vk::Filter minFilter = vk::Filter::eLinear;
-    vk::Filter magFilter = vk::Filter::eLinear;
-    vk::SamplerMipmapMode mipmapMode = vk::SamplerMipmapMode::eLinear;
-    vk::SamplerAddressMode addressModeU = vk::SamplerAddressMode::eRepeat;
-    vk::SamplerAddressMode addressModeV = vk::SamplerAddressMode::eRepeat;
-    vk::SamplerAddressMode addressModeW = vk::SamplerAddressMode::eRepeat;
-    f32 anisotropy = 1.0f;
-    f32 maxLod = vk::LodClampNone;
-    f32 minLod = 0.0f;
-    f32 mipLodBias = 0.0f;
+    vk::Filter m_minFilter = vk::Filter::eLinear;
+    vk::Filter m_magFilter = vk::Filter::eLinear;
+    vk::SamplerMipmapMode m_mipmapMode = vk::SamplerMipmapMode::eLinear;
+    vk::SamplerAddressMode m_addressModeU = vk::SamplerAddressMode::eRepeat;
+    vk::SamplerAddressMode m_addressModeV = vk::SamplerAddressMode::eRepeat;
+    vk::SamplerAddressMode m_addressModeW = vk::SamplerAddressMode::eRepeat;
+    f32 m_anisotropy = 1.0f;
+    f32 m_maxLod = vk::LodClampNone;
+    f32 m_minLod = 0.0f;
+    f32 m_mipLodBias = 0.0f;
 
     auto operator==(const SamplerParams& other) const -> bool {
         return memcmp(this, &other, sizeof(*this)) == 0;
@@ -33,43 +33,43 @@ struct SamplerParams {
     }
 
     [[nodiscard]] constexpr auto setMinFilter(vk::Filter filter) noexcept -> SamplerParams& {
-        minFilter = filter;
+        m_minFilter = filter;
         return *this;
     }
     [[nodiscard]] constexpr auto setMagFilter(vk::Filter filter) noexcept -> SamplerParams& {
-        magFilter = filter;
+        m_magFilter = filter;
         return *this;
     }
     [[nodiscard]] constexpr auto setMipmapMode(vk::SamplerMipmapMode mipmapMode) noexcept -> SamplerParams& {
-        this->mipmapMode = mipmapMode;
+        m_mipmapMode = mipmapMode;
         return *this;
     }
     [[nodiscard]] constexpr auto setAddressModeU(vk::SamplerAddressMode addressModeU) noexcept -> SamplerParams& {
-        this->addressModeU = addressModeU;
+        m_addressModeU = addressModeU;
         return *this;
     }
     [[nodiscard]] constexpr auto setAddressModeV(vk::SamplerAddressMode addressModeV) noexcept -> SamplerParams& {
-        this->addressModeV = addressModeV;
+        m_addressModeV = addressModeV;
         return *this;
     }
     [[nodiscard]] constexpr auto setAddressModeW(vk::SamplerAddressMode addressModeW) noexcept -> SamplerParams& {
-        this->addressModeW = addressModeW;
+        m_addressModeW = addressModeW;
         return *this;
     }
     [[nodiscard]] constexpr auto setAnisotropy(f32 anisotropy) noexcept -> SamplerParams& {
-        this->anisotropy = anisotropy;
+        m_anisotropy = anisotropy;
         return *this;
     }
     [[nodiscard]] constexpr auto setMaxLod(f32 maxLod) noexcept -> SamplerParams& {
-        this->maxLod = maxLod;
+        m_maxLod = maxLod;
         return *this;
     }
     [[nodiscard]] constexpr auto setMinLod(f32 minLod) noexcept -> SamplerParams& {
-        this->minLod = minLod;
+        m_minLod = minLod;
         return *this;
     }
     [[nodiscard]] constexpr auto setMipLodBias(f32 mipLodBias) noexcept -> SamplerParams& {
-        this->mipLodBias = mipLodBias;
+        m_mipLodBias = mipLodBias;
         return *this;
     }
 };

@@ -33,7 +33,7 @@ auto VulkanContext::create(projnekomata::SdlWindow& sdlWindow) -> std::unique_pt
     vk::detail::defaultDispatchLoaderDynamic.init(vkGetInstanceProcAddr);
 
     vkContext->m_vkRaiiContext = initVkRaiiContext();
-    vkContext->m_vkInstance = createVkInstance(vkContext->m_vkRaiiContext, false, sdlWindow);
+    vkContext->m_vkInstance = createVkInstance(vkContext->m_vkRaiiContext, false);
 
     // To access vkInstance* functions, the vulkan.hpp dispatcher must be made aware of the instance.
     vk::detail::defaultDispatchLoaderDynamic.init(*vkContext->m_vkInstance);
@@ -84,6 +84,10 @@ auto VulkanContext::create(projnekomata::SdlWindow& sdlWindow) -> std::unique_pt
     g_vkResourceDeletionQueue = vkContext->m_vkResourceDeletionQueue.get();
     vkContext->m_shaderCache = std::make_unique<ShaderCache>(vkContext->m_vkPhysicalDeviceProperties.m_hasKhrPipelineBinary);
 
+    if (vkContext->m_vkPhysicalDeviceProperties.m_hasAMDAntiLag2) {
+        vkContext->m_antiLagMethod.store(AntiLagMethod::AMDAntiLag2);
+    }
+
     return vkContext;
 }
 
@@ -122,6 +126,12 @@ auto VulkanContext::antiLagPacePresent(u64 frameIndex, u32 targetFps) -> void {
         m_vkDevice.antiLagUpdateAMD(antilagData);
     }
 }
+auto VulkanContext::currentVramUsage() const -> std::tuple<u64, u64> {
+    auto budget = Vec<vma::Budget>::fromStdVector(m_vmaAllocator.getHeapBudgets());
+
+    auto& vramStat = budget[m_vkPhysicalDeviceProperties.m_vramMemoryHeapIndex].statistics;
+    return { vramStat.blockBytes, vramStat.allocationBytes };
+}
 
 auto VulkanContext::extMemoryBudgetGetVramBudget() const -> u64 {
     debug_assert(m_vkPhysicalDeviceProperties.m_hasExtMemoryBudget, "extMemoryBudget not supported");
@@ -134,7 +144,7 @@ auto VulkanContext::initVkRaiiContext() -> vk::raii::Context {
     return {};
 }
 
-auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debugEnable, projnekomata::SdlWindow& sdlWindow) -> vk::raii::Instance {
+auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debugEnable) -> vk::raii::Instance {
     auto appInfo = vk::ApplicationInfo{}
         .setPApplicationName("project_nekomata")
         .setPEngineName("project_nekomata")
@@ -179,41 +189,28 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
 
     if (physicalDevices.isEmpty()) panic("no GPUs found");
 
-    auto props = physicalDevices.iter()
+    auto physicalDeviceOpt = physicalDevices.iter()
         .map([&](auto&& vkPhysicalDevice) { return VulkanPhysicalDeviceProperties::query(vkPhysicalDevice, vkSurface); })
         .enumerate()
-        .collect<Vec>();
+        .inspect([](const auto& exp) {
+            if (exp.value.has_value()) {
+                log::info("GPU #{}:", exp.index);
+                exp.value->printInfo();
+            } else {
+                log::warn("GPU #{} is not supported, reason: {}", exp.index, exp.value.error().toString());
+            }
+        })
+        .filter([](const auto& exp) { return exp.value.has_value(); })
+        .maxByKey([](const auto& exp) {
+            return exp.value->autoselectPriorityScore();
+        });
 
-    if (props.iter().all([](const auto& x) { return !x.value.has_value(); })) {
-        log::crit("No GPUs shown by loader are supported!");
-        for (auto& [i, prop] : props) {
-            log::crit("  GPU #{}: {}", i, prop.error().toString());
-        }
-        panic("no GPUs shown by loader are supported");
-    }
+    if (physicalDeviceOpt.isNone()) panic("no GPUs supported");
+    auto [physicalDeviceIndex, props] = std::move(physicalDeviceOpt.unwrap());
+    auto prop = std::move(props.value());
 
-    auto scores = Vec<u32>::fromValue(props.size(), 0);
-
-    for (auto& [i, prop] : props) {
-        if (!prop.has_value()) {
-            log::warn("GPU #{} is not supported, reason: {}", i, prop.error().toString());
-            continue;
-        }
-        scores[i] = prop->autoselectPriorityScore();
-
-        log::info("GPU #{}:", i);
-        prop->printInfo();
-    }
-
-    auto scoreMaxIndex = scores.iter()
-        .enumerate()
-        .maxByKey([](const auto& x) -> u32 { return x.value; })
-        .unwrap()
-        .index;
-
-    log::info("Picked GPU #{}", scoreMaxIndex);
-    auto [_, prop] = std::move(props[scoreMaxIndex]);
-    return { physicalDevices[scoreMaxIndex], std::move(*prop) };
+    log::info("Picked GPU #{}", physicalDeviceIndex);
+    return { physicalDevices[physicalDeviceIndex], std::move(prop) };
 }
 
 auto VulkanContext::createVkDevice(const vk::raii::PhysicalDevice& vkPhysicalDevice, const VulkanPhysicalDeviceProperties& vkPhysicalDeviceProps) -> vk::raii::Device {

@@ -10,16 +10,16 @@ import :core.cs.panic;
 
 export namespace projnekomata {
 
-template <typename T> inline auto vkCheckResult(vk::ResultValue<T> x) {
+template <typename T> inline auto vkCheckResult(vk::ResultValue<T> x, std::source_location loc = std::source_location::current()) {
     if (x.result != vk::Result::eSuccess) {
-        panic("Vulkan result check failed: returned {}", vk::to_string(x.result));
+        panic("Vulkan result check failed: returned {} (Original check location in {}:{})", vk::to_string(x.result), loc.file_name(), loc.line());
     }
     return std::move(x.value);
 }
 
-inline auto vkCheckResult(vk::Result x) {
+inline auto vkCheckResult(vk::Result x, std::source_location loc = std::source_location::current()) {
     if (x != vk::Result::eSuccess) {
-        panic("Vulkan result check failed: returned {}", vk::to_string(x));
+        panic("Vulkan result check failed: returned {} (Original check location in {}:{})", vk::to_string(x), loc.file_name(), loc.line());
     }
 }
 
@@ -27,6 +27,12 @@ enum class AntiLagMethod {
     None,
     AMDAntiLag2,
 };
+constexpr std::string_view antiLagMethodToString(AntiLagMethod method) {
+    switch (method) {
+        case AntiLagMethod::None: return "None";
+        case AntiLagMethod::AMDAntiLag2: return "AMD Anti-Lag 2";
+    }
+}
 
 class VulkanContext {
 public:
@@ -55,9 +61,11 @@ public:
     [[nodiscard]] auto vkDeletionQueue() -> std::unique_ptr<VulkanResourceDeletionQueue>& { return m_vkResourceDeletionQueue; }
     [[nodiscard]] auto shaderCache() -> std::unique_ptr<class ShaderCache>& { return m_shaderCache; }
 
+    auto antiLagMethod() const -> AntiLagMethod { return m_antiLagMethod.load(std::memory_order_relaxed); }
     auto antiLagPaceInput(u64 frameIndex, u32 targetFps) -> void;
     auto antiLagPacePresent(u64 frameIndex, u32 targetFps) -> void;
 
+    auto currentVramUsage() const -> std::tuple<u64, u64>;
     auto extMemoryBudgetGetVramBudget() const -> u64;
 
 private:
@@ -65,7 +73,7 @@ private:
     // TODO: Document
     static auto initVkRaiiContext() -> vk::raii::Context;
     // TODO: Document
-    static auto createVkInstance(vk::raii::Context& vkRaiiContext, bool debugEnable, projnekomata::SdlWindow& sdlWindow) -> vk::raii::Instance;
+    static auto createVkInstance(vk::raii::Context& vkRaiiContext, bool debugEnable) -> vk::raii::Instance;
     // TODO: Document
     static auto createVkSurface(const vk::raii::Instance& vkInstance, projnekomata::SdlWindow& sdlWindow) -> vk::raii::SurfaceKHR;
     // TODO: Document
@@ -94,7 +102,7 @@ private:
     std::unique_ptr<class VulkanResourceDeletionQueue> m_vkResourceDeletionQueue;
     std::unique_ptr<class ShaderCache> m_shaderCache;
 
-    std::atomic<AntiLagMethod> m_antiLagMethod = AntiLagMethod::AMDAntiLag2;
+    std::atomic<AntiLagMethod> m_antiLagMethod = AntiLagMethod::None;
 };
 
 inline VulkanContext* g_vkContext = nullptr;

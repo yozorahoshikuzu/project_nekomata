@@ -64,7 +64,7 @@ inline bool isObjectVisible(
     return true;
 }
 
-auto FrameContext::execute(TransientRenderingResources& transientRenderingResources, SharedRenderingResources& sharedRenderingResources, VulkanSwapchain& swapchain, MRThreadsSharedDataLeaf& renderingData, float timeSinceStart) -> FrameResult {
+auto FrameContext::execute(TransientRenderingResources& transientRenderingResources, SharedRenderingResources& sharedRenderingResources, VulkanSwapchain& swapchain, MRThreadsSharedDataLeaf& renderingData) -> FrameResult {
     m_frameRenderingResources.frameDoneFence().waitForSignal(std::numeric_limits<u64>::max());
 
     auto imageAcquire = swapchain.acquireNextImage(std::numeric_limits<u64>::max(), m_frameRenderingResources.imageAcquiredSemaphore());
@@ -246,9 +246,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     auto pushConstantData = std::array<unsigned char, 32>{};
 
     memcpy((void*)(pushConstantData.data() + 16), &seconds, 4);
-    u32 verticesThisDraw = 0;
 
-    u32 shouldInvertColors = 0;
     for (auto [i, renderable] : renderingData.m_renderables.m_storage.iter().enumerate()) {
         // Get the LOD list for the renderable and skip it if no LODs are available
         auto& lodList = meshsystem::MeshAssetStorage::get().getLodList(renderable.meshAsset);
@@ -267,8 +265,6 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         auto textureSamplerId = renderingData.m_textureToSamplerShaderIndexSnapshot[renderable.texture.index];
         memcpy((void*)(pushConstantData.data() + 20), &textureImageId, 4);
         memcpy((void*)(pushConstantData.data() + 24), &textureSamplerId, 4);
-        memcpy((pushConstantData.data() + 28), &shouldInvertColors, 4);
-
 
         // Pick an LOD
         Vector3f objectPos = Vector3f(0.0f);
@@ -325,9 +321,6 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
         cb.pushConstants<unsigned char>(sharedRenderingResources.simpleLayout().vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation, 0, pushConstantData);
         cb.drawIndexed(lod.meshSuballocation.indexBuffer.size / sizeof(u32), 1, 0, 0, 0);
-        verticesThisDraw += lod.meshSuballocation.indexBuffer.size / sizeof(u32);
-
-        shouldInvertColors = shouldInvertColors == 0 ? 1 : 0;
     }
 
     // Draw UI

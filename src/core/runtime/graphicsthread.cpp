@@ -80,15 +80,25 @@ auto RenderThread::loop() -> void {
 
     if (m_mrSharedData->m_leafs.getSecondary().injectOverlay) {
         auto& physicalDeviceProps = VulkanContext::get().vkPhysicalDeviceProps();
+        auto [blockBytes, allocBytes] = VulkanContext::get().currentVramUsage();
         std::string vramStr;
         if (physicalDeviceProps.m_hasExtMemoryBudget) {
             f64 vramBudget = VulkanContext::get().extMemoryBudgetGetVramBudget();
-            vramStr = std::format("{:.2f} MB (avail: {:.2f} MB)", physicalDeviceProps.m_vramSize / 1024.0f / 1024.0f, vramBudget / 1024.0f / 1024.0f);
+            vramStr = std::format("total {:.2f} MB used/allocd block bytes: {:.2f}/{:.2f} MB budget: {:.2f} MB",
+                physicalDeviceProps.m_vramSize / 1024.0_f64 / 1024.0_f64,
+                allocBytes / 1024.0_f64 / 1024.0_f64,
+                blockBytes / 1024.0_f64 / 1024.0_f64,
+                vramBudget / 1024.0_f64 / 1024.0_f64
+            );
         } else {
-            vramStr = std::format("{:.2f} MB", physicalDeviceProps.m_vramSize / 1024.0f / 1024.0f);
+            vramStr = std::format("total {:.2f} MB used/allocd block bytes: {:.2f}/{:.2f} MB",
+                physicalDeviceProps.m_vramSize / 1024.0_f64 / 1024.0_f64,
+                allocBytes / 1024.0_f64 / 1024.0_f64,
+                blockBytes / 1024.0_f64 / 1024.0_f64
+            );
         }
 
-        std::string text = std::format("--- Project Nekomata ---\n FPS: {:.2f} ({:.3f}ms)\n\n -SDL-\n Video Driver: {}\n\n -Vulkan-\n Device: {}\n Driver: {} {}.{}.{}.{} API Version {}.{}.{}.{}\n VRAM: {}\n Shader Cache: {}\n Descriptor Binding Model: {}",
+        std::string text = std::format("--- Project Nekomata ---\n FPS: {:.2f} ({:.3f}ms)\n\n -SDL-\n Video Driver: {}\n\n -Vulkan-\n Device: {}\n Driver: {} {}.{}.{}.{} API Version {}.{}.{}.{}\n VRAM: {}\n Shader Cache: {}\n Descriptor Binding Model: {}\n Anti-Lag: {}",
             1000.0f / m_sharedRenderingResources.displayMs, m_sharedRenderingResources.displayMs,
             m_mrSharedData->m_sdlVideoDriverName,
             physicalDeviceProps.m_deviceName,
@@ -96,7 +106,8 @@ auto RenderThread::loop() -> void {
             physicalDeviceProps.getApiVersionVariant(), physicalDeviceProps.getApiVersionMajor(), physicalDeviceProps.getApiVersionMinor(), physicalDeviceProps.getApiVersionPatch(),
             vramStr,
             VulkanContext::get().shaderCache()->usesPipelineBinaries() ? "Yes" : "No",
-            graphics::texturesystem::TextureManager::get().shaderResourceTable().modelName()
+            graphics::texturesystem::TextureManager::get().shaderResourceTable().modelName(),
+            antiLagMethodToString(VulkanContext::get().antiLagMethod())
         );
         m_mrSharedData->m_leafs.getSecondary().m_uiDrawCmds.emplace(ui::UiTextDrawCmd {
             .baselinePos = Vector2f(4.0f, 18.0f),
@@ -107,7 +118,7 @@ auto RenderThread::loop() -> void {
     }
 
     auto result = m_frames[m_currentFrameContextIndex].execute(m_transientRenderingResources, m_sharedRenderingResources, m_vkSwapchain,
-                                                               m_mrSharedData->m_leafs.getSecondary(), timeSinceStart);
+                                                               m_mrSharedData->m_leafs.getSecondary());
     if (result.stepPerFrameResources)
         m_currentFrameContextIndex = (m_currentFrameContextIndex + 1) % MAX_FRAMES_IN_FLIGHT;
 

@@ -205,7 +205,7 @@ auto MeshPool::freeIndexBuffer(BufferPoolSuballocation& alloc, u64 currentFrameI
 auto MeshPool::allocateMesh(u64 vertexBufferSize, u64 indexBufferSize, u64 vertexAlignment, u64 indexAlignment) -> MeshSuballocation {
     MeshSuballocation alloc{};
     alloc.vertexBuffer = m_vertexBufferPool.allocate(vertexBufferSize, vertexAlignment);
-    alloc.indexBuffer = m_indexBufferPool.allocate(indexBufferSize, vertexAlignment);
+    alloc.indexBuffer = m_indexBufferPool.allocate(indexBufferSize, indexAlignment);
     return alloc;
 }
 auto MeshPool::freeMesh(MeshSuballocation& alloc, u64 currentFrameIndex) -> void {

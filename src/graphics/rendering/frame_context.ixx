@@ -19,7 +19,7 @@ public:
     FrameContext();
 
     [[nodiscard]] auto execute(TransientRenderingResources& transientRenderingResources, SharedRenderingResources& sharedRenderingResources,
-                               VulkanSwapchain& swapchain, MRThreadsSharedDataLeaf& renderingData, float timeSinceStart) -> FrameResult;
+                               VulkanSwapchain& swapchain, MRThreadsSharedDataLeaf& renderingData) -> FrameResult;
 
 private:
     FrameRenderingResources m_frameRenderingResources = nullptr;

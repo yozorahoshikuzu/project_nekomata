@@ -91,7 +91,8 @@ struct UiNode {
                 auto drawCmd = UiTextDrawCmd{
                     .baselinePos = position,
                     .text = text.text,
-                    .size = text.size
+                    .face = text.fontFace.clone(),
+                    .size = text.size,
                 };
                 list.emplace(drawCmd);
             },

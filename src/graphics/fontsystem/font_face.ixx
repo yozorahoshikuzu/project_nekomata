@@ -9,6 +9,10 @@ struct FontFace {
     bool operator==(const FontFace& other) const {
         return handleIndex == other.handleIndex;
     }
+
+    constexpr auto clone() const -> FontFace {
+        return FontFace { handleIndex };
+    }
 };
 
 }
