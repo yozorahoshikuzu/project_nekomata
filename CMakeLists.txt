@@ -1,20 +1,38 @@
 cmake_minimum_required(VERSION 4.3)
 set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
 
+include(FetchContent)
+project(project_nekomata VERSION 0.1.0 LANGUAGES CXX C)
+
+option(ENABLE_THINLTO "Enable ThinLTO" OFF)
+option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
+option(ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
+
+set(SANITIZERS_LIST "")
+if(ENABLE_ASAN)
+        list(APPEND SANITIZERS_LIST "address")
+endif()
+if(ENABLE_UBSAN)
+        list(APPEND SANITIZERS_LIST "undefined")
+endif()
+
+if(SANITIZERS_LIST)
+        list(JOIN SANITIZERS_LIST "," SANITIZERS_STR)
+        set(SANITIZER_FLAGS "-fsanitize=${SANITIZERS_STR}")
+endif()
+
 add_compile_options(
         -fno-exceptions
-        -flto=thin
         -fno-plt
 
         -fno-math-errno
         -fno-trapping-math
         -ffp-contract=fast
         -fwrapv
+        ${SANITIZER_FLAGS}
+        ${THINLTO_FLAGS}
 )
-add_link_options(-fuse-ld=lld -flto=thin)
-
-include(FetchContent)
-project(project_nekomata VERSION 0.1.0 LANGUAGES CXX C)
+add_link_options(-fuse-ld=lld ${THINLTO_FLAGS} ${SANITIZER_FLAGS})
 
 set(CMAKE_CXX_MODULE_STD ON)
 set(CMAKE_CXX_STANDARD 26)
@@ -231,7 +249,6 @@ if (LIBBACKTRACE_INCLUDE_DIR AND LIBBACKTRACE_LIBRARY)
 endif()
 target_compile_options(
         project_nekomata_Library PRIVATE
-        -flto=thin
         -ftls-model=local-exec
         -fvisibility=hidden
         -fvisibility-inlines-hidden
@@ -260,6 +277,11 @@ target_compile_options(
 add_slang_shaders(project_nekomata_spv TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR}/spirv SOURCES ${project_nekomata_SHADER_SOURCES})
 add_dependencies(project_nekomata_Library project_nekomata_spv)
 
+message("--- Project Nekomata Options ---")
+message("  UBSAN: ${ENABLE_UBSAN}")
+message("  ASAN: ${ENABLE_ASAN}")
+message("  ThinLTO: ${ENABLE_THINLTO}")
+
 foreach(BINARY_ENTRY ${project_nekomata_BINARIES})
         get_filename_component(BINARY_ENTRY_NAME ${BINARY_ENTRY} NAME_WE)
         add_executable(${BINARY_ENTRY_NAME} ${BINARY_ENTRY})
@@ -267,7 +289,6 @@ foreach(BINARY_ENTRY ${project_nekomata_BINARIES})
 
         target_compile_options(
                 ${BINARY_ENTRY_NAME} PRIVATE
-                -flto=thin
                 -ftls-model=local-exec
                 -fvisibility=hidden
                 -fvisibility-inlines-hidden
