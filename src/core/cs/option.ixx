@@ -2,6 +2,8 @@ export module projnekomata:core.cs.option;
 import std;
 import :core.platform.int_def;
 import :core.cs.niche;
+import :core.cs.panic;
+import :core.cs.invoke_traits;
 
 export template <typename T> class Option {
 public:
@@ -11,15 +13,15 @@ public:
     static constexpr bool kIsCopyable = std::is_copy_constructible_v<T>;
     static constexpr bool kIsMovable = std::is_move_constructible_v<T>;
 
-    constexpr static auto none() -> Option<T> { return Option<T>(); }
-    constexpr static auto some(const T& value) -> Option<T> { return Option<T>(value); }
-    constexpr static auto some(T&& value) -> Option<T> { return Option<T>(std::forward<T>(value)); }
+    constexpr static auto None() -> Option<T> { return Option<T>(); }
+    constexpr static auto Some(const T& value) -> Option<T> { return Option<T>(value); }
+    constexpr static auto Some(T&& value) -> Option<T> { return Option<T>(std::forward<T>(value)); }
 
     template <typename F> constexpr static auto someIf(bool cond, F&& f) -> Option<T>
-        requires std::invocable<F> && std::same_as<std::invoke_result_t<F>, T>
+        requires TypedInvocable<F, T>
     {
-        if (cond) return some(f());
-        return none();
+        if (cond) return Some(f());
+        return None();
     }
 
     constexpr Option(const Option& other) requires kIsCopyable {
@@ -64,6 +66,7 @@ public:
     constexpr Option(Option&&) requires (!kIsMovable) = delete;
     constexpr Option& operator=(Option&&) requires (!kIsMovable) = delete;
 
+    // ---- Metadata and Access --------------------------------------------------------------------------------------------------------------------------------
 
     constexpr auto isSome() const -> bool {
         if constexpr (HasNiche<T>) return !NicheValue<T>::matchesNiche(m_storage);
@@ -72,16 +75,19 @@ public:
     constexpr auto isNone() const -> bool { return !isSome(); }
     constexpr explicit operator bool() const { return isSome(); }
 
+    template <typename P> requires TypedInvocable<P, bool, const T&>
+    constexpr auto isSomeAnd(P&& pred) const -> bool { return isSome() && pred(*ptr()); }
+
     constexpr auto unwrap() const& -> const T& {
-        if (isNone()) __builtin_trap();
+        if (isNone()) panic("called `Option::unwrap()` on a None value");
         return *ptr();
     }
     constexpr auto unwrap() & -> T& {
-        if (isNone()) __builtin_trap();
+        if (isNone()) panic("called `Option::unwrap()` on a None value");
         return *ptr();
     }
     constexpr auto unwrap() && -> T {
-        if (isNone()) __builtin_trap();
+        if (isNone()) panic("called `Option::unwrap()` on a None value");
         return std::move(*ptr());
     }
 
@@ -99,6 +105,21 @@ public:
             if constexpr (kNeedsDestruction) ptr()->~T();
             storeNone();
         }
+    }
+
+    // ---- Functional Programming Bits ------------------------------------------------------------------------------------------------------------------------
+
+    template <typename F> requires TypedInvocableNoRet<F, T&&>
+    constexpr auto map(F&& f) const& -> Option<std::invoke_result_t<F, T&&>> {
+        using ReturnOptionType = Option<std::invoke_result_t<F, T&&>>;
+        if (isNone()) return ReturnOptionType::None();
+        return ReturnOptionType::Some(f(std::move(*ptr())));
+    }
+    template <typename F> requires TypedInvocableNoRet<F, T&&>
+    constexpr auto map(F&& f) && -> Option<std::invoke_result_t<F, T&&>> {
+        using ReturnOptionType = Option<std::invoke_result_t<F, T&&>>;
+        if (isNone()) return ReturnOptionType::None();
+        return ReturnOptionType::Some(f(std::move(*ptr())));
     }
 
 private:

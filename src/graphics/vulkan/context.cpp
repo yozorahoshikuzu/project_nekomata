@@ -190,27 +190,26 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
     if (physicalDevices.isEmpty()) panic("no GPUs found");
 
     auto physicalDeviceOpt = physicalDevices.iter()
-        .map([&](auto&& vkPhysicalDevice) { return VulkanPhysicalDeviceProperties::query(vkPhysicalDevice, vkSurface); })
         .enumerate()
-        .inspect([](const auto& exp) {
-            if (exp.value.has_value()) {
-                log::info("GPU #{}:", exp.index);
-                exp.value->printInfo();
+        .filterMap([&](auto&& pdKey) {
+            auto query = VulkanPhysicalDeviceProperties::query(pdKey.value, vkSurface);
+            if (query.isOk()) {
+                log::info("GPU #{}:", pdKey.index);
+                query.unwrap().printInfo();
             } else {
-                log::warn("GPU #{} is not supported, reason: {}", exp.index, exp.value.error().toString());
+                log::warn("GPU #{} is not supported, reason: {}", pdKey.index, query.unwrapErr().toString());
             }
+            return query.ok().map([&](auto&& props) { return std::pair(pdKey.index, std::move(props)); });
         })
-        .filter([](const auto& exp) { return exp.value.has_value(); })
         .maxByKey([](const auto& exp) {
-            return exp.value->autoselectPriorityScore();
+            return exp.second.autoselectPriorityScore();
         });
 
     if (physicalDeviceOpt.isNone()) panic("no GPUs supported");
     auto [physicalDeviceIndex, props] = std::move(physicalDeviceOpt.unwrap());
-    auto prop = std::move(props.value());
 
     log::info("Picked GPU #{}", physicalDeviceIndex);
-    return { physicalDevices[physicalDeviceIndex], std::move(prop) };
+    return { physicalDevices[physicalDeviceIndex], std::move(props) };
 }
 
 auto VulkanContext::createVkDevice(const vk::raii::PhysicalDevice& vkPhysicalDevice, const VulkanPhysicalDeviceProperties& vkPhysicalDeviceProps) -> vk::raii::Device {

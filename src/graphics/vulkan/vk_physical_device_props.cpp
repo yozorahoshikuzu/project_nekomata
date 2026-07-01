@@ -173,7 +173,7 @@ auto dedupQueueIndices(std::vector<u32>& queueIndices) {
 }
 
 auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhysicalDevice, const vk::raii::SurfaceKHR& vkSurface)
-    -> std::expected<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError> {
+    -> Result<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError> {
     auto supportedExtensionProperties = Vec<vk::ExtensionProperties>::fromStdVector(vkCheckResult(vkPhysicalDevice.enumerateDeviceExtensionProperties()));
     auto supportedExtensionNames = supportedExtensionProperties.iter()
         .map([](auto&& ext) { return std::string(ext.extensionName); })
@@ -185,7 +185,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
 
     for (auto& rule : kRequiredPhysicalDeviceExtensions) {
         if (!supportedExtensionNames.contains(rule.m_extensionName)) {
-            return std::unexpected(PhysicalDevicePropertyQueryError{.m_kind = rule.m_errorKindIfMissing});
+            return Result<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError>::Err(PhysicalDevicePropertyQueryError{.m_kind = rule.m_errorKindIfMissing});
         }
     }
 
@@ -214,12 +214,12 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
             satisfied &= featuresQuery.get<vk::PhysicalDeviceVulkan14Features>().*(rule.m_vk14);
 
         if (!satisfied)
-            return std::unexpected(PhysicalDevicePropertyQueryError{.m_kind = rule.m_errorKindIfMissing});
+            return Result<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError>::Err(PhysicalDevicePropertyQueryError{.m_kind = rule.m_errorKindIfMissing});
     }
 
     // TODO: refactor
     if (!featuresQuery.get<vk::PhysicalDeviceImageViewMinLodFeaturesEXT>().minLod) {
-        return std::unexpected(PhysicalDevicePropertyQueryError{.m_kind = PhysicalDevicePropertyQueryErrorKind::MissingExtImageViewMinLod});
+        return Result<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError>::Err(PhysicalDevicePropertyQueryError{.m_kind = PhysicalDevicePropertyQueryErrorKind::MissingExtImageViewMinLod});
     }
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -326,7 +326,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     props.m_asyncComputeQueueIndex = asyncComputeQueueIndex;
     props.m_queueFamilies = VulkanQueueFamilySwizzling(graphicsQueueIndex, presentQueueIndex, asyncComputeQueueIndex);
 
-    return props;
+    return Result<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError>::Ok(std::move(props));
 }
 
 auto VulkanPhysicalDeviceProperties::autoselectPriorityScore() const -> u64 {

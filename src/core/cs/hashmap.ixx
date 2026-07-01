@@ -371,11 +371,11 @@ public:
     constexpr HashMapKeysIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
     constexpr auto next() -> Option<Item> {
-        if (m_index >= m_hashmap->m_capacity) return Option<Item>::none();
+        if (m_index >= m_hashmap->m_capacity) return Option<Item>::None();
         auto i = m_index;
         m_index++;
         skipEmpty();
-        return Option<Item>::some(IteratorInternalNonNullPtr(NonNullPtr<const K>(&m_hashmap->m_entries[i].key)));
+        return Option<Item>::Some(IteratorInternalNonNullPtr(NonNullPtr<const K>(&m_hashmap->m_entries[i].key)));
     }
 
 private:
@@ -393,11 +393,11 @@ public:
     constexpr HashMapValuesIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
     constexpr auto next() -> Option<Item> {
-        if (m_index >= m_hashmap->m_capacity) return Option<Item>::none();
+        if (m_index >= m_hashmap->m_capacity) return Option<Item>::None();
         auto i = m_index;
         m_index++;
         skipEmpty();
-        return Option<Item>::some(IteratorInternalNonNullPtr(NonNullPtr<V>(&m_hashmap->m_entries[i].value)));
+        return Option<Item>::Some(IteratorInternalNonNullPtr(NonNullPtr<V>(&m_hashmap->m_entries[i].value)));
     }
 
 private:
@@ -415,11 +415,11 @@ public:
     constexpr HashMapIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
     constexpr auto next() -> Option<Item> {
-        if (m_index >= m_hashmap->m_capacity) return Option<Item>::none();
+        if (m_index >= m_hashmap->m_capacity) return Option<Item>::None();
         auto i = m_index;
         m_index++;
         skipEmpty();
-        return Option<Item>::some(Item(IteratorInternalNonNullPtr(NonNullPtr<const K>(&m_hashmap->m_entries[i].key)), IteratorInternalNonNullPtr(NonNullPtr<V>(&m_hashmap->m_entries[i].value))));
+        return Option<Item>::Some(Item(IteratorInternalNonNullPtr(NonNullPtr<const K>(&m_hashmap->m_entries[i].key)), IteratorInternalNonNullPtr(NonNullPtr<V>(&m_hashmap->m_entries[i].value))));
     }
 
 private:

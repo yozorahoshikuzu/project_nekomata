@@ -5,6 +5,7 @@ import vk_mem_alloc;
 import :graphics.vulkan.vk_queue_family_swizzling;
 import :core.platform.int_def;
 import :core.cs.vec;
+import :core.cs.result;
 
 export namespace projnekomata {
 
@@ -90,7 +91,7 @@ consteval auto defaultEnabledVk14Features() -> vk::PhysicalDeviceVulkan14Feature
 
 class VulkanPhysicalDeviceProperties {
 public:
-    static auto query(const vk::raii::PhysicalDevice& vkPhysicalDevice, const vk::raii::SurfaceKHR& vkSurface) -> std::expected<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError>;
+    static auto query(const vk::raii::PhysicalDevice& vkPhysicalDevice, const vk::raii::SurfaceKHR& vkSurface) -> Result<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError>;
     [[nodiscard]] auto autoselectPriorityScore() const -> u64;
     [[nodiscard]] auto queueCreateInfos() const -> std::vector<vk::DeviceQueueCreateInfo>;
     [[nodiscard]] auto vmaAllocatorCreateFlags() const -> vma::AllocatorCreateFlags;

@@ -21,8 +21,8 @@ public:
 
     constexpr VecSliceIter(T* begin, T* end) : m_begin(begin), m_end(end) {}
     constexpr auto next() -> Option<Item> {
-        if (m_begin == m_end) return Option<Item>::none();
-        return Option<Item>::some(IteratorInternalNonNullPtr(NonNullPtr<T>(m_begin++)));
+        if (m_begin == m_end) return Option<Item>::None();
+        return Option<Item>::Some(IteratorInternalNonNullPtr(NonNullPtr<T>(m_begin++)));
     }
 
 private:

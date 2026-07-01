@@ -34,4 +34,4 @@ template <typename T> struct NicheValue<NonNullPtr<T>> {
     static auto setNiche(u8* storage) { std::memset(storage, 0, sizeof(NonNullPtr<T>)); }
     static bool matchesNiche(const u8* storage) { u8* nullptrBits = nullptr; return std::memcmp(storage, &nullptrBits, sizeof(NonNullPtr<T>)) == 0; }
 };
-static_assert(sizeof(Option<NonNullPtr<u32>>) == 8, "NonNullPtr should have a working niche");
+static_assert(sizeof(Option<NonNullPtr<u32>>) == sizeof(u32*), "NonNullPtr should have null pointer optimization");

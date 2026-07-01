@@ -133,7 +133,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     // see if there are new glyphs to rasterize in the system text..
     auto all_texts_iter = renderingData.m_uiDrawCmds.iter()
         .filterMap([&](const auto& x) {
-            if (!std::holds_alternative<ui::UiTextDrawCmd>(x)) return Option<fonts::FontRasterBatch>::none();
+            if (!std::holds_alternative<ui::UiTextDrawCmd>(x)) return Option<fonts::FontRasterBatch>::None();
             auto cmd = std::get<ui::UiTextDrawCmd>(x);
             auto batch = fonts::FontManager::get().findAndBatchMissingGlyphs(cmd.face, sharedRenderingResources.m_fontAtlas, cmd.text, cmd.size);
             return batch;
@@ -243,7 +243,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     auto elapsed = std::chrono::steady_clock::now() - sharedRenderingResources.m_tmStart;
     float seconds = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() / 1000.0;
     auto uboDeviceAddr = m_frameRenderingResources.transformsBuffer().memoryDevicePtr();
-    auto pushConstantData = std::array<unsigned char, 32>{};
+    auto pushConstantData = std::array<unsigned char, 28>{};
 
     memcpy((void*)(pushConstantData.data() + 16), &seconds, 4);
 

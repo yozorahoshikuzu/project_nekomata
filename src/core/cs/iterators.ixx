@@ -6,11 +6,9 @@ import :core.platform.int_def;
 import :core.cs.nonzero_ptr;
 import :core.cs.option;
 import :core.log;
+import :core.cs.invoke_traits;
 
 // ---- Helper Concepts ----------------------------------------------------------------------------------------------------------------------------------------
-
-template <typename Fn, typename ReturnType, typename... Args> concept TypedInvocable = std::invocable<Fn, Args...> && std::same_as<std::invoke_result_t<Fn, Args...>, ReturnType>;
-template <typename Fn, typename... Args> concept TypedInvocableNoRet = std::invocable<Fn, Args...>;
 
 template <typename> struct IsOption : std::false_type {};
 template <typename T> struct IsOption<Option<T>> : std::true_type {};
@@ -178,8 +176,8 @@ public:
 
     constexpr MapIter(Inner inner, F f) : m_inner(std::move(inner)), m_f(std::move(f)) {}
     constexpr auto next() -> Option<Item> {
-        if (auto next = m_inner.next()) return Option<Item>::some(m_f(intoLambdaByMove(std::move(next.unwrap()))));
-        return Option<Item>::none();
+        if (auto next = m_inner.next()) return Option<Item>::Some(m_f(intoLambdaByMove(std::move(next.unwrap()))));
+        return Option<Item>::None();
     }
 
 private:
@@ -193,8 +191,8 @@ public:
 
     constexpr FilterIter(Inner inner, P p) : m_inner(std::move(inner)), m_p(std::move(p)) {}
     constexpr auto next() -> Option<Item> {
-        while (auto next = m_inner.next()) { if (m_p(intoLambdaByRef(next.unwrap()))) return Option<Item>::some(std::move(next.unwrap())); }
-        return Option<Item>::none();
+        while (auto next = m_inner.next()) { if (m_p(intoLambdaByRef(next.unwrap()))) return Option<Item>::Some(std::move(next.unwrap())); }
+        return Option<Item>::None();
     }
 
 private:
@@ -208,8 +206,8 @@ public:
 
     constexpr FilterMapIter(Inner inner, P p) : m_inner(std::move(inner)), m_p(std::move(p)) {}
     constexpr auto next() -> Option<Item> {
-        while (auto next = m_inner.next()) { if (auto mapped = m_p(intoLambdaByMove(std::move(next.unwrap())))) return Option<Item>::some(std::move(mapped.unwrap())); }
-        return Option<Item>::none();
+        while (auto next = m_inner.next()) { if (auto mapped = m_p(intoLambdaByMove(std::move(next.unwrap())))) return Option<Item>::Some(std::move(mapped.unwrap())); }
+        return Option<Item>::None();
     }
 
 private:
@@ -223,8 +221,8 @@ public:
 
     constexpr EnumerateIter(Inner inner) : m_inner(std::move(inner)) {}
     constexpr auto next() -> Option<Item> {
-        if (auto next = m_inner.next()) return Option<Item>::some(Enumerand{m_index++, std::forward<typename Inner::Item>(next.unwrap())});
-        return Option<Item>::none();
+        if (auto next = m_inner.next()) return Option<Item>::Some(Enumerand{m_index++, std::forward<typename Inner::Item>(next.unwrap())});
+        return Option<Item>::None();
     }
 
 private:
@@ -240,8 +238,8 @@ public:
     constexpr auto next() -> Option<Item> {
         auto next1 = m_i1.next();
         auto next2 = m_i2.next();
-        if (next1.isSome() && next2.isSome()) return Option<Item>::some(KeyValue(std::move(next1.unwrap()), std::move(next2.unwrap())));
-        return Option<Item>::none();
+        if (next1.isSome() && next2.isSome()) return Option<Item>::Some(KeyValue(std::move(next1.unwrap()), std::move(next2.unwrap())));
+        return Option<Item>::None();
     }
 
 private:
@@ -259,9 +257,9 @@ public:
     constexpr auto next() -> Option<Item> {
         if (auto next = m_inner.next()) {
             m_f(intoLambdaByRef(next.unwrap()));
-            return Option<Item>::some(std::move(next.unwrap()));
+            return Option<Item>::Some(std::move(next.unwrap()));
         }
-        return Option<Item>::none();
+        return Option<Item>::None();
     }
 
 private:
@@ -291,7 +289,7 @@ public:
 
 private:
     Iter m_inner;
-    Option<typename Iter::Item> m_current = Option<typename Iter::Item>::none();
+    Option<typename Iter::Item> m_current = Option<typename Iter::Item>::None();
 };
 
 // ---- Common CRTP iterator mixin -----------------------------------------------------------------------------------------------------------------------------
@@ -356,11 +354,11 @@ public:
         using Item = typename Derived::Item;
         using ValueType = OwnedTypeT<Item>;
 
-        auto result = Option<ValueType>::none();
+        auto result = Option<ValueType>::None();
 
         while (auto v = self().next()) {
-            if (result.isNone()) { result = Option<ValueType>::some(ownedType(std::move(v.unwrap()))); continue; }
-            if (intoLambdaByRef(v.unwrap()) < intoLambdaByRef(result.unwrap())) result = Option<ValueType>::some(ownedType(std::move(v.unwrap())));
+            if (result.isNone()) { result = Option<ValueType>::Some(ownedType(std::move(v.unwrap()))); continue; }
+            if (intoLambdaByRef(v.unwrap()) < intoLambdaByRef(result.unwrap())) result = Option<ValueType>::Some(ownedType(std::move(v.unwrap())));
         }
 
         return result;
@@ -371,11 +369,11 @@ public:
         using Item = typename Derived::Item;
         using ValueType = OwnedTypeT<Item>;
 
-        auto result = Option<ValueType>::none();
+        auto result = Option<ValueType>::None();
 
         while (auto v = self().next()) {
-            if (result.isNone()) { result = Option<ValueType>::some(ownedType(std::move(v.unwrap()))); continue; }
-            if (intoLambdaByRef(v.unwrap()) > intoLambdaByRef(result.unwrap())) result = Option<ValueType>::some(ownedType(std::move(v.unwrap())));
+            if (result.isNone()) { result = Option<ValueType>::Some(ownedType(std::move(v.unwrap()))); continue; }
+            if (intoLambdaByRef(v.unwrap()) > intoLambdaByRef(result.unwrap())) result = Option<ValueType>::Some(ownedType(std::move(v.unwrap())));
         }
 
         return result;
@@ -388,11 +386,11 @@ public:
         using Item = typename Derived::Item;
         using ValueType = OwnedTypeT<Item>;
 
-        auto result = Option<ValueType>::none();
+        auto result = Option<ValueType>::None();
 
         while (auto v = self().next()) {
-            if (result.isNone()) { result = Option<ValueType>::some(ownedType(std::move(v.unwrap()))); continue; }
-            if (f(intoLambdaByRef(v.unwrap())) < f(intoLambdaByRef(result.unwrap()))) result = Option<ValueType>::some(ownedType(std::move(v.unwrap())));
+            if (result.isNone()) { result = Option<ValueType>::Some(ownedType(std::move(v.unwrap()))); continue; }
+            if (f(intoLambdaByRef(v.unwrap())) < f(intoLambdaByRef(result.unwrap()))) result = Option<ValueType>::Some(ownedType(std::move(v.unwrap())));
         }
         return result;
     }
@@ -404,11 +402,11 @@ public:
         using Item = typename Derived::Item;
         using ValueType = OwnedTypeT<Item>;
 
-        auto result = Option<ValueType>::none();
+        auto result = Option<ValueType>::None();
 
         while (auto v = self().next()) {
-            if (result.isNone()) { result = Option<ValueType>::some(ownedType(std::move(v.unwrap()))); continue; }
-            if (f(intoLambdaByRef(v.unwrap())) > f(intoLambdaByRef(result.unwrap()))) result = Option<ValueType>::some(ownedType(std::move(v.unwrap())));
+            if (result.isNone()) { result = Option<ValueType>::Some(ownedType(std::move(v.unwrap()))); continue; }
+            if (f(intoLambdaByRef(v.unwrap())) > f(intoLambdaByRef(result.unwrap()))) result = Option<ValueType>::Some(ownedType(std::move(v.unwrap())));
         }
         return result;
     }
@@ -420,9 +418,9 @@ public:
         using ValueType = OwnedTypeT<Item>;
 
         while (auto v = self().next()) {
-            if (pred(intoLambdaByRef(v.unwrap()))) return Option<ValueType>::some(intoLambdaByMove(std::move(v.unwrap())));
+            if (pred(intoLambdaByRef(v.unwrap()))) return Option<ValueType>::Some(intoLambdaByMove(std::move(v.unwrap())));
         }
-        return Option<ValueType>::none();
+        return Option<ValueType>::None();
     }
 
     // ---- Collector ------------------------------------------------------------------------------------------------------------------------------------------

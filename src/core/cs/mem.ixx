@@ -3,6 +3,7 @@ module;
 #include <malloc.h>
 export module projnekomata:core.cs.mem;
 import :core.platform.int_def;
+import :core.cs.panic;
 
 export class Mem {
 public:
@@ -14,17 +15,17 @@ public:
     // ---- Ensured Allocation ---------------------------------------------------------------------------------------------------------------------------------
     template <typename T> static auto allocChecked(usize len) -> T* {
         auto ptr = alloc<T>(len);
-        if (!ptr) __builtin_trap();
+        if (!ptr) panic("out of host memory");
         return ptr;
     }
     template <typename T> static auto allocAlignedChecked(usize len, usize alignment) -> T* {
         auto ptr = allocAligned<T>(len, alignment);
-        if (!ptr) __builtin_trap();
+        if (!ptr) panic("out of host memory");
         return ptr;
     }
     template <typename T> static auto reallocChecked(T* ptr, usize len) -> T* {
         auto ptr2 = realloc<T>(ptr, len);
-        if (!ptr2) __builtin_trap();
+        if (!ptr2) panic("out of host memory");
         return ptr2;
     }
 

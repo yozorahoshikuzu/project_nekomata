@@ -241,7 +241,7 @@ auto FontManager::findAndBatchMissingGlyphs(FontFace font, rendering::DynamicBit
     // TODO: that's not a concern, but could become later when we dispatch threads to do raster work
 
     auto& fontEntry = *m_fontEntries[font.handleIndex];
-    if (!fontEntry.isLoaded) return Option<FontRasterBatch>::none();
+    if (!fontEntry.isLoaded) return Option<FontRasterBatch>::None();
     std::scoped_lock faceLock(fontEntry.rasterMutex);
 
     auto glyphIndices = Vec<u32>::create();
@@ -260,8 +260,8 @@ auto FontManager::findAndBatchMissingGlyphs(FontFace font, rendering::DynamicBit
         }
     }
 
-    if (glyphIndices.isEmpty()) return Option<FontRasterBatch>::none();
-    return Option<FontRasterBatch>::some(FontRasterBatch { font, pixelSize, std::move(glyphIndices) });
+    if (glyphIndices.isEmpty()) return Option<FontRasterBatch>::None();
+    return Option<FontRasterBatch>::Some(FontRasterBatch { font, pixelSize, std::move(glyphIndices) });
 }
 
 u32 FontManager::getFreeFontIndex() {
