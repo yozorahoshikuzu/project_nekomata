@@ -126,8 +126,8 @@ private:
         std::vector<u8> byteBuffer;
 
         auto result = m_pipelineKeysToBinaryKeyObjects.load(key, byteBuffer);
-        if (!result.has_value()) {
-            auto err = result.error();
+        if (result.isErr()) {
+            auto err = result.unwrapErr();
             switch (err) {
             case storage::HashStorageLoadError::FileOpenError: log::error("Failed to load pipeline key to binary key object: file open error"); break;
             case storage::HashStorageLoadError::FileReadError: log::error("Failed to load pipeline key to binary key object: file read error"); break;
@@ -149,8 +149,8 @@ private:
             std::span<const u8> key = { binaryKey.key.data(), binaryKey.keySize };
             std::vector<u8> byte_buffer;
             auto result = m_binaryKeysToBinaryObjects.load(key, byte_buffer);
-            if (!result.has_value()) {
-                auto err = result.error();
+            if (result.isErr()) {
+                auto err = result.unwrapErr();
                 switch (err) {
                 case storage::HashStorageLoadError::FileOpenError: log::error("Failed to load binary key to binary object: file open error"); break;
                 case storage::HashStorageLoadError::FileReadError: log::error("Failed to load binary key to binary object: file read error"); break;
@@ -248,7 +248,7 @@ private:
             std::span<const u8> binaryDataKeySpan = { binaryDataKey.key.data(), binaryDataKey.keySize };
             auto storeResult = m_binaryKeysToBinaryObjects.store(binaryDataKeySpan, binaryData);
 
-            if (!storeResult.has_value()) {
+            if (storeResult.isErr()) {
                 log::error("Failed to store pipeline binary object!");
                 silentlyFailPipelineKeyWrite = true;
             }
@@ -268,7 +268,7 @@ private:
         std::span<const u8> pipelineKeySpan = { pipelineKey.key.data(), pipelineKey.keySize };
         auto storeResult = m_pipelineKeysToBinaryKeyObjects.store(pipelineKeySpan, byteBuffer);
 
-        if (!storeResult.has_value()) {
+        if (storeResult.isErr()) {
             log::error("Failed to store pipeline binary keys object!");
         }
         VulkanContext::get().vkDevice().releaseCapturedPipelineDataKHR(release_info);

@@ -81,7 +81,7 @@ auto TextureManager::loadTextureFromMemoryInternal(u32 width, u32 height, u32 de
         )
         .flush(cmd);
     cb.end();
-    auto asyncOp = VulkanContext::get().vkQueueAsyncCompute().submitOneCommandBuffer(cb, {}, {}, {});
+    auto asyncOp = VulkanContext::get().vkQueueAsyncCompute().submitOneCommandBuffer(cb, {}, {}, None);
     asyncOp.await();
 
     auto texture = allocateTexture(std::move(image));
@@ -229,7 +229,7 @@ auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesy
         .flush(cmd);
     cb.end();
 
-    auto future = VulkanContext::get().vkQueueAsyncCompute().submitOneCommandBuffer(cb, {}, {}, {});
+    auto future = VulkanContext::get().vkQueueAsyncCompute().submitOneCommandBuffer(cb, {}, {}, None);
     ktxTexture2_Destroy(ktxData);
 
     // TODO: Move somewhere else. We don't want it blocking an entire job when a threadpool gets in place.

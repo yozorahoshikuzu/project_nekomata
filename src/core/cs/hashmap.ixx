@@ -75,7 +75,7 @@ public:
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    constexpr auto get(const K& key) -> std::optional<std::reference_wrapper<V>> {
+    constexpr auto get(const K& key) -> Option<std::reference_wrapper<V>> {
         u64 hash = H::hash(key);
         u8 h2 = computeH2(hash);
         usize index = hashHomeIndex(hash);
@@ -92,29 +92,29 @@ public:
             while (matches) {
                 u32 bit = __builtin_ctz(matches);
                 usize slot = (base + bit) & (m_capacity - 1);
-                if (m_entries[slot].key == key) return m_entries[slot].value;
+                if (m_entries[slot].key == key) return Some(std::ref(m_entries[slot].value));
                 matches &= (matches - 1);
             }
             u32 emptyCount = _mm_movemask_epi8(_mm_cmpeq_epi8(group, empty));
-            if (emptyCount) return std::nullopt;
+            if (emptyCount) return None;
         }
-        return std::nullopt;
+        return None;
     }
 
     constexpr auto operator[](const K& key) -> V& {
         auto ref = get(key);
-        debug_assert(ref.has_value(), "HashMap: key not found");
-        return ref.value();
+        debug_assert(ref.isSome(), "HashMap: key not found");
+        return ref.unwrap();
     }
 
     constexpr auto contains(const K& key) -> bool {
-        return get(key).has_value();
+        return get(key).isSome();
     }
 
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    constexpr auto remove(const K& key) -> std::optional<V> {
+    constexpr auto remove(const K& key) -> Option<V> {
         u64 hash = H::hash(key);
         u8 h2 = computeH2(hash);
         usize index = hashHomeIndex(hash);
@@ -138,9 +138,9 @@ public:
             }
 
             u32 emptyCount = _mm_movemask_epi8(_mm_cmpeq_epi8(group, empty));
-            if (emptyCount) return std::nullopt;
+            if (emptyCount) return None;
         }
-        return std::nullopt;
+        return None;
     }
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -226,8 +226,8 @@ private:
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    constexpr auto removeAt(usize index) -> std::optional<V> {
-        auto result = std::make_optional(std::move(m_entries[index].value));
+    constexpr auto removeAt(usize index) -> Option<V> {
+        auto result = Some(std::move(m_entries[index].value));
 
         if constexpr (kKeyNeedsFinalizer) m_entries[index].key.~K();
         if constexpr (kValNeedsFinalizer) m_entries[index].value.~V();
@@ -371,11 +371,11 @@ public:
     constexpr HashMapKeysIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
     constexpr auto next() -> Option<Item> {
-        if (m_index >= m_hashmap->m_capacity) return Option<Item>::None();
+        if (m_index >= m_hashmap->m_capacity) return None;
         auto i = m_index;
         m_index++;
         skipEmpty();
-        return Option<Item>::Some(IteratorInternalNonNullPtr(NonNullPtr<const K>(&m_hashmap->m_entries[i].key)));
+        return Some(IteratorInternalNonNullPtr(NonNullPtr<const K>(&m_hashmap->m_entries[i].key)));
     }
 
 private:
@@ -393,11 +393,11 @@ public:
     constexpr HashMapValuesIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
     constexpr auto next() -> Option<Item> {
-        if (m_index >= m_hashmap->m_capacity) return Option<Item>::None();
+        if (m_index >= m_hashmap->m_capacity) return None;
         auto i = m_index;
         m_index++;
         skipEmpty();
-        return Option<Item>::Some(IteratorInternalNonNullPtr(NonNullPtr<V>(&m_hashmap->m_entries[i].value)));
+        return Some(IteratorInternalNonNullPtr(NonNullPtr<V>(&m_hashmap->m_entries[i].value)));
     }
 
 private:
@@ -415,11 +415,11 @@ public:
     constexpr HashMapIter(HashMap<K, V, H>* hashmap) : m_hashmap(hashmap) { skipEmpty(); }
 
     constexpr auto next() -> Option<Item> {
-        if (m_index >= m_hashmap->m_capacity) return Option<Item>::None();
+        if (m_index >= m_hashmap->m_capacity) return None;
         auto i = m_index;
         m_index++;
         skipEmpty();
-        return Option<Item>::Some(Item(IteratorInternalNonNullPtr(NonNullPtr<const K>(&m_hashmap->m_entries[i].key)), IteratorInternalNonNullPtr(NonNullPtr<V>(&m_hashmap->m_entries[i].value))));
+        return Some(Item(IteratorInternalNonNullPtr(NonNullPtr<const K>(&m_hashmap->m_entries[i].key)), IteratorInternalNonNullPtr(NonNullPtr<V>(&m_hashmap->m_entries[i].value))));
     }
 
 private:

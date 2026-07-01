@@ -48,14 +48,14 @@ public:
     VulkanSwapchain(std::nullptr_t);
     VulkanSwapchain(vk::raii::SwapchainKHR&& swapchain, vk::Extent2D swapchainImageExtent, Vec<SwapchainImage>&& swapchainImages);
 
-    static auto create(vk::Extent2D windowDrawableExtent, std::optional<VulkanSwapchain>&& oldSwapchain, bool vsyncEnable) -> VulkanSwapchain;
+    static auto create(vk::Extent2D windowDrawableExtent, Option<VulkanSwapchain>&& oldSwapchain, bool vsyncEnable) -> VulkanSwapchain;
 
     VulkanSwapchain(const VulkanSwapchain&) = delete;
     VulkanSwapchain(VulkanSwapchain&&) = default;
     VulkanSwapchain& operator=(const VulkanSwapchain&) = delete;
     VulkanSwapchain& operator=(VulkanSwapchain&&) = default;
 
-    [[nodiscard]] auto acquireNextImage(u64 timeoutNanos, const VulkanBinarySemaphore& imageAcquireSemaphore) -> std::pair<std::optional<u32>, bool>;
+    [[nodiscard]] auto acquireNextImage(u64 timeoutNanos, const VulkanBinarySemaphore& imageAcquireSemaphore) -> std::pair<Option<u32>, bool>;
     [[nodiscard]] auto imageAtIndex(u32 index) -> SwapchainImage& { return m_vkSwapchainImages[index]; }
 
     [[nodiscard]] auto vkSwapchain() const -> const vk::raii::SwapchainKHR& { return m_vkSwapchain.vkHandle(); }

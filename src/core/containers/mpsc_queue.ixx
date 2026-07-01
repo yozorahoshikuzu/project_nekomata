@@ -1,5 +1,6 @@
 export module projnekomata:core.containers.mpsc_queue;
 import std;
+import :core.cs.option;
 
 export template <typename T> class AtomicMpscQueue {
 public:
@@ -11,7 +12,7 @@ public:
 
 
     ~AtomicMpscQueue() {
-        while (pop().has_value())
+        while (pop().isSome())
             ;
         delete m_tail;
     }
@@ -22,10 +23,10 @@ public:
         prev->m_next.store(node, std::memory_order_release);
     }
 
-    auto pop() -> std::optional<T> {
+    auto pop() -> Option<T> {
         Node* next = m_tail->m_next.load(std::memory_order_acquire);
         if (!next)
-            return std::nullopt;
+            return None;
 
         auto result = std::move(next->m_value);
 
@@ -35,15 +36,15 @@ public:
         return result;
     }
 
-    auto peek() -> std::optional<std::reference_wrapper<T>> {
+    auto peek() -> Option<std::reference_wrapper<T>> {
         Node* next = m_tail->m_next.load(std::memory_order_acquire);
         if (!next)
-            return std::nullopt;
+            return None;
 
         if (!next->m_value.has_value())
-            return std::nullopt;
+            return None;
 
-        return std::ref(next->m_value.value());
+        return Some(std::ref(next->m_value.value()));
     }
 
     auto hasElement() -> bool {
@@ -53,11 +54,11 @@ public:
 
 private:
     struct Node {
-        std::optional<T> m_value;
+        Option<T> m_value = None;
         std::atomic<Node*> m_next{nullptr};
 
         Node() = default;
-        Node(T v) : m_value(std::move(v)) {}
+        Node(T v) : m_value(Some(std::move(v))) {}
     };
 
     std::atomic<Node*> m_head;

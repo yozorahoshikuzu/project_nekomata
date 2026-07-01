@@ -69,7 +69,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
     auto imageAcquire = swapchain.acquireNextImage(std::numeric_limits<u64>::max(), m_frameRenderingResources.imageAcquiredSemaphore());
 
-    if (!imageAcquire.first.has_value() || imageAcquire.second) {
+    if (imageAcquire.first.isNone() || imageAcquire.second) {
         return { .shouldRecreateSwapchain = true, .stepPerFrameResources = false };
     }
 
@@ -116,7 +116,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     float perspFocalLength = renderingArea.y() / (2.0f * std::tan(0.5f * degreesToRadians(firstCamera.fov)));
 
     m_frameRenderingResources.prepareTransformsBuffer(renderingData, firstCamera, firstCameraTransform, aspectRatio);
-    auto& swapchainImage = swapchain.imageAtIndex(*imageAcquire.first);
+    auto& swapchainImage = swapchain.imageAtIndex(imageAcquire.first.unwrap());
 
     m_frameRenderingResources.commandPool().reset();
 
@@ -132,8 +132,8 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
     // see if there are new glyphs to rasterize in the system text..
     auto all_texts_iter = renderingData.m_uiDrawCmds.iter()
-        .filterMap([&](const auto& x) {
-            if (!std::holds_alternative<ui::UiTextDrawCmd>(x)) return Option<fonts::FontRasterBatch>::None();
+        .filterMap([&](const auto& x) -> Option<fonts::FontRasterBatch> {
+            if (!std::holds_alternative<ui::UiTextDrawCmd>(x)) return None;
             auto cmd = std::get<ui::UiTextDrawCmd>(x);
             auto batch = fonts::FontManager::get().findAndBatchMissingGlyphs(cmd.face, sharedRenderingResources.m_fontAtlas, cmd.text, cmd.size);
             return batch;
@@ -433,11 +433,11 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         {}, {},
         m_frameRenderingResources.imageAcquiredSemaphore(), swapchainImage.vkSemaphoreImagePresent(),
         vk::PipelineStageFlagBits2::eBlit, vk::PipelineStageFlagBits2::eBlit,
-        m_frameRenderingResources.frameDoneFence()
+        Some(std::ref(m_frameRenderingResources.frameDoneFence()))
     );
 
     VulkanContext::get().antiLagPacePresent(renderingData.m_frameIndex, 0);
-    auto presentResult = VulkanContext::get().vkQueuePresent().submitPresent(swapchain, swapchainImage.vkSemaphoreImagePresent(), *imageAcquire.first);
+    auto presentResult = VulkanContext::get().vkQueuePresent().submitPresent(swapchain, swapchainImage.vkSemaphoreImagePresent(), imageAcquire.first.unwrap());
 
     if (presentResult == vk::Result::eErrorOutOfDateKHR || presentResult == vk::Result::eSuboptimalKHR) {
         return { .shouldRecreateSwapchain = true, .stepPerFrameResources = true };

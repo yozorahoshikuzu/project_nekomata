@@ -4,8 +4,17 @@ import :core.cs.panic;
 import :core.cs.option;
 import :core.cs.invoke_traits;
 
+template <typename T> struct OkT { T value; };
+template <typename T> constexpr auto Ok(T&& value) -> OkT<std::decay_t<T>> { return OkT<std::decay_t<T>>{ std::forward<T>(value) }; }
+
+template <typename T> struct ErrT { T value; };
+template <typename T> constexpr auto Err(T&& value) -> ErrT<std::decay_t<T>> { return ErrT<std::decay_t<T>>{ std::forward<T>(value) }; }
+
 export template <typename T, typename E> class Result {
 public:
+    constexpr Result(OkT<T> other) : m_variant(std::move(other.value)) {}
+    constexpr Result(ErrT<E> other) : m_variant(std::move(other.value)) {}
+
     constexpr static auto Ok(const T& value) -> Result<T, E> { return Result<T, E>(value); }
     constexpr static auto Err(const E& error) -> Result<T, E> { return Result<T, E>(error); }
     constexpr static auto Ok(T&& value) -> Result<T, E> { return Result<T, E>(std::move(value)); }
@@ -47,12 +56,12 @@ public:
     }
 
     constexpr auto ok() -> Option<T> {
-        if (isErr()) return Option<T>::None();
-        return Option<T>::Some(std::move(std::get<T>(m_variant)));
+        if (isErr()) return None;
+        return Some(std::move(std::get<T>(m_variant)));
     }
     constexpr auto err() -> Option<E> {
-        if (isOk()) return Option<E>::None();
-        return Option<E>::Some(std::move(std::get<E>(m_variant)));
+        if (isOk()) return None;
+        return Some(std::move(std::get<E>(m_variant)));
     }
 
 private:

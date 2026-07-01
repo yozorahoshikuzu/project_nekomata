@@ -21,7 +21,7 @@ static constexpr std::array<vk::PresentModeKHR, 4> PRESENT_MODE_PRIORITY_NO_VSYN
 VulkanSwapchain::VulkanSwapchain(std::nullptr_t) {}
 VulkanSwapchain::VulkanSwapchain(vk::raii::SwapchainKHR&& swapchain, vk::Extent2D swapchainImageExtent, Vec<SwapchainImage>&& swapchainImages) : m_vkSwapchain(std::move(swapchain)), m_swapchainImageExtent(swapchainImageExtent), m_vkSwapchainImages(std::move(swapchainImages)) {}
 
-auto VulkanSwapchain::create(vk::Extent2D windowDrawableExtent, std::optional<VulkanSwapchain>&& oldSwapchain, bool vsyncEnable) -> VulkanSwapchain {
+auto VulkanSwapchain::create(vk::Extent2D windowDrawableExtent, Option<VulkanSwapchain>&& oldSwapchain, bool vsyncEnable) -> VulkanSwapchain {
     auto surfaceProps = VulkanPhysicalDeviceSurfaceProperties::query(VulkanContext::get().vkPhysicalDevice(), VulkanContext::get().vkSurface());
 
     auto surfaceFormat = surfaceProps.m_surfaceFormats.iter()
@@ -44,7 +44,7 @@ auto VulkanSwapchain::create(vk::Extent2D windowDrawableExtent, std::optional<Vu
     auto imageSharingMode = VulkanContext::get().vkPhysicalDeviceProps().m_graphicsQueueIndex == VulkanContext::get().vkPhysicalDeviceProps().m_presentQueueIndex ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent;
 
     // Reduce noise from window resizing / out-of-date events by checking if this is the first time calling this function is oldSwapchain is nullopt.
-    if (!oldSwapchain.has_value()) {
+    if (oldSwapchain.isNone()) {
         log::info("Swapchain parameters:");
         log::info("  Image count: {}", imageCount);
         log::info("  Image sharing mode: {}", vk::to_string(imageSharingMode));
@@ -69,8 +69,8 @@ auto VulkanSwapchain::create(vk::Extent2D windowDrawableExtent, std::optional<Vu
         .setClipped(true)
         .setPresentMode(presentMode);
     
-    if (oldSwapchain.has_value()) {
-        swapchainCreateInfo.oldSwapchain = oldSwapchain->vkSwapchain();
+    if (oldSwapchain.isSome()) {
+        swapchainCreateInfo.oldSwapchain = oldSwapchain.unwrap().vkSwapchain();
     }
 
     auto swapchain = vkCheckResult(VulkanContext::get().vkDevice().createSwapchainKHR(swapchainCreateInfo));
@@ -82,17 +82,17 @@ auto VulkanSwapchain::create(vk::Extent2D windowDrawableExtent, std::optional<Vu
     return VulkanSwapchain(std::move(swapchain), imageExtent, std::move(swapchainImages));
 }
 
-auto VulkanSwapchain::acquireNextImage(u64 timeoutNanos, const VulkanBinarySemaphore& imageAcquireSemaphore) -> std::pair<std::optional<u32>, bool> {
+auto VulkanSwapchain::acquireNextImage(u64 timeoutNanos, const VulkanBinarySemaphore& imageAcquireSemaphore) -> std::pair<Option<u32>, bool> {
     auto index = m_vkSwapchain.vkHandle().acquireNextImage(timeoutNanos, imageAcquireSemaphore.vkSemaphore());
     if (index.result == vk::Result::eSuccess) {
-        return { *index, false };
+        return { Some(*index), false };
     }
     if (index.result == vk::Result::eSuboptimalKHR) {
-        return { *index, true };
+        return { Some(*index), true };
     }
 
     if (index.result == vk::Result::eErrorOutOfDateKHR) {
-        return { std::nullopt, true };
+        return { None, true };
     }
 
     panic("vkAcquireNextImageKHR failed");

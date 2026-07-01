@@ -65,8 +65,8 @@ public:
 
     template <typename T> bool has(Entity e) {
         auto vect = m_components.get(std::type_index(typeid(T)));
-        if (!vect.has_value()) return false;
-        return vect->get()->containsEntity(e);
+        if (vect.isNone()) return false;
+        return vect.unwrap().get()->containsEntity(e);
     }
 
     template <typename T> T& get(Entity e) { return components<T>().get(e); }
@@ -75,19 +75,19 @@ public:
 
     template <typename T> T* tryGet(Entity e) {
         auto vect = m_components.get(std::type_index(typeid(T)));
-        if (!vect.has_value()) return nullptr;
-        return static_cast<ComponentSet<T>*>(vect->get())->try_get(e);
+        if (vect.isNone()) return nullptr;
+        return static_cast<ComponentSet<T>*>(vect.unwrap().get())->try_get(e);
     }
 
     template <typename T> ComponentSet<T>& components() {
         auto key = std::type_index(typeid(T));
         auto vect = m_components.get(key);
-        if (!vect.has_value()) {
+        if (vect.isNone()) {
             auto set = std::make_unique<ComponentSet<T>>();
             auto& p = m_components.insert(std::move(key), std::move(set));
             return *static_cast<ComponentSet<T>*>(p.get());
         }
-        return *static_cast<ComponentSet<T>*>(vect.value().get().get());
+        return *static_cast<ComponentSet<T>*>(vect.unwrap().get().get());
     }
 
     // Attach a script of the given type to the given entity.
@@ -110,9 +110,9 @@ public:
     // Remove the given script type from the given entity.
     template <typename ScriptType> void removeScript(Entity ent) {
         auto vec = m_scripts.get(ent);
-        if (!vec.has_value()) return;
+        if (vec.isNone()) return;
 
-        auto& cont = vec->get();
+        auto& cont = vec.unwrap().get();
         cont.retain([](const auto& s) -> bool { return dynamic_cast<ScriptType*>(s.get()) == nullptr; });
     }
 
@@ -121,9 +121,9 @@ public:
     // Get first script of given type of given entity. Returns nullptr if absent.
     template <typename ScriptType> ScriptType* getScript(Entity ent) {
         auto vec = m_scripts.get(ent);
-        if (!vec.has_value()) return nullptr;
+        if (vec.isNone()) return nullptr;
 
-        for (auto& s : vec->get())
+        for (auto& s : vec.unwrap().get())
             if (auto* cast = dynamic_cast<ScriptType*>(s.get()))
                 return cast;
         return nullptr;

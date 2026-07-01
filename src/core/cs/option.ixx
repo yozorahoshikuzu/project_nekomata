@@ -5,9 +5,17 @@ import :core.cs.niche;
 import :core.cs.panic;
 import :core.cs.invoke_traits;
 
+struct NoneT_Meta {};
+
+template <typename T> struct SomeT { T value; };
+template <typename T> constexpr auto Some(T&& value) -> SomeT<std::decay_t<T>> { return SomeT<std::decay_t<T>>{ std::forward<T>(value) }; }
+
 export template <typename T> class Option {
 public:
     ~Option() { reset(); }
+
+    constexpr Option(NoneT_Meta) : Option() {}
+    constexpr Option(SomeT<T> other) : Option(std::move(other.value)) {}
 
     static constexpr bool kNeedsDestruction = !std::is_trivially_destructible_v<T>;
     static constexpr bool kIsCopyable = std::is_copy_constructible_v<T>;
@@ -95,7 +103,7 @@ public:
         if (isNone()) return other;
         return *ptr();
     }
-    constexpr auto unwrapOr(T&& other) -> T& {
+    constexpr auto unwrapOr(T&& other) -> T {
         if (isNone()) return other;
         return *ptr();
     }
@@ -145,3 +153,12 @@ private:
     alignas(T) u8 m_storage[sizeof(T)];
     [[no_unique_address]] IsSome m_isSome;
 };
+
+struct NoneT {
+    template<typename T>
+    constexpr operator Option<T>() const noexcept {
+        return Option<T>(NoneT_Meta{});
+    }
+};
+
+inline constexpr auto None = NoneT{};

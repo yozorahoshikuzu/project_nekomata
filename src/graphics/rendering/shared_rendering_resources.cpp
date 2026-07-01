@@ -18,7 +18,7 @@ SharedRenderingResources::SharedRenderingResources() {
             | vk::ShaderStageFlagBits::eFragment
         )
         .build();
-    auto shader = *SpirvShaderCode::loadFromFile("./spirv/tess_test.spv");
+    auto shader = SpirvShaderCode::loadFromFile("./spirv/tess_test.spv").unwrap();
     m_simplePipeline = VulkanGraphicsPipeline::builder()
         .setPipelineLayout(m_simpleLayout)
         .addShader(shader, vk::ShaderStageFlagBits::eVertex)
@@ -46,7 +46,7 @@ SharedRenderingResources::SharedRenderingResources() {
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
         .addPushConstantRange(0, 12, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
         .build();
-    auto bitmapFontRendererShader = *SpirvShaderCode::loadFromFile("./spirv/bitmap_font.spv");
+    auto bitmapFontRendererShader = SpirvShaderCode::loadFromFile("./spirv/bitmap_font.spv").unwrap();
     m_bitmapFontRendererPipeline = VulkanGraphicsPipeline::builder()
         .setPipelineLayout(m_bitmapFontRendererLayout)
         .addShader(bitmapFontRendererShader, vk::ShaderStageFlagBits::eVertex)
@@ -75,7 +75,7 @@ SharedRenderingResources::SharedRenderingResources() {
     m_uiRectRendererLayout = VulkanPipelineLayout::builder()
         .addPushConstantRange(0, 32, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
         .build();
-    auto uiRectRendererShader = *SpirvShaderCode::loadFromFile("./spirv/ui_rect.spv");
+    auto uiRectRendererShader = SpirvShaderCode::loadFromFile("./spirv/ui_rect.spv").unwrap();
     m_uiRectRendererPipeline = VulkanGraphicsPipeline::builder()
         .setPipelineLayout(m_uiRectRendererLayout)
         .addShader(uiRectRendererShader, vk::ShaderStageFlagBits::eVertex)
@@ -105,7 +105,7 @@ SharedRenderingResources::SharedRenderingResources() {
         .addPushConstantRange(0, 40, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
         .build();
-    auto uiTextureRendererShader = *SpirvShaderCode::loadFromFile("./spirv/ui_texture.spv");
+    auto uiTextureRendererShader = SpirvShaderCode::loadFromFile("./spirv/ui_texture.spv").unwrap();
     m_uiTextureRendererPipeline = VulkanGraphicsPipeline::builder()
         .setPipelineLayout(m_uiTextureRendererLayout)
         .addShader(uiTextureRendererShader, vk::ShaderStageFlagBits::eVertex)

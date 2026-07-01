@@ -4,6 +4,7 @@ import vulkan;
 import vk_mem_alloc;
 import :core.platform.int_def;
 import :graphics.vulkan.vk_buffer;
+import :core.cs.option;
 
 export namespace projnekomata {
 
@@ -98,7 +99,7 @@ private:
         u64 deferredTillFrameIndex = 0;
     };
 
-    [[nodiscard]] std::optional<BufferPoolSuballocation> trySuballocate(u32 slabIndex, u64 byteSize, u64 alignment);
+    [[nodiscard]] Option<BufferPoolSuballocation> trySuballocate(u32 slabIndex, u64 byteSize, u64 alignment);
 
     auto processFree(const SlabAllocationRef& pendingFree) -> void;
 

@@ -35,13 +35,13 @@ public:
     VulkanQueue& operator=(VulkanQueue&&) = delete;
 
     auto submitOneCommandBuffer(const vk::raii::CommandBuffer& buf, const std::span<GPUFuture>& asyncWaits,
-                                   const std::span<vk::PipelineStageFlags2>& asyncWaitStages, const std::optional<std::reference_wrapper<VulkanFence>>& fence)
+                                   const std::span<vk::PipelineStageFlags2>& asyncWaitStages, const Option<std::reference_wrapper<VulkanFence>>& fence)
         -> GPUFuture;
     auto submitOneCommandBufferWithBinarySemaphores(const vk::raii::CommandBuffer& buf, const std::span<GPUFuture>& asyncWaits,
                                               const std::span<vk::PipelineStageFlags2>& asyncWaitStages, const VulkanBinarySemaphore& binaryWait,
                                               const VulkanBinarySemaphore& binarySignal, const vk::PipelineStageFlags2& binaryWaitStage,
                                               const vk::PipelineStageFlags2& binarySignalStage,
-                                              const std::optional<std::reference_wrapper<VulkanFence>>& fence) -> GPUFuture;
+                                              const Option<std::reference_wrapper<VulkanFence>>& fence) -> GPUFuture;
     auto submitPresent(const VulkanSwapchain& swapchain, const VulkanBinarySemaphore& waitSemaphore, u32 imageIndex) -> vk::Result;
     auto waitIdle() -> void;
 

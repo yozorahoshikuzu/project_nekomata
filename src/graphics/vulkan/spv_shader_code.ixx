@@ -2,6 +2,7 @@ export module projnekomata:graphics.vulkan.spv_shader_code;
 import std;
 import vulkan;
 import :core.platform.int_def;
+import :core.cs.result;
 
 export namespace projnekomata {
 
@@ -21,7 +22,7 @@ public:
     SpirvShaderCode& operator=(const SpirvShaderCode&) = delete;
     SpirvShaderCode& operator=(SpirvShaderCode&&) = default;
 
-    static auto loadFromFile(const std::filesystem::path& path) -> std::expected<SpirvShaderCode, ShaderLoadError>;
+    static auto loadFromFile(const std::filesystem::path& path) -> Result<SpirvShaderCode, ShaderLoadError>;
     [[nodiscard]] auto shaderModuleCreateInfo() const           -> vk::ShaderModuleCreateInfo;
 
     [[nodiscard]] auto spvCode() const -> std::span<const u32> { return m_spvCode; }

@@ -38,10 +38,10 @@ auto BindlessDescriptorSetShaderResourceTable::create(u32 maxImageCount, u32 max
 
 auto BindlessDescriptorSetShaderResourceTable::allocateImageIndex() -> SRTResourceIndex {
     auto index = m_imageIndexAllocator.allocate();
-    if (!index.has_value()) {
+    if (index.isNone()) {
         panic("bindless descriptor set image index allocator ran out of indices");
     }
-    return SRTResourceIndex(index.value());
+    return SRTResourceIndex(index.unwrap());
 }
 
 auto BindlessDescriptorSetShaderResourceTable::allocateImageIndices(u32 count, std::span<SRTResourceIndex> dstIndices) -> void {

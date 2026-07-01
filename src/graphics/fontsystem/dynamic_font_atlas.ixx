@@ -20,7 +20,7 @@ public:
     AtlasShelfPacker(std::nullptr_t);
     AtlasShelfPacker(i32 width, i32 height);
 
-    std::optional<math::Vector2i> pack(i32 width, i32 height);
+    Option<math::Vector2i> pack(i32 width, i32 height);
 
 private:
     struct Shelf {

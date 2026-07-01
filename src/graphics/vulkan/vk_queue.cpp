@@ -25,7 +25,7 @@ VulkanQueue::~VulkanQueue() {
 // TODO: Timeline semaphore support
 auto VulkanQueue::submitOneCommandBuffer(const vk::raii::CommandBuffer& buf, const std::span<GPUFuture>& asyncWaits,
                                             const std::span<vk::PipelineStageFlags2>& asyncWaitStages,
-                                            const std::optional<std::reference_wrapper<VulkanFence>>& fence) -> GPUFuture {
+                                            const Option<std::reference_wrapper<VulkanFence>>& fence) -> GPUFuture {
     std::scoped_lock lock(m_queueMutex);
     auto signalValue = m_lastTimelineSubmissionValue.fetch_add(1, std::memory_order_relaxed) + 1;
 
@@ -50,11 +50,13 @@ auto VulkanQueue::submitOneCommandBuffer(const vk::raii::CommandBuffer& buf, con
     auto submitInfo =
         vk::SubmitInfo2{}.setCommandBufferInfos(commandBuffer).setSignalSemaphoreInfos(semaphoreSubmitInfo).setWaitSemaphoreInfos(semaphoreWaitInfos);
 
-    if (fence.has_value()) {
-        vkCheckResult(m_vkQueue.submit2(submitInfo, fence->get().vkFence()));
-    } else {
-        m_vkQueue.submit2(submitInfo);
-    }
+    vkCheckResult(
+        m_vkQueue.submit2(
+            submitInfo,
+            fence.map([](const auto& x) { return *x.get().vkFence(); })
+                .unwrapOr(nullptr)
+        )
+    );
 
     auto asyncOp = GPUFuture(m_timelineSemaphore, signalValue);
     return asyncOp;
@@ -64,7 +66,7 @@ auto VulkanQueue::submitOneCommandBufferWithBinarySemaphores(const vk::raii::Com
                                                        const std::span<vk::PipelineStageFlags2>& asyncWaitStages, const VulkanBinarySemaphore& binaryWait,
                                                        const VulkanBinarySemaphore& binarySignal, const vk::PipelineStageFlags2& binaryWaitStage,
                                                        const vk::PipelineStageFlags2& binarySignalStage,
-                                                       const std::optional<std::reference_wrapper<VulkanFence>>& fence) -> GPUFuture {
+                                                       const Option<std::reference_wrapper<VulkanFence>>& fence) -> GPUFuture {
     std::scoped_lock lock(m_queueMutex);
     auto signalValue = m_lastTimelineSubmissionValue.fetch_add(1, std::memory_order_relaxed) + 1;
 
@@ -103,11 +105,13 @@ auto VulkanQueue::submitOneCommandBufferWithBinarySemaphores(const vk::raii::Com
     auto submitInfo =
         vk::SubmitInfo2{}.setCommandBufferInfos(commandBuffer).setSignalSemaphoreInfos(semaphoreSignalInfos).setWaitSemaphoreInfos(semaphoreWaitInfos);
 
-    if (fence.has_value()) {
-        vkCheckResult(m_vkQueue.submit2(submitInfo, fence->get().vkFence()));
-    } else {
-        vkCheckResult(m_vkQueue.submit2(submitInfo));
-    }
+    vkCheckResult(
+        m_vkQueue.submit2(
+            submitInfo,
+            fence.map([](const auto& x) { return *x.get().vkFence(); })
+                .unwrapOr(nullptr)
+        )
+    );
 
     auto asyncOp = GPUFuture(m_timelineSemaphore, signalValue);
     return asyncOp;

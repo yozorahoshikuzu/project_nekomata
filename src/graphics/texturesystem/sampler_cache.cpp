@@ -8,11 +8,11 @@ SamplerCache::SamplerCache() {}
 auto SamplerCache::acquireSampler(const SamplerParams& params) -> u32 {
     {
         std::shared_lock lock(m_hashmapMutex);
-        if (auto entry = m_hashmap.get(params)) return entry->get().shaderIndex;
+        if (auto entry = m_hashmap.get(params)) return entry.unwrap().get().shaderIndex;
     }
 
     std::unique_lock lock(m_hashmapMutex);
-    if (auto entry = m_hashmap.get(params)) return entry->get().shaderIndex;
+    if (auto entry = m_hashmap.get(params)) return entry.unwrap().get().shaderIndex;
 
     m_hashmap.insert(params, createSampler(params));
     return m_hashmap[params].shaderIndex;

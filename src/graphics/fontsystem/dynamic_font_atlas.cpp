@@ -7,7 +7,7 @@ AtlasShelfPacker::AtlasShelfPacker(std::nullptr_t) {}
 AtlasShelfPacker::AtlasShelfPacker(i32 width, i32 height)
     : m_atlasWidth(width), m_atlasHeight(height) {}
 
-std::optional<math::Vector2i> AtlasShelfPacker::pack(i32 width, i32 height) {
+Option<math::Vector2i> AtlasShelfPacker::pack(i32 width, i32 height) {
     // Try best fit first.
     Shelf* bestShelf = nullptr;
     i32 bestInefficiency = std::numeric_limits<i32>::max();
@@ -26,18 +26,18 @@ std::optional<math::Vector2i> AtlasShelfPacker::pack(i32 width, i32 height) {
     if (bestShelf) {
         math::Vector2i pos(bestShelf->writerX, bestShelf->writerY);
         bestShelf->writerX += width;
-        return pos;
+        return Some(pos);
     }
 
     // No shelves fit the glyphs, so try creating a new one.
     i32 newShelfY = m_shelves.isEmpty() ? 0 : m_shelves.last().writerY + m_shelves.last().height;
     if (newShelfY + height <= m_atlasHeight) {
         m_shelves.emplace(height, width, newShelfY);
-        return math::Vector2i(0, newShelfY);
+        return Some(math::Vector2i(0, newShelfY));
     }
 
     // Atlas is full.
-    return std::nullopt;
+    return None;
 }
 
 } // namespace projnekomata::graphics::rendering

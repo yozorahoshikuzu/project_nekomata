@@ -30,7 +30,7 @@ auto BufferPool::DedicatedAllocation::create(u64 byteSize, const BufferPoolConfi
     return DedicatedAllocation(std::move(bufferptr));
 }
 
-std::optional<BufferPoolSuballocation> BufferPool::trySuballocate(u32 slabIndex, u64 byteSize, u64 alignment) {
+Option<BufferPoolSuballocation> BufferPool::trySuballocate(u32 slabIndex, u64 byteSize, u64 alignment) {
     Slab& slab = m_slabs[slabIndex];
 
     auto vaCreateInfo = vma::VirtualAllocationCreateInfo{}
@@ -60,7 +60,7 @@ std::optional<BufferPoolSuballocation> BufferPool::trySuballocate(u32 slabIndex,
     suballocation.slabAllocationRef.slabIndex = slabIndex;
     suballocation.slabAllocationRef.virtualAllocation = std::move(va);
 
-    return suballocation;
+    return Some(std::move(suballocation));
 }
 
 auto BufferPool::allocate(u64 byteSize, u64 alignment) -> BufferPoolSuballocation {
@@ -104,7 +104,7 @@ auto BufferPool::allocate(u64 byteSize, u64 alignment) -> BufferPoolSuballocatio
     // Path 2 - Try existing slabs
 
     for (u32 i = 0; i < m_slabs.size(); i++) {
-        if (auto suballocation = trySuballocate(i, byteSize, alignment)) return std::move(*suballocation);
+        if (auto suballocation = trySuballocate(i, byteSize, alignment)) return std::move(suballocation.unwrap());
     }
 
     // --------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -116,7 +116,7 @@ auto BufferPool::allocate(u64 byteSize, u64 alignment) -> BufferPoolSuballocatio
 
     m_slabs.push_back(Slab::create(m_cfg));
 
-    if (auto suballocation = trySuballocate(m_slabs.size() - 1, byteSize, alignment)) return std::move(*suballocation);
+    if (auto suballocation = trySuballocate(m_slabs.size() - 1, byteSize, alignment)) return std::move(suballocation.unwrap());
 
     panic("ran out of slabs space");
 }

@@ -176,8 +176,8 @@ public:
 
     constexpr MapIter(Inner inner, F f) : m_inner(std::move(inner)), m_f(std::move(f)) {}
     constexpr auto next() -> Option<Item> {
-        if (auto next = m_inner.next()) return Option<Item>::Some(m_f(intoLambdaByMove(std::move(next.unwrap()))));
-        return Option<Item>::None();
+        if (auto next = m_inner.next()) return Some(m_f(intoLambdaByMove(std::move(next.unwrap()))));
+        return None;
     }
 
 private:
@@ -191,8 +191,8 @@ public:
 
     constexpr FilterIter(Inner inner, P p) : m_inner(std::move(inner)), m_p(std::move(p)) {}
     constexpr auto next() -> Option<Item> {
-        while (auto next = m_inner.next()) { if (m_p(intoLambdaByRef(next.unwrap()))) return Option<Item>::Some(std::move(next.unwrap())); }
-        return Option<Item>::None();
+        while (auto next = m_inner.next()) { if (m_p(intoLambdaByRef(next.unwrap()))) return Some(std::move(next.unwrap())); }
+        return None;
     }
 
 private:
@@ -206,8 +206,8 @@ public:
 
     constexpr FilterMapIter(Inner inner, P p) : m_inner(std::move(inner)), m_p(std::move(p)) {}
     constexpr auto next() -> Option<Item> {
-        while (auto next = m_inner.next()) { if (auto mapped = m_p(intoLambdaByMove(std::move(next.unwrap())))) return Option<Item>::Some(std::move(mapped.unwrap())); }
-        return Option<Item>::None();
+        while (auto next = m_inner.next()) { if (auto mapped = m_p(intoLambdaByMove(std::move(next.unwrap())))) return Some(std::move(mapped.unwrap())); }
+        return None;
     }
 
 private:
@@ -221,8 +221,8 @@ public:
 
     constexpr EnumerateIter(Inner inner) : m_inner(std::move(inner)) {}
     constexpr auto next() -> Option<Item> {
-        if (auto next = m_inner.next()) return Option<Item>::Some(Enumerand{m_index++, std::forward<typename Inner::Item>(next.unwrap())});
-        return Option<Item>::None();
+        if (auto next = m_inner.next()) return Some(Enumerand{m_index++, std::forward<typename Inner::Item>(next.unwrap())});
+        return None;
     }
 
 private:
@@ -238,8 +238,8 @@ public:
     constexpr auto next() -> Option<Item> {
         auto next1 = m_i1.next();
         auto next2 = m_i2.next();
-        if (next1.isSome() && next2.isSome()) return Option<Item>::Some(KeyValue(std::move(next1.unwrap()), std::move(next2.unwrap())));
-        return Option<Item>::None();
+        if (next1.isSome() && next2.isSome()) return Some(KeyValue(std::move(next1.unwrap()), std::move(next2.unwrap())));
+        return None;
     }
 
 private:
@@ -257,9 +257,9 @@ public:
     constexpr auto next() -> Option<Item> {
         if (auto next = m_inner.next()) {
             m_f(intoLambdaByRef(next.unwrap()));
-            return Option<Item>::Some(std::move(next.unwrap()));
+            return Some(std::move(next.unwrap()));
         }
-        return Option<Item>::None();
+        return None;
     }
 
 private:
@@ -289,13 +289,15 @@ public:
 
 private:
     Iter m_inner;
-    Option<typename Iter::Item> m_current = Option<typename Iter::Item>::None();
+    Option<typename Iter::Item> m_current = None;
 };
 
 // ---- Common CRTP iterator mixin -----------------------------------------------------------------------------------------------------------------------------
 
 export template <typename Derived> class IteratorBase {
 public:
+    template <typename D = Derived>
+    using DerivItem = typename D::type;
 
     // ---- Iterator Extensions --------------------------------------------------------------------------------------------------------------------------------
 
@@ -357,8 +359,8 @@ public:
         auto result = Option<ValueType>::None();
 
         while (auto v = self().next()) {
-            if (result.isNone()) { result = Option<ValueType>::Some(ownedType(std::move(v.unwrap()))); continue; }
-            if (intoLambdaByRef(v.unwrap()) < intoLambdaByRef(result.unwrap())) result = Option<ValueType>::Some(ownedType(std::move(v.unwrap())));
+            if (result.isNone()) { result = Some(ownedType(std::move(v.unwrap()))); continue; }
+            if (intoLambdaByRef(v.unwrap()) < intoLambdaByRef(result.unwrap())) result = Some(ownedType(std::move(v.unwrap())));
         }
 
         return result;
@@ -372,8 +374,8 @@ public:
         auto result = Option<ValueType>::None();
 
         while (auto v = self().next()) {
-            if (result.isNone()) { result = Option<ValueType>::Some(ownedType(std::move(v.unwrap()))); continue; }
-            if (intoLambdaByRef(v.unwrap()) > intoLambdaByRef(result.unwrap())) result = Option<ValueType>::Some(ownedType(std::move(v.unwrap())));
+            if (result.isNone()) { result = Some(ownedType(std::move(v.unwrap()))); continue; }
+            if (intoLambdaByRef(v.unwrap()) > intoLambdaByRef(result.unwrap())) result = Some(ownedType(std::move(v.unwrap())));
         }
 
         return result;
@@ -389,8 +391,8 @@ public:
         auto result = Option<ValueType>::None();
 
         while (auto v = self().next()) {
-            if (result.isNone()) { result = Option<ValueType>::Some(ownedType(std::move(v.unwrap()))); continue; }
-            if (f(intoLambdaByRef(v.unwrap())) < f(intoLambdaByRef(result.unwrap()))) result = Option<ValueType>::Some(ownedType(std::move(v.unwrap())));
+            if (result.isNone()) { result = Some(ownedType(std::move(v.unwrap()))); continue; }
+            if (f(intoLambdaByRef(v.unwrap())) < f(intoLambdaByRef(result.unwrap()))) result = Some(ownedType(std::move(v.unwrap())));
         }
         return result;
     }
@@ -405,8 +407,8 @@ public:
         auto result = Option<ValueType>::None();
 
         while (auto v = self().next()) {
-            if (result.isNone()) { result = Option<ValueType>::Some(ownedType(std::move(v.unwrap()))); continue; }
-            if (f(intoLambdaByRef(v.unwrap())) > f(intoLambdaByRef(result.unwrap()))) result = Option<ValueType>::Some(ownedType(std::move(v.unwrap())));
+            if (result.isNone()) { result = Some(ownedType(std::move(v.unwrap()))); continue; }
+            if (f(intoLambdaByRef(v.unwrap())) > f(intoLambdaByRef(result.unwrap()))) result = Some(ownedType(std::move(v.unwrap())));
         }
         return result;
     }

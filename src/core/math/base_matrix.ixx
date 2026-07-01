@@ -3,6 +3,7 @@ import std;
 import :core.platform.assert;
 import :core.math.consts;
 import :core.platform.int_def;
+import :core.cs.option;
 
 export namespace projnekomata::math {
 
@@ -390,34 +391,34 @@ public:
     // --------------------------------------------------------------------------------------------------------------------------------------------------------
     // Matrix Inverse
 
-    [[nodiscard]] std::optional<Matrix> inverse() const requires (NCols == NRows && NRows <= 4) {
+    [[nodiscard]] Option<Matrix> inverse() const requires (NCols == NRows && NRows <= 4) {
         if constexpr (NRows == 1) return invertMatrix1x1(*this);
         if constexpr (NRows == 2) return invertMatrix2x2(*this);
         if constexpr (NRows == 3) return invertMatrix3x3(*this);
         if constexpr (NRows == 4) return invertMatrix4x4(*this);
 
         // TODO: Add a fallback later. For the moment it's not necessary.
-        return std::nullopt;
+        return None;
     }
 
     /// Inverts a 1x1 matrix.
     ///
     /// It does so by simply computing the reciprocal of the element.
-    auto invertMatrix1x1(Matrix<T, 1, 1> mat) const -> std::optional<Matrix<T, 1, 1>> {
+    auto invertMatrix1x1(Matrix<T, 1, 1> mat) const -> Option<Matrix<T, 1, 1>> {
         T det = mat[0, 0];
 
         if (std::abs(det) < consts::epsilonValue<T>()) {
-            return std::nullopt;
+            return None;
         }
 
         Matrix result = { T(1) / det };
-        return result;
+        return Some(result);
     }
 
     /// Inverts a 2x2 matrix.
     ///
     /// Uses the 1/det (ad-bc) formula.
-    auto invertMatrix2x2(Matrix<T, 2, 2> mat) const -> std::optional<Matrix<T, 2, 2>> {
+    auto invertMatrix2x2(Matrix<T, 2, 2> mat) const -> Option<Matrix<T, 2, 2>> {
         T a = mat[0, 0];
         T b = mat[0, 1];
         T c = mat[1, 0];
@@ -425,7 +426,7 @@ public:
 
         T det = a * d - b * c;
         if (std::abs(det) < consts::epsilonValue<T>()) {
-            return std::nullopt;
+            return None;
         }
 
         T invDet = T(1) / det;
@@ -434,13 +435,13 @@ public:
             d * invDet, -b * invDet,
            -c * invDet,  a * invDet
        };
-        return result;
+        return Some(result);
     }
 
     /// Inverts a 3x3 matrix.
     ///
     /// Uses the cofactor and adjugate method.
-    auto invertMatrix3x3(Matrix<T, 3, 3> mat) const -> std::optional<Matrix<T, 3, 3>> {
+    auto invertMatrix3x3(Matrix<T, 3, 3> mat) const -> Option<Matrix<T, 3, 3>> {
         T m00 = mat[0, 0], m01 = mat[0, 1], m02 = mat[0, 2];
         T m10 = mat[1, 0], m11 = mat[1, 1], m12 = mat[1, 2];
         T m20 = mat[2, 0], m21 = mat[2, 1], m22 = mat[2, 2];
@@ -457,7 +458,7 @@ public:
 
         T det = m00 * c00 + m01 * c10 + m02 * c20;
         if (std::abs(det) < consts::epsilonValue<T>()) {
-            return std::nullopt;
+            return None;
         }
 
         T invDet = T(1) / det;
@@ -467,13 +468,13 @@ public:
             c10 * invDet, c11 * invDet, c12 * invDet,
             c20 * invDet, c21 * invDet, c22 * invDet
         };
-        return result;
+        return Some(result);
     }
 
     /// Inverts a 4x4 matrix.
     ///
     /// Uses a cofactor expansion struck using 2x2 subdeterminants to avoid all 3x3 determinant calculations.
-    auto invertMatrix4x4(Matrix<T, 4, 4> mat) const -> std::optional<Matrix<T, 4, 4>> {
+    auto invertMatrix4x4(Matrix<T, 4, 4> mat) const -> Option<Matrix<T, 4, 4>> {
         T m00 = mat[0, 0], m01 = mat[0, 1], m02 = mat[0, 2], m03 = mat[0, 3];
         T m10 = mat[1, 0], m11 = mat[1, 1], m12 = mat[1, 2], m13 = mat[1, 3];
         T m20 = mat[2, 0], m21 = mat[2, 1], m22 = mat[2, 2], m23 = mat[2, 3];
@@ -497,7 +498,7 @@ public:
 
         T det = s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0;
         if (std::abs(det) < consts::epsilonValue<T>()) {
-            return std::nullopt;
+            return None;
         }
 
         T invDet = T(1) / det;
@@ -508,7 +509,7 @@ public:
             invDet * ( m13 * s5 - m23 * s4 + m33 * s3), invDet * (-m03 * s5 + m23 * s2 - m33 * s1), invDet * ( m03 * s4 - m13 * s2 + m33 * s0), invDet * (-m03 * s3 + m13 * s1 - m23 * s0),
             invDet * (-m12 * s5 + m22 * s4 - m32 * s3), invDet * ( m02 * s5 - m22 * s2 + m32 * s1), invDet * (-m02 * s4 + m12 * s2 - m32 * s0), invDet * ( m02 * s3 - m12 * s1 + m22 * s0)
         };
-        return result;
+        return Some(result);
     }
 };
 

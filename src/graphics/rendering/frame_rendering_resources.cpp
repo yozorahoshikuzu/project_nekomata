@@ -27,7 +27,7 @@ FrameRenderingResources::FrameRenderingResources(u32 initialMaxObjects) {
 auto FrameRenderingResources::prepareTransformsBuffer(MRThreadsSharedDataLeaf& renderingData, ecs::components::Camera camera, const ecs::components::Transform& cameraTransform, float renderAspectRatio) -> void {
     auto projectionMatrix = camera.computeProjectionMatrix(renderAspectRatio);
     auto cameraModelMatrix = cameraTransform.m_transform3d.computeModelMatrix();
-    auto viewMatrix = cameraModelMatrix.inverse().value_or(math::Matrix4x4f::identity());
+    auto viewMatrix = cameraModelMatrix.inverse().unwrapOr(math::Matrix4x4f::identity());
 
     for (auto [i, rend] : renderingData.m_renderables.m_storage.iter().enumerate()) {
         auto entSparseIndex = renderingData.m_renderables.m_storageToEntity[i];

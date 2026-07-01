@@ -15,13 +15,13 @@ public:
     auto allocate_one_with_index(const T& element, usize index) -> usize { return internal_allocate_one_with_index(element, index); }
     auto allocate_one_with_index(T&& element, usize index) -> usize { return internal_allocate_one_with_index(std::move(element), index); }
 
-    auto remove(usize index) -> std::optional<T> {
+    auto remove(usize index) -> Option<T> {
         if (index >= m_index_to_storage.len())
-            return std::nullopt;
+            return None;
 
         usize maybe_storage_index = m_index_to_storage[index];
         if (maybe_storage_index == INVALID_INDEX)
-            return std::nullopt;
+            return None;
 
         m_index_to_storage[index] = INVALID_INDEX;
         usize storage_index = maybe_storage_index;
@@ -42,7 +42,7 @@ public:
         auto removed = std::move(m_storage.last());
         m_storage.pop();
 
-        return removed;
+        return Some(std::move(removed));
     }
 
     auto get(usize index) -> T* {

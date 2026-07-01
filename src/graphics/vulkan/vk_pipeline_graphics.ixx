@@ -106,8 +106,10 @@ public:
         return *this;
     }
     [[nodiscard]] constexpr auto setTessellationPatchControlPoints(u32 patchControlPoints) noexcept -> VulkanGraphicsPipelineBuilder& {
-        m_tessellationState = vk::PipelineTessellationStateCreateInfo{}
-            .setPatchControlPoints(patchControlPoints);
+        m_tessellationState = Some(
+            vk::PipelineTessellationStateCreateInfo{}
+                .setPatchControlPoints(patchControlPoints)
+        );
         return *this;
     }
     [[nodiscard]] constexpr auto build() -> VulkanGraphicsPipeline {
@@ -143,8 +145,8 @@ public:
             .setPDynamicState(&dynamicState)
             .setLayout(m_pipelineLayout);
 
-        if (m_tessellationState) {
-            pipelineInfo.pTessellationState = &m_tessellationState.value();
+        if (m_tessellationState.isSome()) {
+            pipelineInfo.pTessellationState = &m_tessellationState.unwrap();
         }
 
         auto sc = vk::StructureChain{
@@ -165,7 +167,7 @@ private:
     vk::PipelineMultisampleStateCreateInfo m_multisampleState = {};
     vk::PipelineDepthStencilStateCreateInfo m_depthStencilState = {};
     vk::PipelineRenderingCreateInfo m_renderingCreateInfo = {};
-    std::optional<vk::PipelineTessellationStateCreateInfo> m_tessellationState = std::nullopt;
+    Option<vk::PipelineTessellationStateCreateInfo> m_tessellationState = None;
     std::vector<vk::PipelineColorBlendAttachmentState> m_renderingColorAttachmentBlendStates;
     std::vector<vk::Format> m_renderingColorAttachmentFormats;
 

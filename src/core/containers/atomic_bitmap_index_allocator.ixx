@@ -1,6 +1,7 @@
 export module projnekomata:core.containers.abia;
 import std;
 import :core.platform.int_def;
+import :core.cs.option;
 
 export namespace projnekomata {
 
@@ -14,7 +15,7 @@ public:
         }
     }
 
-    auto allocate() -> std::optional<usize> {
+    auto allocate() -> Option<usize> {
         // First, find a qword that has a free bit.
         for (usize i = 0; i < m_qwordCount; i++) {
             auto& qword = m_bitmap[i];
@@ -25,19 +26,19 @@ public:
                 u64 freeBitfield = ~qwordBits;
                 u32 bitIndex = __builtin_ctzll(freeBitfield);
                 usize candidateId = i * 64 + bitIndex;
-                if (candidateId >= m_bitmapSize) return std::nullopt;
+                if (candidateId >= m_bitmapSize) return None;
 
                 u64 newQwordBits = qwordBits | (1ull << bitIndex);
 
                 if (qword.compare_exchange_weak(qwordBits, newQwordBits,
                 std::memory_order_acquire, std::memory_order_relaxed)) {
-                    return candidateId;
+                    return Some(candidateId);
                 }
                 // If the condition above fails, then CAS failed (another thread just allocated and set a bit in this qword), must retry
             }
         }
         // The allocator is full at this point.
-        return std::nullopt;
+        return None;
     }
 
     auto release(usize index) -> void {

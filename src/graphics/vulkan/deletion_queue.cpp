@@ -57,9 +57,10 @@ auto VulkanResourceDeletionQueue::workerRoutine() -> void {
     auto semaphores = std::array<vk::Semaphore, 2>{graphicsQueueSemaphore, asyncComputeQueueSemaphore};
 
     while (m_shouldRun.load(std::memory_order_acquire)) {
-        while (auto obj = m_objectsMpscQueue.pop()) {
-            if (!(obj->m_graphicsQueueRetireValue <= currentGraphicsQueueRetireValue && obj->m_asyncComputeQueueRetireValue <= currentAsyncComputeQueueRetireValue)) {            
-                auto values = std::array<u64, 2>{obj->m_graphicsQueueRetireValue, obj->m_asyncComputeQueueRetireValue};
+        while (auto objOpt = m_objectsMpscQueue.pop()) {
+            auto obj = std::move(objOpt.unwrap());
+            if (!(obj.m_graphicsQueueRetireValue <= currentGraphicsQueueRetireValue && obj.m_asyncComputeQueueRetireValue <= currentAsyncComputeQueueRetireValue)) {
+                auto values = std::array<u64, 2>{obj.m_graphicsQueueRetireValue, obj.m_asyncComputeQueueRetireValue};
 
                 auto waitInfo = vk::SemaphoreWaitInfo{}
                     .setSemaphores(semaphores)
@@ -76,7 +77,7 @@ auto VulkanResourceDeletionQueue::workerRoutine() -> void {
 
             // log::info("Vulkan OBRM: Vulkan object retired with graphics = {}, async compute = {}", obj->graphics_queue_retire_value, obj->async_compute_queue_retire_value);
 
-            drop(std::move(obj->m_vkObject));
+            drop(std::move(obj.m_vkObject));
         }
 
         std::unique_lock<std::mutex> lock(m_cvLock);

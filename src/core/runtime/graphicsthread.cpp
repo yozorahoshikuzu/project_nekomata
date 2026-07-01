@@ -16,7 +16,7 @@ RenderThread::RenderThread(const std::shared_ptr<MRThreadsSharedData>& mrSharedD
 auto RenderThread::runMainLoop() -> void {
     cmdalloc::VulkanCommandPoolsList::initThreadLocalCommandPools();
 
-    m_vkSwapchain = VulkanSwapchain::create(m_currentWindowExtent, std::nullopt, false);
+    m_vkSwapchain = VulkanSwapchain::create(m_currentWindowExtent, None, false);
     // TODO : remove the abuse
     std::construct_at(&m_sharedRenderingResources);
     m_transientRenderingResources = graphics::TransientRenderingResources(m_currentWindowExtent);
@@ -73,7 +73,7 @@ auto RenderThread::loop() -> void {
 
         // TODO: This is to work around present queues not being friendly to synchronize
         VulkanContext::get().vkDevice().waitIdle();
-        m_vkSwapchain = VulkanSwapchain::create(m_currentWindowExtent, std::move(m_vkSwapchain), false);
+        m_vkSwapchain = VulkanSwapchain::create(m_currentWindowExtent, Some(std::move(m_vkSwapchain)), false);
         m_transientRenderingResources.handleWindowSizeChange(m_currentWindowExtent);
     }
     auto timeSinceStart = std::chrono::duration<float>(currentTime - m_timeAtStart).count();

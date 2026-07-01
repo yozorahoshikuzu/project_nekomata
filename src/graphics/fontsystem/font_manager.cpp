@@ -107,7 +107,7 @@ auto FontManager::rasterizeGlyphs(FontRasterInfo rasterInfo) -> void {
 
             for (auto& atlasImage : rasterInfo.atlas.m_atlasTextures) {
                 if (auto offset = atlasImage.imagePacker.pack(imageWidth, imageHeight)) {
-                    imageOffset = *offset;
+                    imageOffset = offset.unwrap();
                     dstImageSize = { static_cast<i32>(atlasImage.image.extent().width), static_cast<i32>(atlasImage.image.extent().height) };
                     image = *atlasImage.image.vkImage();
                     break;
@@ -121,7 +121,7 @@ auto FontManager::rasterizeGlyphs(FontRasterInfo rasterInfo) -> void {
                 imageIndex = rasterInfo.atlas.m_atlasTextures.size() - 1;
                 rasterInfo.newImageIndices.emplace(imageIndex);
                 if (auto offset = rasterInfo.atlas.m_atlasTextures.last().imagePacker.pack(imageWidth, imageHeight)) {
-                    imageOffset = *offset;
+                    imageOffset = offset.unwrap();
                     dstImageSize = { static_cast<i32>(rasterInfo.atlas.m_atlasTextures.last().image.extent().width), static_cast<i32>(rasterInfo.atlas.m_atlasTextures.last().image.extent().height) };
                     image = *rasterInfo.atlas.m_atlasTextures.last().image.vkImage();
                 } else {
@@ -241,7 +241,7 @@ auto FontManager::findAndBatchMissingGlyphs(FontFace font, rendering::DynamicBit
     // TODO: that's not a concern, but could become later when we dispatch threads to do raster work
 
     auto& fontEntry = *m_fontEntries[font.handleIndex];
-    if (!fontEntry.isLoaded) return Option<FontRasterBatch>::None();
+    if (!fontEntry.isLoaded) return None;
     std::scoped_lock faceLock(fontEntry.rasterMutex);
 
     auto glyphIndices = Vec<u32>::create();
@@ -260,8 +260,8 @@ auto FontManager::findAndBatchMissingGlyphs(FontFace font, rendering::DynamicBit
         }
     }
 
-    if (glyphIndices.isEmpty()) return Option<FontRasterBatch>::None();
-    return Option<FontRasterBatch>::Some(FontRasterBatch { font, pixelSize, std::move(glyphIndices) });
+    if (glyphIndices.isEmpty()) return None;
+    return Some(FontRasterBatch { font, pixelSize, std::move(glyphIndices) });
 }
 
 u32 FontManager::getFreeFontIndex() {

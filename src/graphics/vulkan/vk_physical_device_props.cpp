@@ -185,7 +185,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
 
     for (auto& rule : kRequiredPhysicalDeviceExtensions) {
         if (!supportedExtensionNames.contains(rule.m_extensionName)) {
-            return Result<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError>::Err(PhysicalDevicePropertyQueryError{.m_kind = rule.m_errorKindIfMissing});
+            return Err(PhysicalDevicePropertyQueryError{.m_kind = rule.m_errorKindIfMissing});
         }
     }
 
@@ -214,12 +214,12 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
             satisfied &= featuresQuery.get<vk::PhysicalDeviceVulkan14Features>().*(rule.m_vk14);
 
         if (!satisfied)
-            return Result<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError>::Err(PhysicalDevicePropertyQueryError{.m_kind = rule.m_errorKindIfMissing});
+            return Err(PhysicalDevicePropertyQueryError{.m_kind = rule.m_errorKindIfMissing});
     }
 
     // TODO: refactor
     if (!featuresQuery.get<vk::PhysicalDeviceImageViewMinLodFeaturesEXT>().minLod) {
-        return Result<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError>::Err(PhysicalDevicePropertyQueryError{.m_kind = PhysicalDevicePropertyQueryErrorKind::MissingExtImageViewMinLod});
+        return Err(PhysicalDevicePropertyQueryError{.m_kind = PhysicalDevicePropertyQueryErrorKind::MissingExtImageViewMinLod});
     }
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -326,7 +326,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     props.m_asyncComputeQueueIndex = asyncComputeQueueIndex;
     props.m_queueFamilies = VulkanQueueFamilySwizzling(graphicsQueueIndex, presentQueueIndex, asyncComputeQueueIndex);
 
-    return Result<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError>::Ok(std::move(props));
+    return Ok(std::move(props));
 }
 
 auto VulkanPhysicalDeviceProperties::autoselectPriorityScore() const -> u64 {

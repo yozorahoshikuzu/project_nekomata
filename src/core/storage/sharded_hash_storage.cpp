@@ -8,7 +8,7 @@ namespace projnekomata::storage {
 ShardedHashStorage::ShardedHashStorage(const std::filesystem::path& directory, u32 nibblesPerLevel, u32 levelCount)
     : m_directory(directory), m_nibblesPerLevel(nibblesPerLevel), m_levelCount(levelCount) {}
 
-auto ShardedHashStorage::store(const std::span<const u8>& hash, const std::span<const u8>& data) -> std::expected<std::monostate, HashStorageWriteError> {
+auto ShardedHashStorage::store(const std::span<const u8>& hash, const std::span<const u8>& data) -> Result<std::monostate, HashStorageWriteError> {
     auto fullpath = buildPathFromHash(hash);
 
     std::error_code ec;
@@ -16,32 +16,32 @@ auto ShardedHashStorage::store(const std::span<const u8>& hash, const std::span<
 
     if (ec) {
         log::crit("Failed to create directories for hash storage: {}", ec.message());
-        return std::unexpected(HashStorageWriteError::FileOpenError);
+        return Err(HashStorageWriteError::FileOpenError);
     }
 
     std::ofstream file(fullpath, std::ios::binary | std::ios::trunc);
-    if (!file) return std::unexpected(HashStorageWriteError::FileOpenError);
+    if (!file) return Err(HashStorageWriteError::FileOpenError);
 
     file.write(reinterpret_cast<const char*>(data.data()), data.size());
-    if (!file) return std::unexpected(HashStorageWriteError::FileWriteError);
+    if (!file) return Err(HashStorageWriteError::FileWriteError);
 
-    return std::monostate{};
+    return Ok(std::monostate{});
 }
 
-auto ShardedHashStorage::load(const std::span<const u8>& hash, std::vector<u8>& dst) -> std::expected<std::monostate, HashStorageLoadError> {
+auto ShardedHashStorage::load(const std::span<const u8>& hash, std::vector<u8>& dst) -> Result<std::monostate, HashStorageLoadError> {
     auto fullpath = buildPathFromHash(hash);
     if (!std::filesystem::exists(fullpath))
-        return std::unexpected(HashStorageLoadError::ObjectMissing);
+        return Err(HashStorageLoadError::ObjectMissing);
 
     auto file = std::ifstream(fullpath, std::ios::binary | std::ios::ate);
-    if (!file) return std::unexpected(HashStorageLoadError::FileOpenError);
+    if (!file) return Err(HashStorageLoadError::FileOpenError);
     dst.resize(file.tellg());
     file.seekg(0);
 
     file.read(reinterpret_cast<char*>(dst.data()), dst.size());
-    if (!file) return std::unexpected(HashStorageLoadError::FileReadError);
+    if (!file) return Err(HashStorageLoadError::FileReadError);
 
-    return std::monostate{};
+    return Ok(std::monostate{});
 }
 auto ShardedHashStorage::invalidate() -> void {
     std::filesystem::remove_all(m_directory);
