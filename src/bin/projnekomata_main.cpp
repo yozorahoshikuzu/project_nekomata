@@ -2,6 +2,7 @@ import std;
 import projnekomata;
 #include <string.h>
 #include <stdio.h>
+#include <cstdlib>
 
 using namespace projnekomata::math;
 using namespace projnekomata::core::input;
@@ -148,12 +149,29 @@ public:
             .children(std::move(testLogButtonText))
             .build();
 
+
+        auto testPanicButtonText = projnekomata::ui::UiNode::builder()
+            .position({20.0f, 36.0f})
+            .text("Test Panic", 18.0f, m_fontFace.clone())
+            .build();
+
+        auto escapeOverlayMenuButton3 = projnekomata::ui::UiNode::builder()
+            .extentPercentX(100.0f)
+            .extentY(60.0f)
+            .rect(Vector4f{.882f, .164f, .385f, 0.95f})
+            .capturesClicks(true)
+            .onClick([this](Vector2f) {
+                panic("Test Panic");
+            })
+            .children(std::move(testPanicButtonText))
+            .build();
+
         auto escapeOverlayButtons = projnekomata::ui::UiNode::builder()
             .positionY(300.0f)
             .extentPercentX(100.0f)
             .extentY(400.0f)
             .childrenLayout(projnekomata::ui::StackLayout(projnekomata::ui::StackDirection::VerticalTopToBottom, 10.0f))
-            .children(std::move(escapeOverlayMenuButton1), std::move(escapeOverlayMenuButton2))
+            .children(std::move(escapeOverlayMenuButton1), std::move(escapeOverlayMenuButton2), std::move(escapeOverlayMenuButton3))
             .build();
 
 
