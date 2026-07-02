@@ -72,3 +72,15 @@ private:
 
     std::variant<T, E> m_variant;
 };
+
+template <typename T, typename E> struct fmt::formatter<Result<T, E>, char, std::enable_if_t<fmt::is_formattable<T>::value && fmt::is_formattable<E>::value>> {
+    constexpr auto parse(fmt::format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
+
+    auto format(const Result<T, E>& value, fmt::format_context& ctx) const -> decltype(ctx.out()) {
+        if (value.isOk()) {
+            return fmt::format_to(ctx.out(), "Ok({})", value.unwrap());
+        } else {
+            return fmt::format_to(ctx.out(), "Err({})", value.unwrapErr());
+        }
+    }
+};

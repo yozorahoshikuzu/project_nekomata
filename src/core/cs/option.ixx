@@ -1,5 +1,6 @@
 export module projnekomata:core.cs.option;
 import std;
+import fmt;
 import :core.platform.int_def;
 import :core.cs.niche;
 import :core.cs.panic;
@@ -152,6 +153,19 @@ private:
 
     alignas(T) u8 m_storage[sizeof(T)];
     [[no_unique_address]] IsSome m_isSome;
+};
+
+template <typename T> struct fmt::formatter<Option<T>, char, std::enable_if_t<fmt::is_formattable<T>::value>> {
+    constexpr auto parse(fmt::format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
+
+    auto format(const Option<T>& value, fmt::format_context& ctx) const -> decltype(ctx.out()) {
+        if (value.isSome()) {
+            return fmt::format_to(ctx.out(), "Some({})", value.unwrap());
+        } else {
+            return fmt::format_to(ctx.out(), "None");
+        }
+    }
+
 };
 
 struct NoneT {
