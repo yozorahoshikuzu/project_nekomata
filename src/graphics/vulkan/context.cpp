@@ -152,7 +152,6 @@ auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debu
         .setEngineVersion(vk::makeApiVersion(0, 0, 1, 0))
         .setApiVersion(vk::ApiVersion14);
 
-
     auto availableInstanceLayerProps = Vec<vk::LayerProperties>::fromStdVector(vkCheckResult(vk::enumerateInstanceLayerProperties()));
     auto availableInstanceLayerNames = availableInstanceLayerProps.iter()
         .map([](auto&& layer) { return std::string(layer.layerName); })

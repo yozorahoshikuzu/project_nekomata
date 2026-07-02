@@ -1,4 +1,5 @@
 import std;
+import fmt;
 import projnekomata;
 #include <string.h>
 #include <stdio.h>
@@ -249,7 +250,7 @@ public:
         }
 
         auto camPos = m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position;
-        std::get<projnekomata::ui::UiText>(m_text->element).text = std::format("pos: {:.2f}, {:.2f}, {:.2f}", camPos.x(), camPos.y(), camPos.z());
+        std::get<projnekomata::ui::UiText>(m_text->element).text = fmt::format("pos: {:.2f}, {:.2f}, {:.2f}", camPos.x(), camPos.y(), camPos.z());
     }
 
     bool m_handleMouseMovement = true;

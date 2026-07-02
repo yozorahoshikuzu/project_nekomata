@@ -2,6 +2,7 @@ module;
 #include <ctime>
 export module projnekomata:core.log;
 import std;
+import fmt;
 
 export namespace projnekomata::log {
 
@@ -71,39 +72,49 @@ inline std::string timestamp() {
 #else
     localtime_r(&tt, &buf);
 #endif
-    return std::format("{:02}:{:02}:{:02}.{:06}", buf.tm_hour, buf.tm_min, buf.tm_sec, us);
+    return fmt::format("{:02}:{:02}:{:02}.{:06}", buf.tm_hour, buf.tm_min, buf.tm_sec, us);
 }
 
-inline void write(LogLevel level, std::string_view message) {
+template <typename... Args> inline void write(LogLevel level, fmt::format_string<Args...> fmtstr, Args&&... args) {
     using namespace ansi_codes;
     const auto& m = meta(level);
 
-    std::osyncstream(std::cout)
-        << DIM << WHITE << '[' << timestamp() << ']' << RESET
+    std::osyncstream stream(std::cout);
+
+
+    stream << DIM << WHITE << '[' << timestamp() << ']' << RESET
         << ' ' << m.m_prefix << ' ' << m.m_label << ' ' << RESET
-        << " " << m.m_color << message << RESET << '\n';
+        << " " << m.m_color;
+
+    fmt::vformat_to(
+        std::ostreambuf_iterator<char>(stream),
+        fmtstr.get(),
+        fmt::make_format_args(args...)
+    );
+
+    stream << RESET << '\n';
 }
 
 } // namespace impl
 
-template <typename... Args> void trace(std::format_string<Args...> fmt, Args&&... args) {
-    impl::write(LogLevel::Trace, std::format(fmt, std::forward<Args>(args)...));
+template <typename... Args> void trace(fmt::format_string<Args...> fmtstr, Args&&... args) {
+    impl::write(LogLevel::Trace, fmtstr, std::forward<Args>(args)...);
 }
 
-template <typename... Args> void info(std::format_string<Args...> fmt, Args&&... args) {
-    impl::write(LogLevel::Info, std::format(fmt, std::forward<Args>(args)...));
+template <typename... Args> void info(fmt::format_string<Args...> fmtstr, Args&&... args) {
+    impl::write(LogLevel::Info, fmtstr, std::forward<Args>(args)...);
 }
 
-template <typename... Args> void warn(std::format_string<Args...> fmt, Args&&... args) {
-    impl::write(LogLevel::Warn, std::format(fmt, std::forward<Args>(args)...));
+template <typename... Args> void warn(fmt::format_string<Args...> fmtstr, Args&&... args) {
+    impl::write(LogLevel::Warn, fmtstr, std::forward<Args>(args)...);
 }
 
-template <typename... Args> void error(std::format_string<Args...> fmt, Args&&... args) {
-    impl::write(LogLevel::Error, std::format(fmt, std::forward<Args>(args)...));
+template <typename... Args> void error(fmt::format_string<Args...> fmtstr, Args&&... args) {
+    impl::write(LogLevel::Error, fmtstr, std::forward<Args>(args)...);
 }
 
-template <typename... Args> void crit(std::format_string<Args...> fmt, Args&&... args) {
-    impl::write(LogLevel::Crit, std::format(fmt, std::forward<Args>(args)...));
+template <typename... Args> void crit(fmt::format_string<Args...> fmtstr, Args&&... args) {
+    impl::write(LogLevel::Crit, fmtstr, std::forward<Args>(args)...);
 }
 
 } // namespace projnekomata::log

@@ -1,4 +1,5 @@
 module projnekomata;
+import fmt;
 import :core.log;
 import :graphics.cmd_alloc;
 import :graphics.vulkan.context;
@@ -84,21 +85,21 @@ auto RenderThread::loop() -> void {
         std::string vramStr;
         if (physicalDeviceProps.m_hasExtMemoryBudget) {
             f64 vramBudget = VulkanContext::get().extMemoryBudgetGetVramBudget();
-            vramStr = std::format("total {:.2f} MB used/allocd block bytes: {:.2f}/{:.2f} MB budget: {:.2f} MB",
+            vramStr = fmt::format("total {:.2f} MB used/allocd block bytes: {:.2f}/{:.2f} MB budget: {:.2f} MB",
                 physicalDeviceProps.m_vramSize / 1024.0_f64 / 1024.0_f64,
                 allocBytes / 1024.0_f64 / 1024.0_f64,
                 blockBytes / 1024.0_f64 / 1024.0_f64,
                 vramBudget / 1024.0_f64 / 1024.0_f64
             );
         } else {
-            vramStr = std::format("total {:.2f} MB used/allocd block bytes: {:.2f}/{:.2f} MB",
+            vramStr = fmt::format("total {:.2f} MB used/allocd block bytes: {:.2f}/{:.2f} MB",
                 physicalDeviceProps.m_vramSize / 1024.0_f64 / 1024.0_f64,
                 allocBytes / 1024.0_f64 / 1024.0_f64,
                 blockBytes / 1024.0_f64 / 1024.0_f64
             );
         }
 
-        std::string text = std::format("--- Project Nekomata ---\n FPS: {:.2f} ({:.3f}ms)\n\n -SDL-\n Video Driver: {}\n\n -Vulkan-\n Device: {}\n Driver: {} {}.{}.{}.{} API Version {}.{}.{}.{}\n VRAM: {}\n Shader Cache: {}\n Descriptor Binding Model: {}\n Anti-Lag: {}",
+        std::string text = fmt::format("--- Project Nekomata ---\n FPS: {:.2f} ({:.3f}ms)\n\n -SDL-\n Video Driver: {}\n\n -Vulkan-\n Device: {}\n Driver: {} {}.{}.{}.{} API Version {}.{}.{}.{}\n VRAM: {}\n Shader Cache: {}\n Descriptor Binding Model: {}\n Anti-Lag: {}",
             1000.0f / m_sharedRenderingResources.displayMs, m_sharedRenderingResources.displayMs,
             m_mrSharedData->m_sdlVideoDriverName,
             physicalDeviceProps.m_deviceName,

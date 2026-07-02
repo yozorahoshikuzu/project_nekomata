@@ -47,6 +47,15 @@ find_package(SDL3 REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(utf8cpp REQUIRED)
 
+set(FMT_MODULE ON)
+FetchContent_Declare(
+        fmt
+        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+        GIT_TAG 12.2.0
+)
+FetchContent_MakeAvailable(fmt)
+
+
 FetchContent_Declare(
         vmahpp
         URL      https://github.com/YaaZ/VulkanMemoryAllocator-Hpp/releases/download/v3.3.0+3/VulkanMemoryAllocator-Hpp-3.3.0.tar.gz
@@ -240,6 +249,7 @@ target_link_libraries(
         fastgltf::fastgltf
         xxhash
         utf8::cpp
+        fmt::fmt-module
 )
 if (LIBBACKTRACE_INCLUDE_DIR AND LIBBACKTRACE_LIBRARY)
         target_include_directories(project_nekomata_Library PRIVATE ${LIBBACKTRACE_INCLUDE_DIR})
@@ -285,7 +295,7 @@ message("  ThinLTO: ${ENABLE_THINLTO}")
 foreach(BINARY_ENTRY ${project_nekomata_BINARIES})
         get_filename_component(BINARY_ENTRY_NAME ${BINARY_ENTRY} NAME_WE)
         add_executable(${BINARY_ENTRY_NAME} ${BINARY_ENTRY})
-        target_link_libraries(${BINARY_ENTRY_NAME} PRIVATE project_nekomata_Library)
+        target_link_libraries(${BINARY_ENTRY_NAME} PRIVATE project_nekomata_Library fmt::fmt-module)
 
         target_compile_options(
                 ${BINARY_ENTRY_NAME} PRIVATE
