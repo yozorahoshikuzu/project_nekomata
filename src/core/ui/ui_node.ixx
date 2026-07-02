@@ -9,6 +9,7 @@ import :core.ui.ui_drawcmds;
 import :core.ui.layout;
 
 export namespace projnekomata::ui {
+struct UiNode;
 
 inline float unormToNdc(float x) {
     return x * 2.0f - 1.0f;
@@ -37,6 +38,14 @@ using UiElement = std::variant<std::monostate, UiRect, UiText, UiTexture>;
 
 class UiNodeBuilder;
 
+struct UiMouseHitRegion {
+    math::Vector2f position;
+    math::Vector2f extent;
+    UiNode* ref;
+
+    std::function_ref<auto(math::Vector2f) -> void> clickCallback;
+};
+
 struct UiNode {
     constexpr static auto builder() -> UiNodeBuilder;
     static auto create() -> std::unique_ptr<UiNode> {
@@ -48,6 +57,9 @@ struct UiNode {
     Extent extentY;
 
     bool visible = true;
+    bool capturesClicks = false;
+
+    std::function<auto(math::Vector2f) -> void> clickCallback = nullptr;
 
     UiElement element = std::monostate{};
 
@@ -62,13 +74,22 @@ struct UiNode {
         return *children.last();
     }
 
-    auto buildDrawCmds(Vec<UiDrawCmd>& list, math::Vector2f screenLogicalSize, math::Vector2f origin, math::Vector2f bounds) -> math::Vector2f {
+    auto buildDrawCmds(Vec<UiDrawCmd>& list, Vec<UiMouseHitRegion>& dstHitregions, math::Vector2f screenLogicalSize, math::Vector2f origin, math::Vector2f bounds) -> math::Vector2f {
         if (!visible)
             return math::Vector2f(0.0f);
 
         auto position = resolveExtent2D(this->posX, this->posY, bounds) + origin;
         auto extent = resolveExtent2D(this->extentX, this->extentY, bounds);
         auto endPos = position + extent;
+
+        if (capturesClicks && clickCallback) {
+            dstHitregions.emplace(UiMouseHitRegion{
+                .position = position,
+                .extent = extent,
+                .ref = this,
+                .clickCallback = clickCallback
+            });
+        }
 
         match(element,
             [&](const UiRect& rect) {
@@ -105,21 +126,21 @@ struct UiNode {
         match(childrenLayout,
             [&](const AbsoluteLayout& layout) {
                 for (auto& child : children)
-                    child->buildDrawCmds(list, screenLogicalSize, position, extent);
+                    child->buildDrawCmds(list, dstHitregions, screenLogicalSize, position, extent);
             },
             [&](const StackLayout& layout) {
                 auto axisCursor = 0.0_f32;
                 switch (layout.direction) {
                 case StackDirection::VerticalTopToBottom: {
                     for (auto& child : children) {
-                        auto childExtent = child->buildDrawCmds(list, screenLogicalSize, position + math::Vector2f(0.0f, axisCursor), extent);
+                        auto childExtent = child->buildDrawCmds(list, dstHitregions, screenLogicalSize, position + math::Vector2f(0.0f, axisCursor), extent);
                         axisCursor += childExtent.y() + layout.spacing;
                     }
                     break;
                 }
                 case StackDirection::HorizontalLeftToRight: {
                     for (auto& child : children) {
-                        auto childExtent = child->buildDrawCmds(list, screenLogicalSize, position + math::Vector2f(axisCursor, 0.0f), extent);
+                        auto childExtent = child->buildDrawCmds(list, dstHitregions, screenLogicalSize, position + math::Vector2f(axisCursor, 0.0f), extent);
                         axisCursor += childExtent.x() + layout.spacing;
                     }
                 }
@@ -160,6 +181,9 @@ public:
         return *this;
     }
 
+    constexpr auto capturesClicks(bool capturesClicks) -> UiNodeBuilder& { m_capturesClicks = capturesClicks; return *this; }
+    constexpr auto onClick(std::function<auto(math::Vector2f) -> void>&& callback) -> UiNodeBuilder& { m_clickCallback = std::move(callback); return *this; }
+
     constexpr auto build() -> std::unique_ptr<UiNode> {
         auto node = UiNode::create();
         node->posX = m_posX;
@@ -167,6 +191,8 @@ public:
         node->extentX = m_extX;
         node->extentY = m_extY;
         node->visible = m_visible;
+        node->capturesClicks = m_capturesClicks;
+        node->clickCallback = m_clickCallback;
         node->element = m_element;
         node->childrenLayout = std::move(m_childrenLayout);
         node->children = std::move(m_children);
@@ -179,7 +205,9 @@ private:
     Extent m_extX     = ExtentPercent{100.f};
     Extent m_extY     = ExtentPercent{100.f};
     bool m_visible    = true;
+    bool m_capturesClicks = false;
 
+    std::function<auto(math::Vector2f) -> void> m_clickCallback = nullptr;
 
     Layout m_childrenLayout = AbsoluteLayout();
     UiElement m_element = std::monostate{};

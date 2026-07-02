@@ -14,8 +14,15 @@ public:
     static auto create() -> std::unique_ptr<UiSystem>;
 
     auto getRoot() const -> ui::UiNode& { return *m_uiRoot; }
+    auto buildUi(Vec<ui::UiDrawCmd>& drawcmds, math::Vector2f screenLogicalSize) -> void;
+
+    auto testMouseDownHit(math::Vector2f pos) -> void;
+    auto testMouseUpHit(math::Vector2f pos) -> void;
 
 private:
+    Vec<ui::UiMouseHitRegion>   m_lastFrameMouseHitRegions = Vec<ui::UiMouseHitRegion>::create();
+    ui::UiNode* m_pressedElement = nullptr;
+
     std::unique_ptr<ui::UiNode> m_uiRoot = nullptr;
 };
 

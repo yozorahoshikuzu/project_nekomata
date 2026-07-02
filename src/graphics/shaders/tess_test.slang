@@ -16,7 +16,6 @@ struct PushConstants {
     float time;
     uint textureId;
     uint samplerId;
-    uint shouldInvertColor;
 };
 
 [vk::push_constant] PushConstants push_consts;

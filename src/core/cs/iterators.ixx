@@ -296,8 +296,6 @@ private:
 
 export template <typename Derived> class IteratorBase {
 public:
-    template <typename D = Derived>
-    using DerivItem = typename D::type;
 
     // ---- Iterator Extensions --------------------------------------------------------------------------------------------------------------------------------
 

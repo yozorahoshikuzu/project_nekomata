@@ -20,4 +20,32 @@ auto UiSystem::create() -> std::unique_ptr<UiSystem> {
     return inst;
 }
 
+auto UiSystem::buildUi(Vec<ui::UiDrawCmd>& drawcmds, math::Vector2f screenLogicalSize) -> void {
+    m_lastFrameMouseHitRegions.clear();
+    m_uiRoot->buildDrawCmds(drawcmds, m_lastFrameMouseHitRegions, screenLogicalSize, math::Vector2f(0.0f), screenLogicalSize);
+}
+
+auto UiSystem::testMouseDownHit(math::Vector2f pos) -> void {
+    for (auto& [position, extent, ref, clickCallback] : m_lastFrameMouseHitRegions.iterRev()) {
+        // todo: Make a math box/aabb type to do this
+        if (position.x() <= pos.x() && pos.x() <= position.x() + extent.x()
+            && position.y() <= pos.y() && pos.y() <= position.y() + extent.y())
+        {
+            m_pressedElement = ref;
+        }
+    }
+}
+auto UiSystem::testMouseUpHit(math::Vector2f pos) -> void {
+    for (auto& [position, extent, ref, clickCallback] : m_lastFrameMouseHitRegions.iterRev()) {
+        if (
+            ref == m_pressedElement
+             && position.x() <= pos.x() && pos.x() <= position.x() + extent.x()
+             && position.y() <= pos.y() && pos.y() <= position.y() + extent.y()
+        ) {
+            clickCallback(pos);
+        }
+    }
+    m_pressedElement = nullptr;
+}
+
 } // namespace projnekomata::ui

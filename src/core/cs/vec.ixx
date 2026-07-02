@@ -30,6 +30,21 @@ private:
     T* m_end;
 };
 
+template <typename T> class VecReverseSliceIter : public IteratorBase<VecReverseSliceIter<T>> {
+public:
+    using Item = IteratorInternalNonNullPtr<T>;
+
+    constexpr VecReverseSliceIter(T* begin, T* end) : m_begin(begin), m_end(end) {}
+    constexpr auto next() -> Option<Item> {
+        if (m_begin == m_end) return None;
+        return Some(IteratorInternalNonNullPtr(NonNullPtr<T>(m_begin--)));
+    }
+
+private:
+    T* m_begin;
+    T* m_end;
+};
+
 export template <typename T> class Vec {
 public:
     static constexpr bool kUsesTriviallyRelocatableFastpath = TTriviallyRelocatableValue<T>;
@@ -204,6 +219,9 @@ public:
 
     constexpr auto iter() -> VecSliceIter<T> { return VecSliceIter<T>(m_data, m_data + m_len); }
     constexpr auto iter() const -> VecSliceIter<const T> { return VecSliceIter<const T>(m_data, m_data + m_len); }
+
+    constexpr auto iterRev() -> VecReverseSliceIter<T> { return VecReverseSliceIter<T>(m_data + m_len - 1, m_data - 1); }
+    constexpr auto iterRev() const -> VecReverseSliceIter<const T> { return VecReverseSliceIter<const T>(m_data + m_len - 1, m_data - 1); }
 
 private:
     constexpr Vec(T* data, usize len, usize capacity) noexcept : m_data(data), m_len(len), m_capacity(capacity) {}

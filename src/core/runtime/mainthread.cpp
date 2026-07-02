@@ -88,11 +88,17 @@ auto MainThread::loop(float dt) -> void {
             break;
         }
         case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+            auto pos = math::Vector2f(event.button.x, event.button.y);
+            m_uiSystem->testMouseDownHit(pos);
+
             auto code = core::input::mapSdlMouseButtonToKey(event.button.button);
             m_inputManager->setKeyState(code, true);
             break;
         }
         case SDL_EVENT_MOUSE_BUTTON_UP: {
+            auto pos = math::Vector2f(event.button.x, event.button.y);
+            m_uiSystem->testMouseUpHit(pos);
+
             auto code = core::input::mapSdlMouseButtonToKey(event.button.button);
             m_inputManager->setKeyState(code, false);
             break;
@@ -133,7 +139,7 @@ auto MainThread::loop(float dt) -> void {
         m_mrSharedData->m_leafs.getPrimary().m_textureToSamplerShaderIndexSnapshot
     );
     m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds.clear();
-    ui::UiSystem::get().getRoot().buildDrawCmds(m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds, logicalSizeFloat, math::Vector2f(0.0f), logicalSizeFloat);
+    ui::UiSystem::get().buildUi(m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds, logicalSizeFloat);
 
     m_mrSharedData->m_leafs.getPrimary().m_hasValidFrame = true;
     m_mrSharedData->m_leafs.getPrimary().injectOverlay = injectOverlay;

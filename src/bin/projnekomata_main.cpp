@@ -104,29 +104,48 @@ public:
         // ---- Escape Overlay Menu ----------------------------------------------------------------------------------------------------------------------------
 
         auto escapeOverlayMenuText = projnekomata::ui::UiNode::builder()
-            .position({20.0f, 20.0f})
+            .position({20.0f, 190.0f})
             .extentX(460.0f)
             .extentPercentY(100.0f)
-            .text("Mouse Released\n(this is a placeholder menu)\n\nClick - close, Alt+F12 - toggle overlay", 18.0f, std::move(m_fontFace))
+            .text("Project Nekomata", 18.0f, m_fontFace.clone())
             .build();
 
+        auto continueButtonText = projnekomata::ui::UiNode::builder()
+            .position({20.0f, 36.0f})
+            .text("Continue", 18.0f, m_fontFace.clone())
+            .build();
 
         auto escapeOverlayMenuButton1 = projnekomata::ui::UiNode::builder()
             .extentPercentX(100.0f)
-            .extentY(40.0f)
-            .rect(Vector4f{.1f, .1f, .1f, 0.95f})
+            .extentY(60.0f)
+            .rect(Vector4f{.455f, .204f, .922f, 0.95f})
+            .capturesClicks(true)
+            .onClick([this](Vector2f) {
+                Input::get().setMouseMode(MouseMode::Captured);
+                m_handleMouseMovement = true;
+                m_escOverlay->visible = false;
+            })
+            .children(std::move(continueButtonText))
+            .build();
+
+        auto testLogButtonText = projnekomata::ui::UiNode::builder()
+            .position({20.0f, 36.0f})
+            .text("Test Logger Messages", 18.0f, m_fontFace.clone())
             .build();
 
         auto escapeOverlayMenuButton2 = projnekomata::ui::UiNode::builder()
             .extentPercentX(100.0f)
-            .extentY(40.0f)
-            .rect(Vector4f{.11f, .1f, .1f, 0.95f})
-            .build();
-
-        auto escapeOverlayMenuButton3 = projnekomata::ui::UiNode::builder()
-            .extentPercentX(100.0f)
-            .extentY(40.0f)
-            .rect(Vector4f{.12f, .1f, .1f, 0.95f})
+            .extentY(60.0f)
+            .rect(Vector4f{.435f, .184f, .902f, 0.95f})
+            .capturesClicks(true)
+            .onClick([this](Vector2f) {
+                projnekomata::log::trace("Test Trace");
+                projnekomata::log::info("Test Info");
+                projnekomata::log::warn("Test Warning");
+                projnekomata::log::error("Test Error");
+                projnekomata::log::crit("Test Critical");
+            })
+            .children(std::move(testLogButtonText))
             .build();
 
         auto escapeOverlayButtons = projnekomata::ui::UiNode::builder()
@@ -134,7 +153,7 @@ public:
             .extentPercentX(100.0f)
             .extentY(400.0f)
             .childrenLayout(projnekomata::ui::StackLayout(projnekomata::ui::StackDirection::VerticalTopToBottom, 10.0f))
-            .children(std::move(escapeOverlayMenuButton1), std::move(escapeOverlayMenuButton2), std::move(escapeOverlayMenuButton3))
+            .children(std::move(escapeOverlayMenuButton1), std::move(escapeOverlayMenuButton2))
             .build();
 
 
@@ -209,12 +228,6 @@ public:
             Input::get().setMouseMode(MouseMode::Normal);
             m_handleMouseMovement = false;
             m_escOverlay->visible = true;
-        }
-
-        if (Input::get().isKeyReleased(Key::MouseLeft)) {
-            Input::get().setMouseMode(MouseMode::Captured);
-            m_handleMouseMovement = true;
-            m_escOverlay->visible = false;
         }
 
         auto camPos = m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position;
