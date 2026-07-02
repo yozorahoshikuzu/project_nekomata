@@ -16,7 +16,7 @@ public:
     ~Option() { reset(); }
 
     constexpr Option(NoneT_Meta) : Option() {}
-    constexpr Option(SomeT<T> other) : Option(std::move(other.value)) {}
+    constexpr Option(SomeT<T>&& other) : Option(std::move(other.value)) {}
 
     static constexpr bool kNeedsDestruction = !std::is_trivially_destructible_v<T>;
     static constexpr bool kIsCopyable = std::is_copy_constructible_v<T>;

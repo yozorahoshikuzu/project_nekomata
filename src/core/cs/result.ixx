@@ -1,5 +1,6 @@
 export module projnekomata:core.cs.result;
 import std;
+import fmt;
 import :core.cs.panic;
 import :core.cs.option;
 import :core.cs.invoke_traits;
@@ -12,8 +13,8 @@ template <typename T> constexpr auto Err(T&& value) -> ErrT<std::decay_t<T>> { r
 
 export template <typename T, typename E> class Result {
 public:
-    constexpr Result(OkT<T> other) : m_variant(std::move(other.value)) {}
-    constexpr Result(ErrT<E> other) : m_variant(std::move(other.value)) {}
+    constexpr Result(OkT<T>&& other) : m_variant(std::move(other.value)) {}
+    constexpr Result(ErrT<E>&& other) : m_variant(std::move(other.value)) {}
 
     constexpr static auto Ok(const T& value) -> Result<T, E> { return Result<T, E>(value); }
     constexpr static auto Err(const E& error) -> Result<T, E> { return Result<T, E>(error); }
