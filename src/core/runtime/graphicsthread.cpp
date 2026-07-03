@@ -26,7 +26,7 @@ auto RenderThread::runMainLoop() -> void {
     }
 
     m_timeAtStart = std::chrono::high_resolution_clock::now();
-    m_overlayFont = graphics::fonts::FontManager::get().loadFont("../Assets/IosevkaTerm-Light.ttf");
+    m_overlayFont = graphics::fonts::FontManager::get().loadFont("../../Assets/IosevkaTerm-Light.ttf");
 
     m_lastFrameTime = std::chrono::high_resolution_clock::now();
     while (true) {

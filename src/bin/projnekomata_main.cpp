@@ -57,11 +57,11 @@ public:
         auto samplerSettings = projnekomata::graphics::texturesystem::SamplerParams::defaultValues()
             .setAnisotropy(16.0f);
 
-        projnekomata::graphics::texturesystem::Texture ts1 = ts.loadKtx2TextureAsync("../Assets/ui_test.ktx2", samplerSettings);
-        projnekomata::graphics::texturesystem::Texture ts2 = ts.loadKtx2TextureAsync("../Assets/ui_test2.ktx2", samplerSettings);
-        projnekomata::graphics::texturesystem::Texture ts3 = ts.loadKtx2TextureAsync("../Assets/ui_test3.ktx2", samplerSettings);
-        projnekomata::graphics::texturesystem::Texture ts4 = ts.loadKtx2TextureAsync("../Assets/ui_test4.ktx2", samplerSettings);
-        projnekomata::graphics::texturesystem::Texture ts5 = ts.loadKtx2TextureAsync("../Assets/ui_test5.ktx2", samplerSettings);
+        projnekomata::graphics::texturesystem::Texture ts1 = ts.loadKtx2TextureAsync("../../Assets/ui_test.ktx2", samplerSettings);
+        projnekomata::graphics::texturesystem::Texture ts2 = ts.loadKtx2TextureAsync("../../Assets/ui_test2.ktx2", samplerSettings);
+        projnekomata::graphics::texturesystem::Texture ts3 = ts.loadKtx2TextureAsync("../../Assets/ui_test3.ktx2", samplerSettings);
+        projnekomata::graphics::texturesystem::Texture ts4 = ts.loadKtx2TextureAsync("../../Assets/ui_test4.ktx2", samplerSettings);
+        projnekomata::graphics::texturesystem::Texture ts5 = ts.loadKtx2TextureAsync("../../Assets/ui_test5.ktx2", samplerSettings);
 
         auto posText = projnekomata::ui::UiNode::builder()
             .position({10.0f, 280.0f})
@@ -317,7 +317,7 @@ void onGameInit(std::unique_ptr<projnekomata::ecs::World>& world) {
     auto samplerSettings = projnekomata::graphics::texturesystem::SamplerParams::defaultValues()
         .setAnisotropy(16.0f);
 
-    projnekomata::graphics::texturesystem::Texture ts1 = ts.loadKtx2TextureAsync("../Assets/abstractart.ktx2", samplerSettings);
+    projnekomata::graphics::texturesystem::Texture ts1 = ts.loadKtx2TextureAsync("../../Assets/abstractart.ktx2", samplerSettings);
     auto fnt = projnekomata::graphics::fonts::FontManager::get().loadFont("/usr/share/fonts/noto/NotoSans-Regular.ttf");
 
 

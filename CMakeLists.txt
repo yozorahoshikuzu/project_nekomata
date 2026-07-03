@@ -4,22 +4,7 @@ set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
 include(FetchContent)
 project(project_nekomata VERSION 0.1.0 LANGUAGES CXX C)
 
-option(ENABLE_THINLTO "Enable ThinLTO" OFF)
-option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
-option(ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
-
-set(SANITIZERS_LIST "")
-if(ENABLE_ASAN)
-        list(APPEND SANITIZERS_LIST "address")
-endif()
-if(ENABLE_UBSAN)
-        list(APPEND SANITIZERS_LIST "undefined")
-endif()
-
-if(SANITIZERS_LIST)
-        list(JOIN SANITIZERS_LIST "," SANITIZERS_STR)
-        set(SANITIZER_FLAGS "-fsanitize=${SANITIZERS_STR}")
-endif()
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo;DebugSanitize" CACHE STRING "" FORCE)
 
 add_compile_options(
         -fno-exceptions
@@ -29,10 +14,14 @@ add_compile_options(
         -fno-trapping-math
         -ffp-contract=fast
         -fwrapv
-        ${SANITIZER_FLAGS}
-        ${THINLTO_FLAGS}
+        $<$<CONFIG:DebugSanitize>:-fsanitize=address,undefined>
+        $<$<CONFIG:Release>:-flto=thin>
 )
-add_link_options(-fuse-ld=lld ${THINLTO_FLAGS} ${SANITIZER_FLAGS})
+add_link_options(
+        -fuse-ld=lld
+        $<$<CONFIG:DebugSanitize>:-fsanitize=address,undefined>
+        $<$<CONFIG:Release>:-flto=thin>
+)
 
 set(CMAKE_CXX_MODULE_STD ON)
 set(CMAKE_CXX_STANDARD 26)
@@ -47,14 +36,25 @@ find_package(SDL3 REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(utf8cpp REQUIRED)
 
-set(FMT_MODULE ON)
+set(SHADOW_CMAKE_GENERATOR_SET OFF)
+if(CMAKE_GENERATOR MATCHES "^Ninja")
+        set(SHADOW_CMAKE_GENERATOR "${CMAKE_GENERATOR}")
+        set(CMAKE_GENERATOR "Ninja")
+        set(SHADOW_CMAKE_GENERATOR_SET ON)
+endif()
+
 FetchContent_Declare(
         fmt
         GIT_REPOSITORY https://github.com/fmtlib/fmt.git
         GIT_TAG 12.2.0
 )
+
+set(FMT_MODULE ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(fmt)
 
+if(SHADOW_CMAKE_GENERATOR_SET)
+        set(CMAKE_GENERATOR "${SHADOW_CMAKE_GENERATOR}")
+endif()
 
 FetchContent_Declare(
         vmahpp
@@ -287,10 +287,6 @@ target_compile_options(
 add_slang_shaders(project_nekomata_spv TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR}/spirv SOURCES ${project_nekomata_SHADER_SOURCES})
 add_dependencies(project_nekomata_Library project_nekomata_spv)
 
-message("--- Project Nekomata Options ---")
-message("  UBSAN: ${ENABLE_UBSAN}")
-message("  ASAN: ${ENABLE_ASAN}")
-message("  ThinLTO: ${ENABLE_THINLTO}")
 
 foreach(BINARY_ENTRY ${project_nekomata_BINARIES})
         get_filename_component(BINARY_ENTRY_NAME ${BINARY_ENTRY} NAME_WE)

@@ -1,5 +1,8 @@
 *
 
+!.idea/
+!.idea/cmake.xml
+
 !LICENSE
 !README.md
 !.gitignore
