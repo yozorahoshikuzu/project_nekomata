@@ -117,6 +117,7 @@ struct UiNode {
                     .text = text.text,
                     .face = text.fontFace.clone(),
                     .size = text.size,
+                    .color = text.color
                 };
                 list.emplace(drawCmd);
             },

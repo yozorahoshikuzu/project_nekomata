@@ -114,7 +114,8 @@ auto RenderThread::loop() -> void {
             .baselinePos = Vector2f(4.0f, 18.0f),
             .text = text,
             .face = m_overlayFont,
-            .size = 14.0f
+            .size = 14.0f,
+            .color = math::Vector4f(1.0f, 1.0f, 1.0f, 1.0f)
         });
     }
 

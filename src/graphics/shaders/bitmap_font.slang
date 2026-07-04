@@ -9,6 +9,7 @@ struct GlyphInstance {
 struct PushConstants {
     GlyphInstance* glyphs;
     uint samplerIndex;
+    float4 color;
 };
 
 [vk::push_constant] PushConstants pushConstants;
@@ -37,5 +38,5 @@ VSOut main(uint vertexId : SV_VulkanVertexID, uint instanceId : SV_VulkanInstanc
 [shader("fragment")]
 float4 main(VSOut input) : SV_Target {
     float alpha = textures[NonUniformResourceIndex(input.textureIndex)].SampleLevel(samplers[pushConstants.samplerIndex], input.texcoord, 0.0).r;
-    return float4(1.0, 1.0, 1.0, alpha);
+    return float4(pushConstants.color.rgb, pushConstants.color.a * alpha);
 }

@@ -363,14 +363,15 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
                 auto buffer = VulkanBuffer::create(shapedText.size() * sizeof(fonts::GlyphInstance), vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer, VulkanBufferMemoryMapping::MapForSequentialWrite, vma::MemoryUsage::eAutoPreferDevice, {}, queuesForBuffer);
                 memcpy(buffer.memoryHostPtr(), shapedText.data(), shapedText.size() * sizeof(fonts::GlyphInstance));
 
-                auto fontPushConstantData2 = std::array<unsigned char, 12>{};
-
                 u32 sampler2 = texturesystem::TextureManager::get().samplerCache().acquireSampler(
                     texturesystem::SamplerParams::defaultValues().setMinFilter(vk::Filter::eNearest).setMagFilter(vk::Filter::eNearest).setMipmapMode(vk::SamplerMipmapMode::eNearest).setMaxLod(0.0f)
                 );
                 auto instanceDevicePtr2 = buffer.memoryDevicePtr();
+
+                auto fontPushConstantData2 = std::array<unsigned char, 28>{};
                 memcpy(fontPushConstantData2.data(), &instanceDevicePtr2, 8);
                 memcpy(fontPushConstantData2.data() + 8, &sampler2, 4);
+                memcpy(fontPushConstantData2.data() + 12, &drawCmd.color, 16);
                 textInstanceBuffers.emplace(std::move(buffer));
 
                 cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.m_bitmapFontRendererPipeline.vkPipeline());

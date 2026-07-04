@@ -25,6 +25,7 @@ struct UiTextDrawCmd {
     std::string text;
     graphics::fonts::FontFace face;
     float size;
+    math::Vector4f color;
 };
 
 using UiDrawCmd = std::variant<UiRectDrawCmd, UiTextureDrawCmd, UiTextDrawCmd>;

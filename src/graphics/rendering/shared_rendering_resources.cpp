@@ -44,7 +44,7 @@ SharedRenderingResources::SharedRenderingResources() {
 
     m_bitmapFontRendererLayout = VulkanPipelineLayout::builder()
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
-        .addPushConstantRange(0, 12, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+        .addPushConstantRange(0, 28, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
         .build();
     auto bitmapFontRendererShader = SpirvShaderCode::loadFromFile("../spirv/bitmap_font.spv").unwrap();
     m_bitmapFontRendererPipeline = VulkanGraphicsPipeline::builder()
