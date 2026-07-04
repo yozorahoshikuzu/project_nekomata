@@ -20,6 +20,8 @@ std::unordered_map<vk::Format, ImageFormatMd> VulkanImage::s_formatMetadata = {
     {vk::Format::eR16G16B16A16Sfloat,                         ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 8 }},
     {vk::Format::eR16G16Sfloat,                               ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 4 }},
 
+    {vk::Format::eA2R10G10B10UnormPack32,                     ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 4 }},
+
     // Compressed Color Formats
     // BC1 - 4x4 blocks, 8 bytes per block
     { vk::Format::eBc1RgbUnormBlock,                          ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 8, .blockWidth = 4, .blockHeight = 4 } },
