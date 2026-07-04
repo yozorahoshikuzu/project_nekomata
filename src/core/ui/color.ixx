@@ -12,18 +12,26 @@ public:
     // ---- To Color Conversions -------------------------------------------------------------------------------------------------------------------------------
 
     constexpr static auto fromRgb8Uint(u8 r, u8 g, u8 b) -> Color {
-        f16 rh = static_cast<float>(r) / 255.0_f32;
-        f16 gh = static_cast<float>(g) / 255.0_f32;
-        f16 bh = static_cast<float>(b) / 255.0_f32;
+        f32 rh = static_cast<float>(r) / 255.0_f32;
+        f32 gh = static_cast<float>(g) / 255.0_f32;
+        f32 bh = static_cast<float>(b) / 255.0_f32;
         return Color{math::Vector4f(rh, gh, bh, 1.0_f32)};
     }
 
     constexpr static auto fromRgba8Uint(u8 r, u8 g, u8 b, u8 a) -> Color {
-        f16 rh = static_cast<float>(r) / 255.0_f32;
-        f16 gh = static_cast<float>(g) / 255.0_f32;
-        f16 bh = static_cast<float>(b) / 255.0_f32;
-        f16 ah = static_cast<float>(a) / 255.0_f32;
+        f32 rh = static_cast<float>(r) / 255.0_f32;
+        f32 gh = static_cast<float>(g) / 255.0_f32;
+        f32 bh = static_cast<float>(b) / 255.0_f32;
+        f32 ah = static_cast<float>(a) / 255.0_f32;
         return Color{math::Vector4f(rh, gh, bh, ah)};
+    }
+
+    constexpr static auto fromRgb8Hexcode(u32 hexcode) -> Color {
+        return fromRgb8Uint(static_cast<u8>((hexcode >> 16) & 0xff), static_cast<u8>((hexcode >> 8) & 0xff), static_cast<u8>(hexcode & 0xff));
+    }
+
+    constexpr static auto fromRgba8Hexcode(u32 hexcode) -> Color {
+        return fromRgba8Uint(static_cast<u8>((hexcode >> 24) & 0xff), static_cast<u8>((hexcode >> 16) & 0xff), static_cast<u8>((hexcode >> 8) & 0xff), static_cast<u8>(hexcode & 0xff));
     }
 
     constexpr static auto fromRgb32Float(f32 r, f32 g, f32 b) -> Color {
