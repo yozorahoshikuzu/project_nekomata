@@ -105,6 +105,19 @@ public:
 
         // ---- Escape Overlay Menu ----------------------------------------------------------------------------------------------------------------------------
 
+
+        auto buttonStyle = projnekomata::ui::ElementStyle::builder()
+            .color(projnekomata::Color::fromRgba32Float(.455f, .204f, .922f, 0.95f))
+            .colorHovered(projnekomata::Color::fromRgba32Float(.335f, .084f, .802f, 0.95f))
+            .colorPressed(projnekomata::Color::fromRgba32Float(.215f, .064f, .682f, 0.95f))
+            .build();
+
+        auto buttonTextStyle = projnekomata::ui::ElementStyle::builder()
+            .color(projnekomata::Color::fromRgba32Float(1.0f, 1.0f, 1.0f, 1.0f))
+            .colorHovered(projnekomata::Color::fromRgb8Uint(255, 115, 0))
+            .hoverStateInheritsParent(true)
+            .build();
+
         auto escapeOverlayMenuText = projnekomata::ui::UiNode::builder()
             .position({20.0f, 190.0f})
             .extentX(460.0f)
@@ -115,13 +128,18 @@ public:
         auto continueButtonText = projnekomata::ui::UiNode::builder()
             .position({20.0f, 36.0f})
             .text("Continue", 18.0f, m_fontFace.clone())
+            .style(buttonTextStyle)
             .build();
 
+        auto menuOverlayColor = projnekomata::Color::fromRgba32Float(.0f, .0f, .0f, 0.85f);
+        auto menuBgColor = projnekomata::Color::fromRgba32Float(.0f, .0f, .0f, 0.25f);
         auto escapeOverlayMenuButton1 = projnekomata::ui::UiNode::builder()
             .extentPercentX(100.0f)
             .extentY(60.0f)
-            .rect(Vector4f{.455f, .204f, .922f, 0.95f})
+            .rect()
+            .style(buttonStyle)
             .capturesClicks(true)
+            .capturesHover(true)
             .onClick([this](Vector2f) {
                 Input::get().setMouseMode(MouseMode::Captured);
                 m_handleMouseMovement = true;
@@ -133,13 +151,16 @@ public:
         auto testLogButtonText = projnekomata::ui::UiNode::builder()
             .position({20.0f, 36.0f})
             .text("Test Logger Messages", 18.0f, m_fontFace.clone())
+            .style(buttonTextStyle)
             .build();
 
         auto escapeOverlayMenuButton2 = projnekomata::ui::UiNode::builder()
             .extentPercentX(100.0f)
             .extentY(60.0f)
-            .rect(Vector4f{.435f, .184f, .902f, 0.95f})
+            .rect()
+            .style(buttonStyle)
             .capturesClicks(true)
+            .capturesHover(true)
             .onClick([this](Vector2f) {
                 projnekomata::log::trace("Test Trace");
                 projnekomata::log::info("Test Info");
@@ -154,13 +175,16 @@ public:
         auto testPanicButtonText = projnekomata::ui::UiNode::builder()
             .position({20.0f, 36.0f})
             .text("Test Panic", 18.0f, m_fontFace.clone())
+            .style(buttonTextStyle)
             .build();
 
         auto escapeOverlayMenuButton3 = projnekomata::ui::UiNode::builder()
             .extentPercentX(100.0f)
             .extentY(60.0f)
-            .rect(Vector4f{.882f, .164f, .385f, 0.95f})
+            .rect()
+            .style(buttonStyle)
             .capturesClicks(true)
+            .capturesHover(true)
             .onClick([this](Vector2f) {
                 panic("Test Panic");
             })
@@ -180,14 +204,16 @@ public:
             .position({250.0f, 0.0f})
             .extentX(500.0f)
             .extentPercentY(100.0f)
-            .rect(Vector4f{0.0f, 0.0f, 0.0f, 0.85f})
+            .rect()
+            .style(projnekomata::ui::ElementStyle::builder().color(menuOverlayColor).build())
             .children(std::move(escapeOverlayMenuText), std::move(escapeOverlayButtons))
             .build();
 
         auto escapeOverlay = projnekomata::ui::UiNode::builder()
             .position({0.0f, 0.0f})
             .extentPercent({100.0f, 100.0f})
-            .rect(Vector4f{0.0f, 0.0f, 0.0f, 0.25f})
+            .rect()
+            .style(projnekomata::ui::ElementStyle::builder().color(menuBgColor).build())
             .visible(false)
             .children(
                 std::move(escapeOverlayMeme1), std::move(escapeOverlayMeme2), std::move(escapeOverlayMeme3), std::move(escapeOverlayMeme4),

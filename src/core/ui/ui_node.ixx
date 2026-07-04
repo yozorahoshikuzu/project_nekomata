@@ -7,6 +7,7 @@ import :core.ui.components.ui_texture;
 import :core.overloaded;
 import :core.ui.ui_drawcmds;
 import :core.ui.layout;
+import :core.ui.element_style;
 
 export namespace projnekomata::ui {
 struct UiNode;
@@ -43,7 +44,11 @@ struct UiMouseHitRegion {
     math::Vector2f extent;
     UiNode* ref;
 
-    std::function_ref<auto(math::Vector2f) -> void> clickCallback;
+    bool capturesClicks = false;
+    bool capturesHover = false;
+
+    Option<std::function_ref<auto(math::Vector2f) -> void>> clickCallback;
+    Option<std::function_ref<auto(math::Vector2f) -> void>> hoverCallback;
 };
 
 struct UiNode {
@@ -51,22 +56,32 @@ struct UiNode {
     static auto create() -> std::unique_ptr<UiNode> {
         return std::make_unique<UiNode>();
     }
+
+    // ---- Positioning ----------------------------------------------------------------------------------------------------------------------------------------
+
     Extent posX;
     Extent posY;
     Extent extentX;
     Extent extentY;
 
-    bool visible = true;
-    bool capturesClicks = false;
+    Layout                       childrenLayout = AbsoluteLayout();
+    Vec<std::unique_ptr<UiNode>> children;
+    UiNode* parent = nullptr;
 
-    std::function<auto(math::Vector2f) -> void> clickCallback = nullptr;
+    // ---- Style ----------------------------------------------------------------------------------------------------------------------------------------------
+
+    bool visible = true;
+    ElementStyle style = ElementStyle();
+
+    // ---- Behavior -------------------------------------------------------------------------------------------------------------------------------------------
 
     UiElement element = std::monostate{};
 
-    Layout                       childrenLayout = AbsoluteLayout();
-    Vec<std::unique_ptr<UiNode>> children;
+    bool capturesClicks = false;
+    std::function<auto(math::Vector2f) -> void> clickCallback = nullptr;
+    bool capturesHover = false;
+    std::function<auto(math::Vector2f) -> void> hoverCallback = nullptr;
 
-    UiNode* parent = nullptr;
 
     UiNode& addChild(std::unique_ptr<UiNode>&& child) {
         child->parent = this;
@@ -74,20 +89,37 @@ struct UiNode {
         return *children.last();
     }
 
-    auto buildDrawCmds(Vec<UiDrawCmd>& list, Vec<UiMouseHitRegion>& dstHitregions, math::Vector2f screenLogicalSize, math::Vector2f origin, math::Vector2f bounds) -> math::Vector2f {
+    auto buildDrawCmds(Vec<UiDrawCmd>& list, Vec<UiMouseHitRegion>& dstHitregions, math::Vector2f screenLogicalSize, math::Vector2f origin, math::Vector2f bounds,
+        UiNode* currentClicked, UiNode* currentHovered, bool styleParentIsClicked, bool styleParentIsHovered) -> math::Vector2f
+    {
         if (!visible)
             return math::Vector2f(0.0f);
+
+        bool isPressed = (style.pressedStateInheritsParent && styleParentIsClicked) || (currentClicked == this);
+        bool isHovered = (style.hoverStateInheritsParent && styleParentIsHovered) || (currentHovered == this);
 
         auto position = resolveExtent2D(this->posX, this->posY, bounds) + origin;
         auto extent = resolveExtent2D(this->extentX, this->extentY, bounds);
         auto endPos = position + extent;
 
-        if (capturesClicks && clickCallback) {
+        if (capturesClicks || capturesHover) {
+            auto optClickCallback = Option<std::function_ref<auto(math::Vector2f) -> void>>::someIf(
+                capturesClicks && (clickCallback != nullptr),
+                [&] { return std::function_ref<auto(math::Vector2f) -> void>(clickCallback); }
+            );
+            auto optHoverCallback = Option<std::function_ref<auto(math::Vector2f) -> void>>::someIf(
+                capturesHover && (hoverCallback != nullptr),
+                [&] { return std::function_ref<auto(math::Vector2f) -> void>(hoverCallback); }
+            );
+
             dstHitregions.emplace(UiMouseHitRegion{
                 .position = position,
                 .extent = extent,
                 .ref = this,
-                .clickCallback = clickCallback
+                .capturesClicks = capturesClicks,
+                .capturesHover = capturesHover,
+                .clickCallback = optClickCallback,
+                .hoverCallback = optHoverCallback
             });
         }
 
@@ -96,7 +128,7 @@ struct UiNode {
                 auto drawCmd = UiRectDrawCmd{
                     .ndcBegin = unormToNdc(position.componentWiseDivide(screenLogicalSize)),
                     .ndcEnd   = unormToNdc(endPos.componentWiseDivide(screenLogicalSize)),
-                    .color    = rect.color
+                    .color    = style.getEndColor(isHovered, isPressed),
                 };
                 list.emplace(drawCmd);
             },
@@ -117,7 +149,7 @@ struct UiNode {
                     .text = text.text,
                     .face = text.fontFace.clone(),
                     .size = text.size,
-                    .color = text.color
+                    .color = style.getEndColor(isHovered, isPressed)
                 };
                 list.emplace(drawCmd);
             },
@@ -127,21 +159,21 @@ struct UiNode {
         match(childrenLayout,
             [&](const AbsoluteLayout& layout) {
                 for (auto& child : children)
-                    child->buildDrawCmds(list, dstHitregions, screenLogicalSize, position, extent);
+                    child->buildDrawCmds(list, dstHitregions, screenLogicalSize, position, extent, currentClicked, currentHovered, isPressed, isHovered);
             },
             [&](const StackLayout& layout) {
                 auto axisCursor = 0.0_f32;
                 switch (layout.direction) {
                 case StackDirection::VerticalTopToBottom: {
                     for (auto& child : children) {
-                        auto childExtent = child->buildDrawCmds(list, dstHitregions, screenLogicalSize, position + math::Vector2f(0.0f, axisCursor), extent);
+                        auto childExtent = child->buildDrawCmds(list, dstHitregions, screenLogicalSize, position + math::Vector2f(0.0f, axisCursor), extent, currentClicked, currentHovered, isPressed, isHovered);
                         axisCursor += childExtent.y() + layout.spacing;
                     }
                     break;
                 }
                 case StackDirection::HorizontalLeftToRight: {
                     for (auto& child : children) {
-                        auto childExtent = child->buildDrawCmds(list, dstHitregions, screenLogicalSize, position + math::Vector2f(axisCursor, 0.0f), extent);
+                        auto childExtent = child->buildDrawCmds(list, dstHitregions, screenLogicalSize, position + math::Vector2f(axisCursor, 0.0f), extent, currentClicked, currentHovered, isPressed, isHovered);
                         axisCursor += childExtent.x() + layout.spacing;
                     }
                 }
@@ -182,8 +214,12 @@ public:
         return *this;
     }
 
+    constexpr auto style(const ElementStyle& style) -> UiNodeBuilder& { m_style = style; return *this; }
+
     constexpr auto capturesClicks(bool capturesClicks) -> UiNodeBuilder& { m_capturesClicks = capturesClicks; return *this; }
+    constexpr auto capturesHover(bool capturesHover) -> UiNodeBuilder& { m_capturesHover = capturesHover; return *this; }
     constexpr auto onClick(std::function<auto(math::Vector2f) -> void>&& callback) -> UiNodeBuilder& { m_clickCallback = std::move(callback); return *this; }
+    constexpr auto onHover(std::function<auto(math::Vector2f) -> void>&& callback) -> UiNodeBuilder& { m_hoverCallback = std::move(callback); return *this; }
 
     constexpr auto build() -> std::unique_ptr<UiNode> {
         auto node = UiNode::create();
@@ -194,7 +230,10 @@ public:
         node->visible = m_visible;
         node->capturesClicks = m_capturesClicks;
         node->clickCallback = m_clickCallback;
+        node->capturesHover = m_capturesHover;
+        node->hoverCallback = m_hoverCallback;
         node->element = m_element;
+        node->style = m_style;
         node->childrenLayout = std::move(m_childrenLayout);
         node->children = std::move(m_children);
         return node;
@@ -207,9 +246,12 @@ private:
     Extent m_extY     = ExtentPercent{100.f};
     bool m_visible    = true;
     bool m_capturesClicks = false;
+    bool m_capturesHover = false;
 
     std::function<auto(math::Vector2f) -> void> m_clickCallback = nullptr;
+    std::function<auto(math::Vector2f) -> void> m_hoverCallback = nullptr;
 
+    ElementStyle m_style = ElementStyle();
     Layout m_childrenLayout = AbsoluteLayout();
     UiElement m_element = std::monostate{};
 

@@ -22,30 +22,51 @@ auto UiSystem::create() -> std::unique_ptr<UiSystem> {
 
 auto UiSystem::buildUi(Vec<ui::UiDrawCmd>& drawcmds, math::Vector2f screenLogicalSize) -> void {
     m_lastFrameMouseHitRegions.clear();
-    m_uiRoot->buildDrawCmds(drawcmds, m_lastFrameMouseHitRegions, screenLogicalSize, math::Vector2f(0.0f), screenLogicalSize);
+    m_uiRoot->buildDrawCmds(drawcmds, m_lastFrameMouseHitRegions, screenLogicalSize, math::Vector2f(0.0f), screenLogicalSize, m_pressedElement, m_hoveredElement, false, false);
 }
 
 auto UiSystem::testMouseDownHit(math::Vector2f pos) -> void {
-    for (auto& [position, extent, ref, clickCallback] : m_lastFrameMouseHitRegions.iterRev()) {
+    for (auto& [position, extent, ref, capturesClicks, _, _, _] : m_lastFrameMouseHitRegions.iterRev()) {
         // todo: Make a math box/aabb type to do this
         if (position.x() <= pos.x() && pos.x() <= position.x() + extent.x()
-            && position.y() <= pos.y() && pos.y() <= position.y() + extent.y())
+            && position.y() <= pos.y() && pos.y() <= position.y() + extent.y()
+            && capturesClicks)
         {
             m_pressedElement = ref;
         }
     }
 }
 auto UiSystem::testMouseUpHit(math::Vector2f pos) -> void {
-    for (auto& [position, extent, ref, clickCallback] : m_lastFrameMouseHitRegions.iterRev()) {
+    for (auto& [position, extent, ref, capturesClicks, _, clickCallback, _] : m_lastFrameMouseHitRegions.iterRev()) {
         if (
             ref == m_pressedElement
              && position.x() <= pos.x() && pos.x() <= position.x() + extent.x()
              && position.y() <= pos.y() && pos.y() <= position.y() + extent.y()
+             && capturesClicks
+             && clickCallback.isSome()
         ) {
-            clickCallback(pos);
+            auto& callback = clickCallback.unwrap();
+            callback(pos);
         }
     }
     m_pressedElement = nullptr;
+}
+auto UiSystem::testMouseHover(math::Vector2f pos) -> void {
+    m_hoveredElement = nullptr;
+    for (auto& [position, extent, ref, _, capturesHover, _, hoverCallback] : m_lastFrameMouseHitRegions.iterRev()) {
+        if (
+            position.x() <= pos.x() && pos.x() <= position.x() + extent.x()
+            && position.y() <= pos.y() && pos.y() <= position.y() + extent.y()
+            && capturesHover
+        ) {
+            m_hoveredElement = ref;
+
+            if (hoverCallback.isSome()) {
+                auto& callback = hoverCallback.unwrap();
+                callback(pos);
+            }
+        }
+    }
 }
 
 } // namespace projnekomata::ui

@@ -3,13 +3,14 @@ import std;
 import :core.math;
 import :graphics.texturesystem.texture_manager;
 import :graphics.fontsystem.font_face;
+import :core.color;
 
 export namespace projnekomata::ui {
 
 struct UiRectDrawCmd {
     math::Vector2f ndcBegin;
     math::Vector2f ndcEnd;
-    math::Vector4f color;
+    Color color;
 };
 
 struct UiTextureDrawCmd {
@@ -25,7 +26,7 @@ struct UiTextDrawCmd {
     std::string text;
     graphics::fonts::FontFace face;
     float size;
-    math::Vector4f color;
+    Color color;
 };
 
 using UiDrawCmd = std::variant<UiRectDrawCmd, UiTextureDrawCmd, UiTextDrawCmd>;

@@ -368,10 +368,11 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
                 );
                 auto instanceDevicePtr2 = buffer.memoryDevicePtr();
 
+                auto col = drawCmd.color.asRgba32Float();
                 auto fontPushConstantData2 = std::array<unsigned char, 28>{};
                 memcpy(fontPushConstantData2.data(), &instanceDevicePtr2, 8);
                 memcpy(fontPushConstantData2.data() + 8, &sampler2, 4);
-                memcpy(fontPushConstantData2.data() + 12, &drawCmd.color, 16);
+                memcpy(fontPushConstantData2.data() + 12, &col, 16);
                 textInstanceBuffers.emplace(std::move(buffer));
 
                 cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.m_bitmapFontRendererPipeline.vkPipeline());

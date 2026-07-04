@@ -115,7 +115,7 @@ auto RenderThread::loop() -> void {
             .text = text,
             .face = m_overlayFont,
             .size = 14.0f,
-            .color = math::Vector4f(1.0f, 1.0f, 1.0f, 1.0f)
+            .color = Color::fromRgba32Float(1.0f, 1.0f, 1.0f, 1.0f)
         });
     }
 

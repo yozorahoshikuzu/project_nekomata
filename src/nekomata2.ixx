@@ -27,3 +27,5 @@ export import :core.cs.option;
 export import :core.cs.nonzero_ptr;
 export import :core.ui.layout;
 export import :core.cs.panic;
+export import :core.color;
+export import :core.ui.element_style;

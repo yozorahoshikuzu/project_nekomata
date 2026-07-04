@@ -106,6 +106,7 @@ public:
 
     u32 m_vramMemoryHeapIndex = 0_u32;
 
+    bool m_hasFp16              = false;
     bool m_hasExtMemoryBudget   = false;
     bool m_hasExtMemoryPriority = false;
     bool m_hasKhrMaintenance4   = false;

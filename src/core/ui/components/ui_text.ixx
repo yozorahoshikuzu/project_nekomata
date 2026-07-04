@@ -7,14 +7,12 @@ export namespace projnekomata::ui {
 
 struct UiText {
     UiText() = default;
-    explicit UiText(std::string_view text, float size, graphics::fonts::FontFace&& fontFace, math::Vector4f color = math::Vector4f(1.f))
-        : size(size), fontFace(std::move(fontFace)), text(text), color(color) {}
+    explicit UiText(std::string_view text, float size, graphics::fonts::FontFace&& fontFace)
+        : size(size), fontFace(std::move(fontFace)), text(text) {}
 
     float size;
     graphics::fonts::FontFace fontFace;
     std::string text;
-
-    math::Vector4f color;
 };
 
 }

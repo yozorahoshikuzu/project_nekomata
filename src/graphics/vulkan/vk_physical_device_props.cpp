@@ -74,6 +74,10 @@ static constexpr auto kRequiredPhysicalDeviceFeatures = std::to_array<RequiredFe
 
 // ---- Optional Features --------------------------------------------------------------------------------------------------------------------------------------
 
+// for Fp16
+static constexpr auto kOptExtensionsFp16 = emptyArray<std::string_view>();
+static constexpr auto kOptFeaturesFp16 = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceVulkan12Features::shaderFloat16 });
+
 // for ExtMemoryBudget
 static constexpr auto kOptExtensionsExtMemoryBudget = std::to_array<std::string_view>({ vk::EXTMemoryBudgetExtensionName });
 static constexpr auto kOptFeaturesExtMemoryBudget = emptyArray<VulkanFeaturePtr>();
@@ -104,6 +108,7 @@ static constexpr auto kOptFeaturesAMDAntiLag2 = std::to_array<VulkanFeaturePtr>(
 
 // Table
 static constexpr auto kOptionalPhysicalDeviceFeatures = std::to_array<OptFeatureRule>({
+    { "FP16 Arithmetic"sv,                                   kOptExtensionsFp16, kOptFeaturesFp16, &VulkanPhysicalDeviceProperties::m_hasFp16 },
     { "Memory Budget Tracking"sv,                            kOptExtensionsExtMemoryBudget, kOptFeaturesExtMemoryBudget, &VulkanPhysicalDeviceProperties::m_hasExtMemoryBudget },
     { "Memory Priority Tagging"sv,                           kOptExtensionsExtMemoryPriority, kOptFeaturesExtMemoryPriority, &VulkanPhysicalDeviceProperties::m_hasExtMemoryPriority },
     { "Ray Tracing"sv,                                       kOptExtensionsRayTracing, kOptFeaturesRayTracing, &VulkanPhysicalDeviceProperties::m_hasRayTracing },

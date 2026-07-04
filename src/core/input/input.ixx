@@ -26,6 +26,8 @@ public:
     auto setMouseDelta(math::Vector2f delta) -> void;
     
     auto setMouseMode(MouseMode mode) -> void;
+    auto getMouseMode() const -> MouseMode { return m_mouseMode; }
+    auto getSystemCurrentMouseMode() const -> MouseMode { return m_systemCurrentMouseMode; }
     auto isKeyPressed(Key x) const -> bool;
     auto isKeyReleased(Key x) const -> bool;
     auto isKeyDown(Key x) const -> bool;

@@ -107,6 +107,11 @@ auto MainThread::loop(float dt) -> void {
             auto position = math::Vector2f(event.motion.x, event.motion.y);
             totalMouseDelta += math::Vector2f(event.motion.xrel, event.motion.yrel);
             m_inputManager->setMousePosition(position);
+
+            if (m_inputManager->getMouseMode() == core::input::MouseMode::Normal) {
+                m_uiSystem->testMouseHover(position);
+            }
+
             break;
         }
         }
