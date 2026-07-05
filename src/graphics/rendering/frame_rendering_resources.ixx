@@ -11,6 +11,15 @@ import :core.ecs.world.transform;
 
 export namespace projnekomata::graphics {
 
+struct Transforms {
+    Matrix4x4f model;
+    Matrix3x3f normalMatrix;
+};
+
+struct RenderingGlobalData {
+    Matrix4x4f projview;
+};
+
 /// Per-frame rendering resources used exclusively by each frame and only by that frame.
 ///
 /// # Access Contingency
@@ -28,7 +37,7 @@ public:
     auto commandBuffer() -> VulkanCommandBuffer& { return m_commandBuffer; }
 
     auto transformsBuffer() -> VulkanBuffer& { return m_transformsBuffer; }
-    auto glyphInstanceBuffer() -> VulkanBuffer& { return m_glyphInstanceBuffer; }
+    auto globalDataBuffer() -> VulkanBuffer& { return m_globalDataBuffer; }
 
     auto frameDoneFence() -> VulkanFence& { return m_frameDoneFence; }
     auto imageAcquiredSemaphore() -> VulkanBinarySemaphore& { return m_imageAcquiredSemaphore; }
@@ -43,10 +52,8 @@ private:
 
     // --------------------------------------------------------------------------------------------------------------------------------------------------------
     // Buffers
+    VulkanBuffer m_globalDataBuffer = nullptr;
     VulkanBuffer m_transformsBuffer = nullptr;
-
-    // temporary, for font rendering demo
-    VulkanBuffer m_glyphInstanceBuffer = nullptr;
 
     // --------------------------------------------------------------------------------------------------------------------------------------------------------
     // Synchronization

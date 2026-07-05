@@ -89,7 +89,9 @@ auto MainThread::loop(float dt) -> void {
         }
         case SDL_EVENT_MOUSE_BUTTON_DOWN: {
             auto pos = math::Vector2f(event.button.x, event.button.y);
-            m_uiSystem->testMouseDownHit(pos);
+            if (m_inputManager->getMouseMode() == core::input::MouseMode::Normal) {
+                m_uiSystem->testMouseDownHit(pos);
+            }
 
             auto code = core::input::mapSdlMouseButtonToKey(event.button.button);
             m_inputManager->setKeyState(code, true);
@@ -97,7 +99,9 @@ auto MainThread::loop(float dt) -> void {
         }
         case SDL_EVENT_MOUSE_BUTTON_UP: {
             auto pos = math::Vector2f(event.button.x, event.button.y);
-            m_uiSystem->testMouseUpHit(pos);
+            if (m_inputManager->getMouseMode() == core::input::MouseMode::Normal) {
+                m_uiSystem->testMouseUpHit(pos);
+            }
 
             auto code = core::input::mapSdlMouseButtonToKey(event.button.button);
             m_inputManager->setKeyState(code, false);

@@ -1,5 +1,10 @@
 struct ObjectUniforms {
     float4x4 model;
+    float3x3 normalMatrix;
+};
+
+struct GlobalData {
+    float4x4 projview;
 };
 
 struct Vertex {
@@ -13,14 +18,18 @@ struct Vertex {
 struct PushConstants {
     ObjectUniforms* data;
     Vertex* vertexbuffer;
-    float time;
+    GlobalData* globalData;
     uint textureId;
     uint samplerId;
+    float time;
 };
 
 [vk::push_constant] PushConstants push_consts;
 [vk::binding(0, 0)] Texture2D textures[];
 [vk::binding(1, 0)] SamplerState samplers[];
+
+static const float3 lightPos = float3(0.0, 0.0, 0.0);
+static const float3 lightColor = float3(1.0, 1.0, 1.0);
 
 struct VSOut {
     float3 position : SV_Position;
@@ -32,14 +41,16 @@ struct VSOut {
 [shader("vertex")]
 VSOut main(uint vertexID: SV_VulkanVertexID) {
     float3 position = push_consts.vertexbuffer[vertexID].position;
+    float3 normal = push_consts.vertexbuffer[vertexID].normal;
     float2 uv = float2(push_consts.vertexbuffer[vertexID].uvX, push_consts.vertexbuffer[vertexID].uvY);
 
+    float4 hposition = mul(push_consts.data.model, float4(position, 1.0));
 
     VSOut output;
-    output.position = position;
+    output.position = hposition.xyz / hposition.w;
     output.color = float3(1.0);
     output.uv = uv;
-    output.normal = push_consts.vertexbuffer[vertexID].normal;
+    output.normal = mul(push_consts.data.normalMatrix, normal);
 
     return output;
 }
@@ -82,6 +93,7 @@ TCSOut main(InputPatch<VSOut, 3> patch, uint i : SV_OutputControlPointID) {
 
 struct TESOut {
     float4 positionCS : SV_Position;
+    float3 positionWS : POSITION_WS;
     float3 color : TEXCOORD0;
     float2 uv : TEXCOORD1;
     float3 normal : TEXCOORD2;
@@ -120,7 +132,8 @@ TESOut main(TCSPatchConst patchConst, float3 barycoord : SV_DomainLocation, Outp
     float hsv_v = 0.85;
 
     TESOut output;
-    output.positionCS = mul(push_consts.data.model, float4(position, 1.0));
+    output.positionCS = mul(push_consts.globalData.projview, float4(position, 1.0));
+    output.positionWS = position;
     output.color = hsv_to_rgb(float3(hsv_h, hsv_s, hsv_v));
     output.uv = uv;
     output.normal = normal;
@@ -140,9 +153,16 @@ namespace AcesTonemap {
 
 [shader("fragment")]
 float4 main(TESOut input, uint h : SV_PrimitiveID) : SV_Target {
-    float3 col = textures[push_consts.textureId].Sample(samplers[push_consts.samplerId], input.uv).rgb;
-    float3 finalCol = AcesTonemap::map(col);
-    float3 xcol = lerp(finalCol, input.color, 0.1);
+    float3 albedo = textures[push_consts.textureId].Sample(samplers[push_consts.samplerId], input.uv).rgb;
 
-    return float4(xcol, 1.0);
+    float3 lightDir = normalize(lightPos - input.positionWS);
+    float3 viewDir = normalize(-input.positionWS);
+    float3 halfwayDir = normalize(lightDir + viewDir);
+
+    float3 col = albedo * max(dot(input.normal, lightDir), 0.0);
+
+
+    float3 finalCol = AcesTonemap::map(col);
+
+    return float4(finalCol, 1.0);
 }

@@ -329,6 +329,17 @@ public:
     }
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
+    // Transposition
+
+    [[nodiscard]] auto transpose() const -> Matrix<T, NRows, NCols> {
+        Matrix<T, NRows, NCols> result{};
+        for (usize col = 0; col < NCols; col++)
+            for (usize row = 0; row < NRows; row++)
+                result.m_data[row][col] = m_data[col][row];
+        return result;
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------------------------------------------------
 
     bool operator==(const Matrix& other) const {
         for (usize col = 0; col < NCols; col++)

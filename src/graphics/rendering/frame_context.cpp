@@ -243,9 +243,10 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     auto elapsed = std::chrono::steady_clock::now() - sharedRenderingResources.m_tmStart;
     float seconds = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() / 1000.0;
     auto uboDeviceAddr = m_frameRenderingResources.transformsBuffer().memoryDevicePtr();
-    auto pushConstantData = std::array<unsigned char, 28>{};
+    auto globaldataAddr = m_frameRenderingResources.globalDataBuffer().memoryDevicePtr();
+    auto pushConstantData = std::array<unsigned char, 36>{};
 
-    memcpy((void*)(pushConstantData.data() + 16), &seconds, 4);
+    memcpy((void*)(pushConstantData.data() + 32), &seconds, 4);
 
     for (auto [i, renderable] : renderingData.m_renderables.m_storage.iter().enumerate()) {
         // Get the LOD list for the renderable and skip it if no LODs are available
@@ -254,17 +255,14 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         if (bestAvailableLod == ~0u) continue;
 
         // Copy its transforms addr to push constants
-        vk::DeviceAddress uboFinalAddr = uboDeviceAddr + i * sizeof(Matrix4x4f);
-        memcpy((void*)pushConstantData.data(), &uboFinalAddr, 8);
+        vk::DeviceAddress uboFinalAddr = uboDeviceAddr + i * sizeof(Transforms);
 
         auto textureImageId = renderingData.m_textureToImageShaderIndexSnapshot[renderable.texture.index];
+        auto textureSamplerId = renderingData.m_textureToSamplerShaderIndexSnapshot[renderable.texture.index];
 
         // test for fonts
         // auto textureImageId = sharedRenderingResources.m_fontAtlas.m_atlasTextures[0].imageShaderIndex;
 
-        auto textureSamplerId = renderingData.m_textureToSamplerShaderIndexSnapshot[renderable.texture.index];
-        memcpy((void*)(pushConstantData.data() + 20), &textureImageId, 4);
-        memcpy((void*)(pushConstantData.data() + 24), &textureSamplerId, 4);
 
         // Pick an LOD
         Vector3f objectPos = Vector3f(0.0f);
@@ -314,10 +312,15 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
         auto& lod = lodList.lods[hysteresisState.currentLod];
 
+        auto vboDeviceAddr = lod.meshSuballocation.vertexBuffer.deviceAddress;
+        memcpy((void*)pushConstantData.data(), &uboFinalAddr, 8);
+        memcpy((void*)(pushConstantData.data() + 8), &vboDeviceAddr, 8);
+        memcpy((void*)(pushConstantData.data() + 16), &globaldataAddr, 8);
+        memcpy((void*)(pushConstantData.data() + 24), &textureImageId, 4);
+        memcpy((void*)(pushConstantData.data() + 28), &textureSamplerId, 4);
+
         cb.bindIndexBuffer(lod.meshSuballocation.indexBuffer.buffer, lod.meshSuballocation.indexBuffer.offset, vk::IndexType::eUint32);
 
-        auto vboDeviceAddr = lod.meshSuballocation.vertexBuffer.deviceAddress;
-        memcpy((void*)(pushConstantData.data() + 8), &vboDeviceAddr, 8);
 
         cb.pushConstants<unsigned char>(sharedRenderingResources.simpleLayout().vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation, 0, pushConstantData);
         cb.drawIndexed(lod.meshSuballocation.indexBuffer.size / sizeof(u32), 1, 0, 0, 0);
