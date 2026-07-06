@@ -120,8 +120,22 @@ public:
     constexpr auto begin() const noexcept -> const T* { return m_data; }
     constexpr auto end() const noexcept -> const T* { return m_data + m_len; }
 
-    constexpr T& operator[](usize index) noexcept { return m_data[index]; }
-    constexpr const T& operator[](usize index) const noexcept { return m_data[index]; }
+    constexpr T& operator[](usize index) noexcept {
+#ifndef NDEBUG
+        if (index >= m_len) {
+            panic("attempted to access index {} but len is {}", index, m_len);
+        }
+#endif
+        return m_data[index];
+    }
+    constexpr const T& operator[](usize index) const noexcept {
+#ifndef NDEBUG
+        if (index >= m_len) {
+            panic("attempted to access index {} but len is {}", index, m_len);
+        }
+#endif
+        return m_data[index];
+    }
 
     constexpr T& first() noexcept { return m_data[0]; }
     constexpr const T& first() const noexcept { return m_data[0]; }
