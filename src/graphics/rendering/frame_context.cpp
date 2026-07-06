@@ -99,7 +99,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     }
 
     if (!firstCameraFound) {
-        // log::warn("No camera found! Will use a default one");
+        log::warn("No camera found! Will use a default one");
         firstCamera = ecs::components::Camera{};
         firstCamera.nearPlane = 0.1f;
         firstCamera.farPlane = 1000.0f;
@@ -115,7 +115,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     float aspectRatio = static_cast<float>(transientRenderingResources.finalDrawBuffer().extent().width) / static_cast<float>(transientRenderingResources.finalDrawBuffer().extent().height);
     float perspFocalLength = renderingArea.y() / (2.0f * std::tan(0.5f * degreesToRadians(firstCamera.fov)));
 
-    m_frameRenderingResources.prepareTransformsBuffer(renderingData, firstCamera, firstCameraTransform, aspectRatio);
+    m_frameRenderingResources.prepareBuffers(renderingData, firstCamera, firstCameraTransform, aspectRatio);
     auto& swapchainImage = swapchain.imageAtIndex(imageAcquire.first.unwrap());
 
     m_frameRenderingResources.commandPool().reset();
@@ -244,9 +244,17 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     float seconds = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() / 1000.0;
     auto uboDeviceAddr = m_frameRenderingResources.transformsBuffer().memoryDevicePtr();
     auto globaldataAddr = m_frameRenderingResources.globalDataBuffer().memoryDevicePtr();
-    auto pushConstantData = std::array<unsigned char, 36>{};
 
-    memcpy((void*)(pushConstantData.data() + 32), &seconds, 4);
+    struct RenderPushConstantData {
+        vk::DeviceAddress uboFinalAddr;
+        vk::DeviceAddress vboDeviceAddr;
+        vk::DeviceAddress globaldataAddr;
+        vk::DeviceAddress pointlightsAddr;
+        u32 pointlightsCount;
+        u32 textureImageId;
+        u32 textureSamplerId;
+        float time;
+    };
 
     for (auto [i, renderable] : renderingData.m_renderables.m_storage.iter().enumerate()) {
         // Get the LOD list for the renderable and skip it if no LODs are available
@@ -259,10 +267,6 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
         auto textureImageId = renderingData.m_textureToImageShaderIndexSnapshot[renderable.texture.index];
         auto textureSamplerId = renderingData.m_textureToSamplerShaderIndexSnapshot[renderable.texture.index];
-
-        // test for fonts
-        // auto textureImageId = sharedRenderingResources.m_fontAtlas.m_atlasTextures[0].imageShaderIndex;
-
 
         // Pick an LOD
         Vector3f objectPos = Vector3f(0.0f);
@@ -313,16 +317,21 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         auto& lod = lodList.lods[hysteresisState.currentLod];
 
         auto vboDeviceAddr = lod.meshSuballocation.vertexBuffer.deviceAddress;
-        memcpy((void*)pushConstantData.data(), &uboFinalAddr, 8);
-        memcpy((void*)(pushConstantData.data() + 8), &vboDeviceAddr, 8);
-        memcpy((void*)(pushConstantData.data() + 16), &globaldataAddr, 8);
-        memcpy((void*)(pushConstantData.data() + 24), &textureImageId, 4);
-        memcpy((void*)(pushConstantData.data() + 28), &textureSamplerId, 4);
+
+        auto pushconstData = RenderPushConstantData {
+            .uboFinalAddr = uboFinalAddr,
+            .vboDeviceAddr = vboDeviceAddr,
+            .globaldataAddr = globaldataAddr,
+            .pointlightsAddr = m_frameRenderingResources.pointlightsBuffer().memoryDevicePtr(),
+            .pointlightsCount = static_cast<u32>(renderingData.m_pointlights.m_storage.len()),
+            .textureImageId = textureImageId,
+            .textureSamplerId = textureSamplerId,
+            .time = seconds
+        };
 
         cb.bindIndexBuffer(lod.meshSuballocation.indexBuffer.buffer, lod.meshSuballocation.indexBuffer.offset, vk::IndexType::eUint32);
 
-
-        cb.pushConstants<unsigned char>(sharedRenderingResources.simpleLayout().vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation, 0, pushConstantData);
+        cb.pushConstants<RenderPushConstantData>(sharedRenderingResources.simpleLayout().vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation, 0, pushconstData);
         cb.drawIndexed(lod.meshSuballocation.indexBuffer.size / sizeof(u32), 1, 0, 0, 0);
     }
 

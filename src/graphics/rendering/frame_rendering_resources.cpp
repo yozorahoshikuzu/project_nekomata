@@ -20,12 +20,13 @@ FrameRenderingResources::FrameRenderingResources(u32 initialMaxObjects) {
     auto queuesForBuffer = VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics];
     m_transformsBuffer = VulkanBuffer::create(initialMaxObjects * 2048, vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer, VulkanBufferMemoryMapping::MapForSequentialWrite, vma::MemoryUsage::eAutoPreferDevice, vk::MemoryPropertyFlagBits::eHostVisible, queuesForBuffer);
     m_globalDataBuffer = VulkanBuffer::create(sizeof(RenderingGlobalData), vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer, VulkanBufferMemoryMapping::MapForSequentialWrite, vma::MemoryUsage::eAutoPreferDevice, vk::MemoryPropertyFlagBits::eHostVisible, queuesForBuffer);
+    m_pointlightsBuffer = VulkanBuffer::create(1024 * sizeof(PointlightData), vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer, VulkanBufferMemoryMapping::MapForSequentialWrite, vma::MemoryUsage::eAutoPreferDevice, vk::MemoryPropertyFlagBits::eHostVisible, queuesForBuffer);
 
     m_frameDoneFence = VulkanFence::create(true);
     m_imageAcquiredSemaphore = VulkanBinarySemaphore::create();
 }
 
-auto FrameRenderingResources::prepareTransformsBuffer(MRThreadsSharedDataLeaf& renderingData, ecs::components::Camera camera, const ecs::components::Transform& cameraTransform, float renderAspectRatio) -> void {
+auto FrameRenderingResources::prepareBuffers(MRThreadsSharedDataLeaf& renderingData, ecs::components::Camera camera, const ecs::components::Transform& cameraTransform, float renderAspectRatio) -> void {
     auto projectionMatrix = camera.computeProjectionMatrix(renderAspectRatio);
     auto cameraModelMatrix = cameraTransform.m_transform3d.computeModelMatrix();
     auto viewMatrix = cameraModelMatrix.inverse().unwrapOr(math::Matrix4x4f::identity());
@@ -55,10 +56,29 @@ auto FrameRenderingResources::prepareTransformsBuffer(MRThreadsSharedDataLeaf& r
         memcpy(m_transformsBuffer.memoryHostPtr() + i * sizeof(Transforms), &transforms, sizeof(Transforms));
     }
 
+    // ---- Pointlights ----------------------------------------------------------------------------------------------------------------------------------------
+
+    for (auto [i, light] : renderingData.m_pointlights.m_storage.iter().enumerate()) {
+        auto entSparseIndex = renderingData.m_pointlights.m_storageToEntity[i];
+
+        auto position = Vector3f(0.0f);
+        if (renderingData.m_transforms.containsEntity(entSparseIndex)) {
+            position = renderingData.m_transforms.get(entSparseIndex).m_transform3d.m_position;
+        }
+
+        auto pointlightData = PointlightData {
+            .position = position,
+            .lightRadiance = light.lightRadiance
+        };
+
+        memcpy(m_pointlightsBuffer.memoryHostPtr() + i * sizeof(PointlightData), &pointlightData, sizeof(PointlightData));
+    }
+
     // ---- Global Data ----------------------------------------------------------------------------------------------------------------------------------------
 
     auto globdata = RenderingGlobalData {
-        .projview = projectionMatrix * viewMatrix
+        .projview = projectionMatrix * viewMatrix,
+        .cameraPos = cameraTransform.m_transform3d.m_position
     };
 
     memcpy(m_globalDataBuffer.memoryHostPtr(), &globdata, sizeof(RenderingGlobalData));

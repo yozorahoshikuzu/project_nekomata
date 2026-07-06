@@ -5,6 +5,7 @@ import :core.platform.int_def;
 import :core.platform.assert;
 import :core.cs.vec;
 import :core.cs.panic;
+import :core.ecs.world.camera;
 
 export namespace projnekomata::ecs {
 
@@ -37,6 +38,8 @@ public:
 
 template <typename T> class ComponentSet : public IComponentSet {
 public:
+    ComponentSet() = default;
+
     void resizeSparseToFit(u32 index) {
         if (index >= m_storage.len())
             m_sparseToStorage.resize(index + 1, INVALID_INDEX);

@@ -7,6 +7,7 @@ export import :core.ecs.world.transform;
 export import :core.ecs.world.renderable;
 export import :core.runtime.entry;
 export import :core.ecs.world.camera;
+export import :core.ecs.world.pointlight;
 export import :core.input.inputmanager;
 export import :core.input.keys;
 export import :core.input.mousemodes;

@@ -18,6 +18,12 @@ struct Transforms {
 
 struct RenderingGlobalData {
     Matrix4x4f projview;
+    Vector3f cameraPos;
+};
+
+struct PointlightData {
+    Vector3f position;
+    Vector3f lightRadiance;
 };
 
 /// Per-frame rendering resources used exclusively by each frame and only by that frame.
@@ -38,11 +44,12 @@ public:
 
     auto transformsBuffer() -> VulkanBuffer& { return m_transformsBuffer; }
     auto globalDataBuffer() -> VulkanBuffer& { return m_globalDataBuffer; }
+    auto pointlightsBuffer() -> VulkanBuffer& { return m_pointlightsBuffer; }
 
     auto frameDoneFence() -> VulkanFence& { return m_frameDoneFence; }
     auto imageAcquiredSemaphore() -> VulkanBinarySemaphore& { return m_imageAcquiredSemaphore; }
 
-    auto prepareTransformsBuffer(MRThreadsSharedDataLeaf& renderingData, ecs::components::Camera camera, const ecs::components::Transform& cameraTransform, float renderAspectRatio) -> void;
+    auto prepareBuffers(MRThreadsSharedDataLeaf& renderingData, ecs::components::Camera camera, const ecs::components::Transform& cameraTransform, float renderAspectRatio) -> void;
 
 private:
     // --------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -54,6 +61,7 @@ private:
     // Buffers
     VulkanBuffer m_globalDataBuffer = nullptr;
     VulkanBuffer m_transformsBuffer = nullptr;
+    VulkanBuffer m_pointlightsBuffer = nullptr;
 
     // --------------------------------------------------------------------------------------------------------------------------------------------------------
     // Synchronization

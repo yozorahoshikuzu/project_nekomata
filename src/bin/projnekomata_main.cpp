@@ -1,9 +1,11 @@
 import std;
 import fmt;
 import projnekomata;
-#include <string.h>
-#include <stdio.h>
+#include <immintrin.h>
 #include <cstdlib>
+#include <stdio.h>
+#include <string.h>
+#include <stddef.h>
 
 using namespace projnekomata::math;
 using namespace projnekomata::core::input;
@@ -24,8 +26,8 @@ public:
         m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position =
             Vector3f(
                 m_spinRadius * std::cos(m_spinInitialTheta + m_spinThetaSpeed * m_time),
-                m_spinRadius * std::sin(m_spinInitialTheta + m_spinThetaSpeed * m_time),
-                -100.0f * std::cos(m_spinInitialPhi + m_spinPhiSpeed * m_time)
+                10.0f * std::cos(m_spinInitialPhi + m_spinPhiSpeed * m_time),
+                m_spinRadius * std::sin(m_spinInitialTheta + m_spinThetaSpeed * m_time)
             );
         m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity)
             .m_transform3d.m_rotation = Quaternion::fromEulerAngles(0.8f * m_time * m_rotationConstX, 0.8f * m_time * m_rotationConstY, 0.4f * m_time * m_rotationConstX);
@@ -255,7 +257,6 @@ public:
         if (Input::get().isKeyDown(Key::Space)) upVel += 1.0f;
         if (Input::get().isKeyDown(Key::C)) upVel -= 1.0f;
 
-
         auto dp = Vector3f(sidewaysVel, upVel, forwardVel);
 
         if (dp != Vector3f(0.0f)) {
@@ -387,26 +388,35 @@ void onGameInit(std::unique_ptr<projnekomata::ecs::World>& world) {
     std::random_device rd;
     std::mt19937 gen(rd());
 
-    std::uniform_real_distribution<float> radiusDist(3.0f, 120.0f);
+
+    std::uniform_real_distribution<float> radiusDist(3.0f, 1200.0f);
     std::uniform_real_distribution<float> thetaDist(0.0f, 2.0f * consts::PI);
     std::uniform_real_distribution<float> phiDist(0.1f, consts::PI - 1.0f);
     std::uniform_real_distribution<float> thetaSpeedDist(0.04f, 0.16f);
     std::uniform_real_distribution<float> phiSpeedDist(0.01f, 0.07f);
     std::uniform_real_distribution<float> rotationConstDist(0.05f, 0.15f);
-    for (usize i = 0; i < 2000; i++) {
+    std::uniform_real_distribution<float> lightradianceDist(60.0f, 20000.0f);
+    for (usize i = 0; i < 1990; i++) {
         auto ent = world->createEntity();
         world->emplace<projnekomata::ecs::components::Transform>(ent);
         world->emplace<projnekomata::ecs::components::Renderable>(ent, mesh, ts1);
         world->addScript<MovingScript>(ent, 0.0f, radiusDist(gen), thetaSpeedDist(gen), phiSpeedDist(gen), thetaDist(gen), phiDist(gen), rotationConstDist(gen), rotationConstDist(gen));
+        if (i % 100 == 0) {
+            world->emplace<projnekomata::ecs::components::PointLight>(ent, Vector3f{lightradianceDist(gen), lightradianceDist(gen), lightradianceDist(gen)});
+        }
     }
 
+    auto lightEnt = world->createEntity();
+    world->emplace<projnekomata::ecs::components::PointLight>(lightEnt, Vector3f{10000.0f, 10000.0f, 10000.0f});
+
+
     auto cameraEnt = world->createEntity();
-    world->emplace<projnekomata::ecs::components::Camera>(cameraEnt, 0.01f, 1000.0f, 60.0f, true);
+    world->emplace<projnekomata::ecs::components::Camera>(cameraEnt, projnekomata::ecs::components::Camera{0.01f, 1000.0f, 60.0f, true});
     world->emplace<projnekomata::ecs::components::Transform>(cameraEnt);
     world->addScript<CameraScript>(cameraEnt, fnt);
-
-
     Input::get().setMouseMode(MouseMode::Captured);
+
+
 }
 
 int main(int argc, char* argv[]) {

@@ -140,6 +140,7 @@ auto MainThread::loop(float dt) -> void {
     m_mrSharedData->m_leafs.getPrimary().m_frameIndex = m_frameIndex;
     if (m_currentWorld) {
         m_currentWorld->components<ecs::components::Renderable>().copyTo(m_mrSharedData->m_leafs.getPrimary().m_renderables);
+        m_currentWorld->components<ecs::components::PointLight>().copyTo(m_mrSharedData->m_leafs.getPrimary().m_pointlights);
         m_currentWorld->components<ecs::components::Transform>().copyTo(m_mrSharedData->m_leafs.getPrimary().m_transforms);
         m_currentWorld->components<ecs::components::Camera>().copyTo(m_mrSharedData->m_leafs.getPrimary().m_cameras);
     }

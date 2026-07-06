@@ -58,7 +58,7 @@ private:
 
     // --------------------------------------------------------------------------------------------------------------------------------------------------------
     // Hysteresis State
-    std::vector<MeshHysteresisState> m_meshHysteresisStates;
+    Vec<MeshHysteresisState> m_meshHysteresisStates = Vec<MeshHysteresisState>::create();
 };
 
 } // namespace projnekomata::graphics
