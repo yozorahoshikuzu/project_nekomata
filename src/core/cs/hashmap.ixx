@@ -65,11 +65,11 @@ public:
     }
 
     constexpr auto insert(const K& key, V&& value) -> V& {
-        return insertInner(K(key), static_cast<V&&>(value));
+        return insertInner(K(key), std::forward<V>(value));
     }
 
     constexpr auto insert(K&& key, V&& value) -> V& {
-        return insertInner(static_cast<K&&>(key), static_cast<V&&>(value));
+        return insertInner(std::forward<K>(key), std::forward<V>(value));
     }
 
 
@@ -266,10 +266,12 @@ private:
         u8 h2 = computeH2(hash);
         usize index = hashHomeIndex(hash);
 
-        auto wkey = std::forward<K>(key);
-        auto wvalue = std::forward<V>(value);
+        auto wkey = std::move(key);
+        auto wvalue = std::move(value);
         auto wh2 = h2;
         auto wdib = 0_u32;
+
+        V* resultptr = nullptr;
 
         while (true) {
             u8 c = m_ctrls[index];
@@ -282,14 +284,14 @@ private:
                 mirrorPaddingEntries(index);
                 m_dibs[index] = wdib;
                 m_len++;
-                return m_entries[index].value;
+                return resultptr ? *resultptr : m_entries[index].value;
             }
 
             // Path 2 - Same h2 and a possible key match
             if (c == wh2 && m_entries[index].key == wkey) {
                 if constexpr (kValNeedsFinalizer) m_entries[index].value.~V();
                 new (&m_entries[index].value) V(std::move(wvalue));
-                return m_entries[index].value;
+                return resultptr ? *resultptr : m_entries[index].value;
             }
 
             // Path 3 - Robin Hood steal
@@ -307,6 +309,8 @@ private:
                 m_ctrls[index] = wh2;
                 mirrorPaddingEntries(index);
                 m_dibs[index] = wdib;
+
+                if (!resultptr) resultptr = &m_entries[index].value;
 
                 wkey = std::move(tkey);
                 wvalue = std::move(tvalue);
