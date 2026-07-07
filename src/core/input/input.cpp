@@ -37,6 +37,7 @@ auto Input::insertInputKeyEvent(InputKeyEvent&& event) -> void {
 }
 
 auto Input::setKeyState(Key x, bool state) -> void {
+    if (x == Key::CountDiscrim) return;
     u32 code = static_cast<u32>(x);
     m_keyStates[code] = state;
 
@@ -58,16 +59,22 @@ auto Input::setMouseMode(MouseMode mode) -> void {
 }
 
 auto Input::isKeyPressed(Key x) const -> bool {
+    if (x == Key::CountDiscrim) return false;
+
     u32 code = static_cast<u32>(x);
     return m_thisFramePressedKeyCounts[code] > 0;
 }
 
 auto Input::isKeyReleased(Key x) const -> bool {
+    if (x == Key::CountDiscrim) return false;
+
     u32 code = static_cast<u32>(x);
     return m_thisFrameReleasedKeyCounts[code] > 0;
 }
 
 auto Input::isKeyDown(Key x) const -> bool {
+    if (x == Key::CountDiscrim) return false;
+
     u32 code = static_cast<u32>(x);
     return m_keyStates[code];
 }
