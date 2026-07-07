@@ -23,6 +23,8 @@ enum class PhysicalDevicePropertyQueryErrorKind {
     MissingVk12RuntimeDescriptorArray,
     MissingVk12ScalarBlockLayout,
     MissingVk12TimelineSemaphore,
+    MissingVk11Multiview,
+    MissingVk10TessellationShader,
     MissingVk10SamplerAnisotropy,
     MissingExtImageViewMinLod,
 };
@@ -71,6 +73,12 @@ struct PhysicalDevicePropertyQueryError {
                 break;
             case PhysicalDevicePropertyQueryErrorKind::MissingVk12TimelineSemaphore:
                 cause = "Missing Vulkan 1.2 feature timelineSemaphore";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk11Multiview:
+                cause = "Missing Vulkan 1.1 feature multiview";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk10TessellationShader:
+                cause = "Missing Vulkan 1.0 feature tessellationShader";
                 break;
             case PhysicalDevicePropertyQueryErrorKind::MissingVk10SamplerAnisotropy:
                 cause = "Missing Vulkan 1.0 feature samplerAnisotropy";

@@ -40,10 +40,22 @@ auto TextureManager::create() -> std::unique_ptr<TextureManager> {
     debug_assert(g_textureManager->m_defaultTexture.index == 0, "the default texture didn't have index 0");
     return textureManager;
 }
+auto TextureManager::createTexture(u32 width, u32 height, u32 depth, u32 layers, u32 mipLevels, bool isCube, vk::Format format, vk::ImageUsageFlags usage,
+                                   const SamplerParams& samplerParams) -> Texture {
+    // TODO: fix UB with assigning 2D null image when image is a type other than 2D
+    auto image = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { width, height, depth }, layers, mipLevels, isCube, format, usage, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics | QueueFamily::AsyncCompute], vk::ImageLayout::eUndefined);
+    auto texture = allocateTexture(std::move(image));
+    auto imageShaderIndex = m_srt->allocateImageIndex();
+    auto samplerShaderIndex = m_samplerCache.acquireSampler(samplerParams);
+    TextureManager::get().m_srt->bindImage(getTextureResources(texture).image(), imageShaderIndex);
+    m_textureToShaderIndexTable.setTextureShaderImageIndex(texture.index, imageShaderIndex.imageIndex);
+    m_textureToShaderIndexTable.setTextureShaderSamplerIndex(texture.index, samplerShaderIndex);
+    return texture;
+}
 
 auto TextureManager::loadTextureFromMemoryInternal(u32 width, u32 height, u32 depth, u32 arrayLayers, u32 mipLevels, vk::Format format,
                                            const std::span<const u8>& data, const SamplerParams& samplerParams) -> Texture {
-    auto image = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { width, height, depth }, arrayLayers, mipLevels, format, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics | QueueFamily::AsyncCompute], vk::ImageLayout::eUndefined);
+    auto image = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { width, height, depth }, arrayLayers, mipLevels, false, format, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics | QueueFamily::AsyncCompute], vk::ImageLayout::eUndefined);
 
     auto buffer = VulkanBuffer::create(data.size(), vk::BufferUsageFlagBits::eTransferSrc, VulkanBufferMemoryMapping::MapForSequentialWrite, vma::MemoryUsage::eAutoPreferDevice, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics | QueueFamily::AsyncCompute]);
     memcpy(buffer.memoryHostPtr(), data.data(), data.size());
@@ -103,6 +115,11 @@ auto TextureManager::loadKtx2TextureAsync(const std::filesystem::path& path, con
 
     return texture;
 }
+auto TextureManager::loadKtx2TextureBlocking(const std::filesystem::path& path, const SamplerParams& samplerParams) -> Texture {
+    auto texture = allocateTexture(nullptr);
+    temporary_uploadTheImage(texture, path, samplerParams);
+    return texture;
+}
 
 auto TextureManager::allocateTexture(VulkanImage&& img) -> Texture {
     auto textureIndex = m_loadedTextures.emplace(std::move(img));
@@ -129,7 +146,6 @@ auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesy
     bool needsTranscoding = ktxTexture2_NeedsTranscoding(ktxData);
     if (needsTranscoding) {
         KTX_error_code transcodeResult = ktxTexture2_TranscodeBasis(ktxData, KTX_TTF_BC7_RGBA, 0);
-        log::info("Transcoding texture: {}", path.string());
         if (transcodeResult != KTX_SUCCESS) {
             panic("failed to transcode texture");
         }
@@ -147,6 +163,7 @@ auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesy
     auto imageDepth = ktxData->baseDepth;
     auto imageArrayLayers = ktxData->numLayers > 0 ? ktxData->numLayers : 1;
     auto imageMipLevels = ktxData->numLevels;
+    auto imageIsCubemap = ktxData->isCubemap;
 
     // Image usage and format
     auto imageFormat = static_cast<vk::Format>(ktxTexture2_GetVkFormat(ktxData));
@@ -155,13 +172,16 @@ auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesy
     auto imageQueues = VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics | QueueFamily::AsyncCompute];
 
     // Vulkan Image
-    auto image = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { imageWidth, imageHeight, imageDepth }, imageArrayLayers, imageMipLevels, imageFormat, imageUsage, imageTiling, vma::MemoryUsage::eAutoPreferDevice, {}, imageQueues, vk::ImageLayout::eUndefined);
+    auto image = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { imageWidth, imageHeight, imageDepth }, imageArrayLayers, imageMipLevels, imageIsCubemap, imageFormat, imageUsage, imageTiling, vma::MemoryUsage::eAutoPreferDevice, {}, imageQueues, vk::ImageLayout::eUndefined);
 
-    log::info("Texture {}: {}x{}x{}x{}, mip levels: {}, buffer size: {}, format: {}{}",
+
+    log::info("Texture {} size: {}x{}x{}{} mips: {} layers: {} mem: {} format: {}{}",
         path.string(),
-        imageWidth, imageHeight, imageDepth, imageArrayLayers,
-        imageMipLevels, bufferSize,
-        vk::to_string(imageFormat), needsTranscoding ? " (from supercompressed UASTC or BasisLZ/ETC1S)" : ""
+        imageWidth, imageHeight, imageDepth,
+        imageIsCubemap ? " cubemap" : "",
+        imageMipLevels, imageArrayLayers,
+        bufferSize >= 1048576 ? fmt::format("{} MiB", bufferSize / 1048576) : fmt::format("{} kiB", bufferSize / 1024),
+        vk::to_string(imageFormat), needsTranscoding ? " decompr" : ""
     );
 
     // Staging buffer
@@ -186,30 +206,38 @@ auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesy
 
     std::vector<vk::BufferImageCopy2> copyRegions;
 
-    for (uint32_t i = 0; i < imageMipLevels; i++) {
-        auto subresLayers = vk::ImageSubresourceLayers{}
-            .setAspectMask(vk::ImageAspectFlagBits::eColor)
-            .setBaseArrayLayer(0)
-            .setLayerCount(1)
-            .setMipLevel(i);
+    u32 faceCount = imageIsCubemap ? 6 : 1;
 
-        ktx_size_t offset;
-        ktxTexture2_GetImageOffset(ktxData, i, 0, 0, &offset);
+    for (u32 mip = 0; mip < imageMipLevels; mip++) {
+        for (u32 layer = 0; layer < imageArrayLayers; layer++) {
+            for (u32 face = 0; face < faceCount; face++) {
+                u32 arrayLayer = imageIsCubemap ? (layer * 6) + face : layer;
 
-        auto extent = vk::Extent3D{
-            std::max(1u,  imageWidth >> i),
-            std::max(1u, imageHeight >> i),
-            std::max(1u,  imageDepth >> i)
-        };
+                auto subresLayers = vk::ImageSubresourceLayers{}
+                    .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                    .setBaseArrayLayer(arrayLayer)
+                    .setLayerCount(1)
+                    .setMipLevel(mip);
 
-        auto copyRegion = vk::BufferImageCopy2{}
-            .setImageExtent(extent)
-            .setImageOffset(vk::Offset3D{0, 0, 0})
-            .setImageSubresource(subresLayers)
-            .setBufferOffset(offset)
-            .setBufferImageHeight(0)
-            .setBufferRowLength(0);
-        copyRegions.push_back(copyRegion);
+                ktx_size_t offset;
+                ktxTexture2_GetImageOffset(ktxData, mip, layer, face, &offset);
+
+                auto extent = vk::Extent3D{
+                    std::max(1u,  imageWidth >> mip),
+                    std::max(1u, imageHeight >> mip),
+                    std::max(1u,  imageDepth >> mip)
+                };
+
+                auto copyRegion = vk::BufferImageCopy2{}
+                    .setImageExtent(extent)
+                    .setImageOffset(vk::Offset3D{0, 0, 0})
+                    .setImageSubresource(subresLayers)
+                    .setBufferOffset(offset)
+                    .setBufferImageHeight(0)
+                    .setBufferRowLength(0);
+                copyRegions.push_back(copyRegion);
+            }
+        }
     }
 
     auto copyInfo = vk::CopyBufferToImageInfo2{}

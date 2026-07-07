@@ -39,10 +39,13 @@ public:
 
     // auto loadTextureFromMemory(u32 width, u32 height, u32 depth, u32 arrayLayers, u32 mipLevels, vk::Format format, const std::span<const u8>& data) -> Texture;
 
+    auto createTexture(u32 width, u32 height, u32 depth, u32 layers, u32 mipLevels, bool isCube, vk::Format format, vk::ImageUsageFlags usage, const SamplerParams& samplerParams) -> Texture;
+
     /// Asynchronously loads a KTX2 texture from system storage.
     ///
     /// The texture can immediately be used, but it will be substituted for a dummy texture while the load is pending.
     auto loadKtx2TextureAsync(const std::filesystem::path& path, const SamplerParams& samplerParams) -> Texture;
+    auto loadKtx2TextureBlocking(const std::filesystem::path& path, const SamplerParams& samplerParams) -> Texture;
     auto freeTexture(Texture texture) -> void;
 
     [[nodiscard]] constexpr auto shaderResourceTable() -> srt::IShaderResourceTable& { return *m_srt; }

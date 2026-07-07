@@ -23,6 +23,9 @@ public:
     auto setTextureShaderImageIndex(usize textureId, u32 shaderImageIndex) -> void;
     auto setTextureShaderSamplerIndex(usize textureId, u32 shaderSamplerIndex) -> void;
 
+    [[nodiscard]] auto textureToShaderImageIndex(usize textureId) const -> u32;
+    [[nodiscard]] auto textureToShaderSamplerIndex(usize textureId) const -> u32;
+
     auto snapshotTables(Vec<u32>& dstTextureToShaderImageIndexTable, Vec<u32>& dstTextureToShaderSamplerIndexTable) const -> void;
 private:
     Vec<std::atomic<u32>> m_textureToShaderImageIndexTable   = Vec<std::atomic<u32>>::create();

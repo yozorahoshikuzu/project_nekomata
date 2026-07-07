@@ -81,7 +81,7 @@ struct DynamicBitmapFontAtlas {
     }
 
     auto pushNewImage(u32 width, u32 height) -> void {
-        auto image = VulkanImage::create(vk::ImageType::e2D, {width, height, 1}, 1, 1, vk::Format::eR8Unorm, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAuto, {}, VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics], vk::ImageLayout::eUndefined);
+        auto image = VulkanImage::create(vk::ImageType::e2D, {width, height, 1}, 1, 1, false, vk::Format::eR8Unorm, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAuto, {}, VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics], vk::ImageLayout::eUndefined);
         auto imageShaderIndex = texturesystem::TextureManager::get().shaderResourceTable().allocateImageIndex();
         texturesystem::TextureManager::get().shaderResourceTable().bindImage(image, imageShaderIndex);
         m_atlasTextures.emplace(AtlasTexture { std::move(image), imageShaderIndex.imageIndex, AtlasShelfPacker(width, height) });

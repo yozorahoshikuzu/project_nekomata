@@ -261,7 +261,7 @@ public:
 
         if (dp != Vector3f(0.0f)) {
             auto factor = 5.0f;
-            if (Input::get().isKeyDown(Key::LShift)) factor = 25.0f;
+            if (Input::get().isKeyDown(Key::LShift)) factor = 250.0f;
 
             auto rotation = m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity).m_transform3d.m_rotation;
             auto delta = dp.normalize() * dt * factor;
@@ -411,7 +411,7 @@ void onGameInit(std::unique_ptr<projnekomata::ecs::World>& world) {
 
 
     auto cameraEnt = world->createEntity();
-    world->emplace<projnekomata::ecs::components::Camera>(cameraEnt, projnekomata::ecs::components::Camera{0.01f, 1000.0f, 60.0f, true});
+    world->emplace<projnekomata::ecs::components::Camera>(cameraEnt, projnekomata::ecs::components::Camera{0.01f, 10000.0f, 60.0f, true});
     world->emplace<projnekomata::ecs::components::Transform>(cameraEnt);
     world->addScript<CameraScript>(cameraEnt, fnt);
     Input::get().setMouseMode(MouseMode::Captured);

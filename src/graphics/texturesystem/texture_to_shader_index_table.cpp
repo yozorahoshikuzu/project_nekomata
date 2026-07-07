@@ -21,6 +21,12 @@ auto TextureToShaderIndexTable::setTextureShaderImageIndex(usize textureId, u32 
 auto TextureToShaderIndexTable::setTextureShaderSamplerIndex(usize textureId, u32 shaderSamplerIndex) -> void {
     m_textureToShaderSamplerIndexTable[textureId].store(shaderSamplerIndex, std::memory_order_relaxed);
 }
+auto TextureToShaderIndexTable::textureToShaderImageIndex(usize textureId) const -> u32 {
+    return m_textureToShaderImageIndexTable[textureId].load(std::memory_order_relaxed);
+}
+auto TextureToShaderIndexTable::textureToShaderSamplerIndex(usize textureId) const -> u32 {
+    return m_textureToShaderSamplerIndexTable[textureId].load(std::memory_order_relaxed);
+}
 
 auto TextureToShaderIndexTable::snapshotTables(Vec<u32>& dstTextureToShaderImageIndexTable, Vec<u32>& dstTextureToShaderSamplerIndexTable) const
     -> void {

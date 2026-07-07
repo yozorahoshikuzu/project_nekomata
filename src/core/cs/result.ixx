@@ -64,6 +64,29 @@ public:
         if (isOk()) return None;
         return Some(std::move(std::get<E>(m_variant)));
     }
+    
+    // ---- Inspection -----------------------------------------------------------------------------------------------------------------------------------------
+    
+    template <typename F> requires TypedInvocableNoRet<F, const T&>
+    constexpr auto inspect(F&& f) const& -> Result<T, E> {
+        if (isOk()) f(std::get<T>(m_variant));
+        return *this;
+    }
+    template <typename F> requires TypedInvocableNoRet<F, const T&>
+    constexpr auto inspect(F&& f) && -> Result<T, E> {
+        if (isOk()) f(std::get<T>(m_variant));
+        return std::move(*this);
+    }
+    template <typename F> requires TypedInvocableNoRet<F, const E&>
+    constexpr auto inspectErr(F&& f) const& -> Result<T, E> {
+        if (isErr()) f(std::get<E>(m_variant));
+        return *this;
+    }
+    template <typename F> requires TypedInvocableNoRet<F, const E&>
+    constexpr auto inspectErr(F&& f) && -> Result<T, E> {
+        if (isErr()) f(std::get<E>(m_variant));
+        return std::move(*this);
+    }
 
 private:
     constexpr explicit Result(const T& value) : m_variant(value) {}

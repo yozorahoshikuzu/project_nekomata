@@ -69,7 +69,9 @@ static constexpr auto kRequiredPhysicalDeviceFeatures = std::to_array<RequiredFe
     { "runtimeDescriptorArray"sv,                            {}, {}, &vk::PhysicalDeviceVulkan12Features::runtimeDescriptorArray, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12RuntimeDescriptorArray },
     { "scalarBlockLayout"sv,                                 {}, {}, &vk::PhysicalDeviceVulkan12Features::scalarBlockLayout, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12ScalarBlockLayout },
     { "timelineSemaphore"sv,                                 {}, {}, &vk::PhysicalDeviceVulkan12Features::timelineSemaphore, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12TimelineSemaphore },
+    { "multiview"sv,                                         {}, &vk::PhysicalDeviceVulkan11Features::multiview, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk11Multiview },
     { "samplerAnisotropy"sv,                                 &vk::PhysicalDeviceFeatures::samplerAnisotropy, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10SamplerAnisotropy },
+    { "tessellationShader"sv,                                &vk::PhysicalDeviceFeatures::tessellationShader, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10TessellationShader },
 });
 
 // ---- Optional Features --------------------------------------------------------------------------------------------------------------------------------------

@@ -29,11 +29,14 @@ struct PushConstants {
     uint pointlightCount;
     uint textureId;
     uint samplerId;
-    float time;
+    uint irradianceTextureId;
+    uint prefiltTextureId;
+    uint iblLutTextureId;
 };
 
 [vk::push_constant] PushConstants push_consts;
 [vk::binding(0, 0)] Texture2D textures[];
+[vk::binding(0, 0)] TextureCube s_texturesCube[];
 [vk::binding(1, 0)] SamplerState samplers[];
 
 struct VSOut {
@@ -161,7 +164,7 @@ namespace AcesTonemap {
 float3 fresnelSchlickRoughnessApprox(float costheta, float3 f0, float roughness) {
     return f0 + (max(float3(1.0 - roughness), f0) - f0) * pow(clamp(1.0 - costheta, 0.0, 1.0), 5.0);
 }
-func fresnelSchlick(cos_theta: float, f0: float3) -> float3 {
+float3 fresnelSchlick(float cos_theta, float3 f0) {
     return f0 + (float3(1.0) - f0) * pow(clamp(1.0 - cos_theta, 0.0, 1.0), 5.0);
 }
 
@@ -222,6 +225,7 @@ float3 computeLightContribution(float3 norm, float3 viewdir, float3 lightdir, fl
     return brdfterm * radiance * nl;
 }
 
+constexpr static float roughnessMaxLod = 7.0f;
 float3 computePixelColor(float3 fragmentPosWS, float3 norm, float3 albedo, float metallic, float roughness, float ao) {
     float3 viewdir = normalize(push_consts.globalData.cameraPos - fragmentPosWS);
     float3 accum = float3(0.0);
@@ -236,16 +240,33 @@ float3 computePixelColor(float3 fragmentPosWS, float3 norm, float3 albedo, float
         accum += computeLightContribution(norm, viewdir, l, radiance, albedo, metallic, roughness);
     }
 
-    float3 ambient = float3(0.03) * albedo * ao;
-    return accum + ambient;
+    // ---- Diffuse IBL ------------------------------------------------------------------------------------------------
+    float3 irradiance = s_texturesCube[push_consts.irradianceTextureId].Sample(samplers[push_consts.samplerId], norm).rgb;
+    float3 diffuseibl = irradiance * albedo;
+
+    // ---- Specular IBL -----------------------------------------------------------------------------------------------
+    float nv = max(dot(norm, viewdir), 0.0001);
+    float3 r = reflect(-viewdir, norm);
+
+    float3 prefiltered = s_texturesCube[push_consts.prefiltTextureId].SampleLevel(samplers[push_consts.samplerId], r, roughness * roughnessMaxLod).rgb;
+    float2 envbrdf = textures[push_consts.iblLutTextureId].Sample(samplers[push_consts.samplerId], float2(nv, roughness)).rg;
+
+    float3 f0 = lerp(float3(0.04), albedo, metallic);
+    float3 fibl = fresnelSchlickRoughnessApprox(max(dot(norm, viewdir), 0.0001), f0, roughness);
+    float3 kdibl = (float3(1.0) - fibl) * (1.0 - metallic);
+
+    float3 specularibl = prefiltered * (fibl * envbrdf.x + envbrdf.y);
+    float3 ambient = (kdibl * diffuseibl + specularibl) * ao;
+
+    return ambient + accum;
 }
 
 [shader("fragment")]
 float4 main(TESOut input) : SV_Target {
-    float3 albedo = textures[push_consts.textureId].Sample(samplers[push_consts.samplerId], input.uv).rgb;
-    float metallic = albedo.r;
-    float roughness = albedo.g;
-    float ao = albedo.b;
+    float3 albedo = textures[push_consts.textureId].Sample(samplers[push_consts.samplerId], input.uv).rgb / 8.0f;
+    float metallic = 0.03f;
+    float roughness = 0.001f;
+    float ao = 0.95f;
 
     float3 norm = normalize(input.normal);
 
@@ -253,5 +274,5 @@ float4 main(TESOut input) : SV_Target {
 
     float3 finalCol = AcesTonemap::map(col);
 
-    return float4(finalCol, 1.0);
+    return float4(col, 1.0);
 }

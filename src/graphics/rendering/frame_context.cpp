@@ -253,8 +253,14 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         u32 pointlightsCount;
         u32 textureImageId;
         u32 textureSamplerId;
-        float time;
+        u32 irradianceTextureId;
+        u32 prefiltTextureId;
+        u32 iblLutTextureId;
     };
+
+    u32 irradianceTextureId = renderingData.m_textureToImageShaderIndexSnapshot[sharedRenderingResources.m_skyIrradianceCubemap.index];
+    u32 prefilterTextureId = renderingData.m_textureToImageShaderIndexSnapshot[sharedRenderingResources.m_skyPrefilterCubemap.index];
+    u32 iblLutTextureId = renderingData.m_textureToImageShaderIndexSnapshot[sharedRenderingResources.m_brdfLUT.index];
 
     for (auto [i, renderable] : renderingData.m_renderables.m_storage.iter().enumerate()) {
         // Get the LOD list for the renderable and skip it if no LODs are available
@@ -326,7 +332,9 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
             .pointlightsCount = static_cast<u32>(renderingData.m_pointlights.m_storage.len()),
             .textureImageId = textureImageId,
             .textureSamplerId = textureSamplerId,
-            .time = seconds
+            .irradianceTextureId = irradianceTextureId,
+            .prefiltTextureId = prefilterTextureId,
+            .iblLutTextureId = iblLutTextureId,
         };
 
         cb.bindIndexBuffer(lod.meshSuballocation.indexBuffer.buffer, lod.meshSuballocation.indexBuffer.offset, vk::IndexType::eUint32);

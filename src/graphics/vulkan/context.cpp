@@ -192,14 +192,11 @@ auto VulkanContext::pickVkPhysicalDevice(const vk::raii::Instance& vkInstance, c
     auto physicalDeviceOpt = physicalDevices.iter()
         .enumerate()
         .filterMap([&](auto&& pdKey) {
-            auto query = VulkanPhysicalDeviceProperties::query(pdKey.value, vkSurface);
-            if (query.isOk()) {
-                log::info("GPU #{}:", pdKey.index);
-                query.unwrap().printInfo();
-            } else {
-                log::warn("GPU #{} is not supported, reason: {}", pdKey.index, query.unwrapErr().toString());
-            }
-            return query.ok().map([&](auto&& props) { return std::pair(pdKey.index, std::move(props)); });
+            return VulkanPhysicalDeviceProperties::query(pdKey.value, vkSurface)
+                .inspect([&](const auto& x) { log::info("  GPU #{}:", pdKey.index); x.printInfo(); })
+                .inspectErr([&](const auto& x) { log::warn("  GPU #{} is not supported, reason: {}", pdKey.index, x.toString()); })
+                .ok()
+                .map([&](auto&& props) { return std::pair(pdKey.index, std::move(props)); });
         })
         .maxByKey([](const auto& exp) {
             return exp.second.autoselectPriorityScore();

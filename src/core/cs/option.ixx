@@ -116,6 +116,20 @@ public:
         }
     }
 
+    // ---- Inspection -----------------------------------------------------------------------------------------------------------------------------------------
+
+    template <typename F> requires TypedInvocableNoRet<F, const T&>
+    constexpr auto inspect(F&& f) const& -> Option<T> {
+        if (isSome()) f(*ptr());
+        return *this;
+    }
+
+    template <typename F> requires TypedInvocableNoRet<F, const T&>
+    constexpr auto inspect(F&& f) && -> Option<T> {
+        if (isSome()) f(*ptr());
+        return std::move(*this);
+    }
+
     // ---- Functional Programming Bits ------------------------------------------------------------------------------------------------------------------------
 
     template <typename F> requires TypedInvocableNoRet<F, T&&>

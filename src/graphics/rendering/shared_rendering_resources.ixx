@@ -43,6 +43,17 @@ public:
 
     float displayMs = 0.0f;
 
+    texturesystem::Texture m_skyCubemap = {};
+    texturesystem::Texture m_skyIrradianceCubemap = {};
+    texturesystem::Texture m_skyPrefilterCubemap = {};
+    texturesystem::Texture m_brdfLUT = {};
+
+    VulkanPipelineLayout m_iblIrradianceCubeGeneratorLayout = nullptr;
+    VulkanGraphicsPipeline m_iblIrradianceCubeGeneratorPipeline = nullptr;
+
+    VulkanPipelineLayout m_iblPrefilterCubeGeneratorLayout = nullptr;
+    VulkanGraphicsPipeline m_iblPrefilterCubeGeneratorPipeline = nullptr;
+
     VulkanPipelineLayout m_bitmapFontRendererLayout = nullptr;
     VulkanGraphicsPipeline m_bitmapFontRendererPipeline = nullptr;
 
@@ -59,6 +70,8 @@ private:
     // --------------------------------------------------------------------------------------------------------------------------------------------------------
     // Hysteresis State
     Vec<MeshHysteresisState> m_meshHysteresisStates = Vec<MeshHysteresisState>::create();
+
+    auto buildIblSecondaryCubemaps() -> void;
 };
 
 } // namespace projnekomata::graphics

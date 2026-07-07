@@ -26,14 +26,14 @@ public:
     using isCVulkanImage = std::true_type;
 
     VulkanImage(std::nullptr_t);
-    VulkanImage(vk::raii::Image&& image, vma::raii::Allocation&& allocation, vk::raii::ImageView imageViewWholeSize, vk::ImageSubresourceRange imageSubresourceRangeFull, vk::Extent3D extents, u32 arrayLayerCount, u32 mipLevelCount, vk::Format format, vk::ImageType type);
+    VulkanImage(vk::raii::Image&& image, vma::raii::Allocation&& allocation, vk::raii::ImageView imageViewWholeSize, vk::ImageSubresourceRange imageSubresourceRangeFull, vk::Extent3D extents, u32 arrayLayerCount, u32 mipLevelCount, bool isCubemap, vk::Format format, vk::ImageType type);
 
     VulkanImage(const VulkanImage&) = delete;
     VulkanImage(VulkanImage&&) = default;
     VulkanImage& operator=(const VulkanImage&) = delete;
     VulkanImage& operator=(VulkanImage&&) = default;
 
-    static auto create(vk::ImageType type, vk::Extent3D extent, u32 arrayLayerCount, u32 mipLevelCount, vk::Format format, vk::ImageUsageFlags usage, vk::ImageTiling tiling, vma::MemoryUsage memoryUsage, vk::MemoryPropertyFlags memoryRequiredFlags, const std::span<const u32>& queueFamilyIndices, vk::ImageLayout initialLayout) -> VulkanImage;
+    static auto create(vk::ImageType type, vk::Extent3D extent, u32 layerCount, u32 mipLevelCount, bool isCubemap, vk::Format format, vk::ImageUsageFlags usage, vk::ImageTiling tiling, vma::MemoryUsage memoryUsage, vk::MemoryPropertyFlags memoryRequiredFlags, const std::span<const u32>& queueFamilyIndices, vk::ImageLayout initialLayout) -> VulkanImage;
 
     // clang-format off
     static std::unordered_map<vk::Format, ImageFormatMd> s_formatMetadata;
@@ -45,8 +45,8 @@ public:
     [[nodiscard]] auto format() const -> vk::Format { return m_vkImageFormat; }
     [[nodiscard]] auto subresourceRangeFull() const -> vk::ImageSubresourceRange { return m_vkImageSubresourceRangeFull; }
 
-    auto createImageView(u32 baseMipLevel, u32 mipLevelCount, u32 baseArrayLayer, u32 arrayLayerCount) -> VulkanImageView;
-    auto createImageViewWithMinLod(u32 baseMipLevel, u32 mipLevelCount, u32 baseArrayLayer, u32 arrayLayerCount, float minLod) -> VulkanImageView;
+    auto createImageView(u32 baseMipLevel, u32 mipLevelCount, u32 baseArrayLayer, u32 arrayLayerCount, bool keepCube) -> VulkanImageView;
+    auto createImageViewWithMinLod(u32 baseMipLevel, u32 mipLevelCount, u32 baseArrayLayer, u32 arrayLayerCount, float minLod, bool keepCube) -> VulkanImageView;
 
 private:
     VulkanAsyncRaiiWrapper<vk::raii::Image> m_vkImage = nullptr;
@@ -59,8 +59,9 @@ private:
     u32 m_mipLevelCount;
     vk::Format m_vkImageFormat;
     vk::ImageType m_vkImageType;
+    bool m_isCubemap = false;
 
-    static auto selectImageViewType(vk::ImageType type, u32 arrayLayerCount) -> vk::ImageViewType;
+    static auto selectImageViewType(vk::ImageType type, u32 arrayLayerCount, bool isCubemap) -> vk::ImageViewType;
 };
 static_assert(CVulkanImage<VulkanImage> && "VulkanImage must satisfy CVulkanImage");
 

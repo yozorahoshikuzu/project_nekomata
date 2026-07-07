@@ -105,6 +105,10 @@ public:
         m_renderingCreateInfo.depthAttachmentFormat = format;
         return *this;
     }
+    [[nodiscard]] constexpr auto setMultiviewViewsMask(u32 mask) noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_renderingCreateInfo.viewMask = mask;
+        return *this;
+    }
     [[nodiscard]] constexpr auto setTessellationPatchControlPoints(u32 patchControlPoints) noexcept -> VulkanGraphicsPipelineBuilder& {
         m_tessellationState = Some(
             vk::PipelineTessellationStateCreateInfo{}
