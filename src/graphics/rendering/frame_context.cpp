@@ -126,7 +126,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         .setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     vkCheckResult(cb.begin(beginInfo));
 
-    // Temporary:: prepare font
+    // ---- Font Rasterization ---------------------------------------------------------------------------------------------------------------------------------
 
     VulkanBuffer stagingBuffer = nullptr;
 
@@ -195,38 +195,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         }
     }
 
-    VulkanPipelineBarriers::builder()
-        .insertImageMemoryBarrier(transientRenderingResources.finalDrawBuffer(),
-            vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eBlit, {},
-            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite
-        )
-        .insertImageMemoryBarrier(transientRenderingResources.depthBuffer(),
-            vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
-            vk::ImageLayout::eDepthAttachmentOptimal, vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, vk::AccessFlagBits2::eDepthStencilAttachmentRead | vk::AccessFlagBits2::eDepthStencilAttachmentWrite
-        )
-        .flush(m_frameRenderingResources.commandBuffer());
-
-    auto drawImageAttachmentInfo = vk::RenderingAttachmentInfo{}
-        .setImageView(transientRenderingResources.finalDrawBuffer().vkImageViewWholeSize())
-        .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setClearValue(vk::ClearColorValue{}.setFloat32({0.0, 0.0, 0.0, 1.0}));
-    auto depthImageAttachmentInfo = vk::RenderingAttachmentInfo{}
-        .setImageView(transientRenderingResources.depthBuffer().vkImageViewWholeSize())
-        .setImageLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .setClearValue(vk::ClearDepthStencilValue{}.setDepth(0.0f));
-
     auto vkRenderingArea = vk::Extent2D{transientRenderingResources.finalDrawBuffer().extent().width, transientRenderingResources.finalDrawBuffer().extent().height};
-
-    auto renderingInfo = vk::RenderingInfo{}
-        .setColorAttachments(drawImageAttachmentInfo)
-        .setPDepthAttachment(&depthImageAttachmentInfo)
-        .setLayerCount(1)
-        .setRenderArea(vk::Rect2D{}.setExtent(vkRenderingArea));
-
     auto viewport = vk::Viewport{}
         .setWidth(static_cast<f32>(vkRenderingArea.width))
         .setHeight(static_cast<f32>(vkRenderingArea.height))
@@ -234,33 +203,74 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         .setMaxDepth(1.0);
     auto scissor = vk::Rect2D{}.setExtent(vkRenderingArea);
 
-    cb.beginRendering(renderingInfo);
+    // ---- Deferred Geometry Stage ----------------------------------------------------------------------------------------------------------------------------
+
+    VulkanPipelineBarriers::builder()
+        .insertImageMemoryBarrier(transientRenderingResources.albedoAndRoughnessBuffer(),
+            vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eFragmentShader, {},
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite
+        )
+        .insertImageMemoryBarrier(transientRenderingResources.normalBuffer(),
+            vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eFragmentShader, {},
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite
+        )
+        .insertImageMemoryBarrier(transientRenderingResources.metallicAndAoBuffer(),
+            vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eFragmentShader, {},
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite
+        )
+        .insertImageMemoryBarrier(transientRenderingResources.depthBuffer(),
+            vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eFragmentShader, {},
+            vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, vk::AccessFlagBits2::eDepthStencilAttachmentWrite
+        )
+        .flush(m_frameRenderingResources.commandBuffer());
+
+    auto albedoAndRoughnessAttachmentInfo = vk::RenderingAttachmentInfo{}
+        .setImageView(transientRenderingResources.albedoAndRoughnessBuffer().vkImageViewWholeSize())
+        .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStoreOp(vk::AttachmentStoreOp::eStore);
+    auto normalAttachmentInfo = vk::RenderingAttachmentInfo{}
+        .setImageView(transientRenderingResources.normalBuffer().vkImageViewWholeSize())
+        .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStoreOp(vk::AttachmentStoreOp::eStore);
+    auto metallicAndAoAttachmentInfo = vk::RenderingAttachmentInfo{}
+        .setImageView(transientRenderingResources.metallicAndAoBuffer().vkImageViewWholeSize())
+        .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStoreOp(vk::AttachmentStoreOp::eStore);
+    auto depthAttachmentInfo = vk::RenderingAttachmentInfo{}
+        .setImageView(transientRenderingResources.depthBuffer().vkImageViewWholeSize())
+        .setImageLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setClearValue(vk::ClearDepthStencilValue{}.setDepth(0.0f));
+
+    auto colorAttachments = std::array<vk::RenderingAttachmentInfo, 3>{albedoAndRoughnessAttachmentInfo, normalAttachmentInfo, metallicAndAoAttachmentInfo};
+    auto deferredGeomRenderingInfo = vk::RenderingInfo{}
+        .setColorAttachments(colorAttachments)
+        .setPDepthAttachment(&depthAttachmentInfo)
+        .setLayerCount(1)
+        .setRenderArea(vk::Rect2D{}.setExtent(vkRenderingArea));
+
+    cb.beginRendering(deferredGeomRenderingInfo);
     cb.setViewport(0, viewport);
     cb.setScissor(0, scissor);
 
-    cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.simplePipeline().vkPipeline());
-    texturesystem::TextureManager::get().shaderResourceTable().bindToCommandBuffer(m_frameRenderingResources.commandBuffer(), sharedRenderingResources.simpleLayout(), vk::PipelineBindPoint::eGraphics);
+    cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.m_mainGeometryRenderPipeline.vkPipeline());
+    texturesystem::TextureManager::get().shaderResourceTable().bindToCommandBuffer(m_frameRenderingResources.commandBuffer(), sharedRenderingResources.m_mainGeometryRenderLayout, vk::PipelineBindPoint::eGraphics);
     auto elapsed = std::chrono::steady_clock::now() - sharedRenderingResources.m_tmStart;
     float seconds = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() / 1000.0;
     auto uboDeviceAddr = m_frameRenderingResources.transformsBuffer().memoryDevicePtr();
     auto globaldataAddr = m_frameRenderingResources.globalDataBuffer().memoryDevicePtr();
 
     struct RenderPushConstantData {
-        vk::DeviceAddress uboFinalAddr;
-        vk::DeviceAddress vboDeviceAddr;
+        vk::DeviceAddress objectUniformAddr;
+        vk::DeviceAddress vertexbufferAddr;
         vk::DeviceAddress globaldataAddr;
-        vk::DeviceAddress pointlightsAddr;
-        u32 pointlightsCount;
-        u32 textureImageId;
-        u32 textureSamplerId;
-        u32 irradianceTextureId;
-        u32 prefiltTextureId;
-        u32 iblLutTextureId;
+        u32 textureId;
+        u32 samplerId;
     };
-
-    u32 irradianceTextureId = renderingData.m_textureToImageShaderIndexSnapshot[sharedRenderingResources.m_skyIrradianceCubemap.index];
-    u32 prefilterTextureId = renderingData.m_textureToImageShaderIndexSnapshot[sharedRenderingResources.m_skyPrefilterCubemap.index];
-    u32 iblLutTextureId = renderingData.m_textureToImageShaderIndexSnapshot[sharedRenderingResources.m_brdfLUT.index];
 
     for (auto [i, renderable] : renderingData.m_renderables.m_storage.iter().enumerate()) {
         // Get the LOD list for the renderable and skip it if no LODs are available
@@ -325,25 +335,102 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         auto vboDeviceAddr = lod.meshSuballocation.vertexBuffer.deviceAddress;
 
         auto pushconstData = RenderPushConstantData {
-            .uboFinalAddr = uboFinalAddr,
-            .vboDeviceAddr = vboDeviceAddr,
+            .objectUniformAddr = uboFinalAddr,
+            .vertexbufferAddr = vboDeviceAddr,
             .globaldataAddr = globaldataAddr,
-            .pointlightsAddr = m_frameRenderingResources.pointlightsBuffer().memoryDevicePtr(),
-            .pointlightsCount = static_cast<u32>(renderingData.m_pointlights.m_storage.len()),
-            .textureImageId = textureImageId,
-            .textureSamplerId = textureSamplerId,
-            .irradianceTextureId = irradianceTextureId,
-            .prefiltTextureId = prefilterTextureId,
-            .iblLutTextureId = iblLutTextureId,
+            .textureId = textureImageId,
+            .samplerId = textureSamplerId
         };
 
         cb.bindIndexBuffer(lod.meshSuballocation.indexBuffer.buffer, lod.meshSuballocation.indexBuffer.offset, vk::IndexType::eUint32);
 
-        cb.pushConstants<RenderPushConstantData>(sharedRenderingResources.simpleLayout().vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation, 0, pushconstData);
+        cb.pushConstants<RenderPushConstantData>(sharedRenderingResources.m_mainGeometryRenderLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation, 0, pushconstData);
         cb.drawIndexed(lod.meshSuballocation.indexBuffer.size / sizeof(u32), 1, 0, 0, 0);
     }
 
-    // Draw UI
+    cb.endRendering();
+
+    // ---- Deferred Lighting Stage ----------------------------------------------------------------------------------------------------------------------------
+
+    VulkanPipelineBarriers::builder()
+        .insertImageMemoryBarrier(transientRenderingResources.albedoAndRoughnessBuffer(),
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
+            vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderSampledRead
+        )
+        .insertImageMemoryBarrier(transientRenderingResources.normalBuffer(),
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
+            vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderSampledRead
+        )
+        .insertImageMemoryBarrier(transientRenderingResources.metallicAndAoBuffer(),
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
+            vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderSampledRead
+        )
+        .insertImageMemoryBarrier(transientRenderingResources.depthBuffer(),
+            vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+            vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderSampledRead
+        )
+        .insertImageMemoryBarrier(transientRenderingResources.finalDrawBuffer(),
+            vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eBlit, {},
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite
+        )
+        .flush(m_frameRenderingResources.commandBuffer());
+
+    u32 skyboxTextureId = renderingData.m_textureToImageShaderIndexSnapshot[sharedRenderingResources.m_skyCubemap.index];
+    u32 irradianceTextureId = renderingData.m_textureToImageShaderIndexSnapshot[sharedRenderingResources.m_skyIrradianceCubemap.index];
+    u32 prefilterTextureId = renderingData.m_textureToImageShaderIndexSnapshot[sharedRenderingResources.m_skyPrefilterCubemap.index];
+    u32 iblLutTextureId = renderingData.m_textureToImageShaderIndexSnapshot[sharedRenderingResources.m_brdfLUT.index];
+    u32 linearSamplerId = renderingData.m_textureToSamplerShaderIndexSnapshot[sharedRenderingResources.m_skyCubemap.index];
+
+    auto drawImageAttachmentInfo = vk::RenderingAttachmentInfo{}
+        .setImageView(transientRenderingResources.finalDrawBuffer().vkImageViewWholeSize())
+        .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStoreOp(vk::AttachmentStoreOp::eStore);
+
+    auto lightingstageRenderingInfo = vk::RenderingInfo{}
+        .setColorAttachments(drawImageAttachmentInfo)
+        .setLayerCount(1)
+        .setRenderArea(vk::Rect2D{}.setExtent(vkRenderingArea));
+
+    cb.beginRendering(lightingstageRenderingInfo);
+    cb.setViewport(0, viewport);
+    cb.setScissor(0, scissor);
+
+    cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.m_mainLightingPassPipeline.vkPipeline());
+    texturesystem::TextureManager::get().shaderResourceTable().bindToCommandBuffer(m_frameRenderingResources.commandBuffer(), sharedRenderingResources.m_mainLightingPassLayout, vk::PipelineBindPoint::eGraphics);
+
+    struct LightingStagePushConstantData {
+        vk::DeviceAddress globaldataAddr;
+        vk::DeviceAddress pointlightsAddr;
+        u32 pointlightCount;
+        u32 depthTextureIndex;
+        u32 albedoAndRoughnessTextureIndex;
+        u32 normalTextureIndex;
+        u32 metallicAoTextureIndex;
+        u32 skyboxTextureId;
+        u32 irradianceTextureId;
+        u32 prefiltTextureId;
+        u32 iblLutTextureId;
+        u32 linearSamplerIndex;
+    };
+
+    auto pushconstData = LightingStagePushConstantData {
+        .globaldataAddr = globaldataAddr,
+        .pointlightsAddr = m_frameRenderingResources.pointlightsBuffer().memoryDevicePtr(),
+        .pointlightCount = static_cast<u32>(renderingData.m_pointlights.m_storage.len()),
+        .depthTextureIndex = transientRenderingResources.depthBufferIndex().imageIndex,
+        .albedoAndRoughnessTextureIndex = transientRenderingResources.albedoAndRoughnessBufferIndex().imageIndex,
+        .normalTextureIndex = transientRenderingResources.normalBufferIndex().imageIndex,
+        .metallicAoTextureIndex = transientRenderingResources.metallicAndAoBufferIndex().imageIndex,
+        .skyboxTextureId = skyboxTextureId,
+        .irradianceTextureId = irradianceTextureId,
+        .prefiltTextureId = prefilterTextureId,
+        .iblLutTextureId = iblLutTextureId,
+        .linearSamplerIndex = linearSamplerId
+    };
+
+    cb.pushConstants<LightingStagePushConstantData>(sharedRenderingResources.m_mainLightingPassLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, pushconstData);
+    cb.draw(3, 1, 0, 0);
 
     auto textInstanceBuffers = Vec<VulkanBuffer>::create();
 

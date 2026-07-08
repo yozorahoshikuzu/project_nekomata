@@ -61,7 +61,7 @@ public:
 
         projnekomata::graphics::texturesystem::Texture ts1 = ts.loadKtx2TextureAsync("../../Assets/ui_test.ktx2", samplerSettings);
         projnekomata::graphics::texturesystem::Texture ts2 = ts.loadKtx2TextureAsync("../../Assets/ui_test2.ktx2", samplerSettings);
-        projnekomata::graphics::texturesystem::Texture ts3 = ts.loadKtx2TextureAsync("../../Assets/ui_test3.ktx2", samplerSettings);
+        //projnekomata::graphics::texturesystem::Texture ts3 = ts.loadKtx2TextureAsync("../../Assets/ui_test3.ktx2", samplerSettings);
         projnekomata::graphics::texturesystem::Texture ts4 = ts.loadKtx2TextureAsync("../../Assets/ui_test4.ktx2", samplerSettings);
         projnekomata::graphics::texturesystem::Texture ts5 = ts.loadKtx2TextureAsync("../../Assets/ui_test5.ktx2", samplerSettings);
 
@@ -90,7 +90,7 @@ public:
         auto escapeOverlayMeme3 = projnekomata::ui::UiNode::builder()
             .position({800.0f, 640.0f})
             .extent({250.0f, 275.0f})
-            .texture(ts3)
+           // .texture(ts3)
             .build();
 
         auto escapeOverlayMeme4 = projnekomata::ui::UiNode::builder()
@@ -402,7 +402,7 @@ void onGameInit(std::unique_ptr<projnekomata::ecs::World>& world) {
         world->emplace<projnekomata::ecs::components::Renderable>(ent, mesh, ts1);
         world->addScript<MovingScript>(ent, 0.0f, radiusDist(gen), thetaSpeedDist(gen), phiSpeedDist(gen), thetaDist(gen), phiDist(gen), rotationConstDist(gen), rotationConstDist(gen));
         if (i % 100 == 0) {
-            world->emplace<projnekomata::ecs::components::PointLight>(ent, Vector3f{lightradianceDist(gen), lightradianceDist(gen), lightradianceDist(gen)});
+            world->emplace<projnekomata::ecs::components::PointLight>(ent, Vector3f{lightradianceDist(gen), 0.0f, lightradianceDist(gen)});
         }
     }
 

@@ -76,8 +76,10 @@ auto FrameRenderingResources::prepareBuffers(MRThreadsSharedDataLeaf& renderingD
 
     // ---- Global Data ----------------------------------------------------------------------------------------------------------------------------------------
 
+    auto projview = projectionMatrix * viewMatrix;
     auto globdata = RenderingGlobalData {
-        .projview = projectionMatrix * viewMatrix,
+        .projview = projview,
+        .projviewInverse = projview.inverse().unwrapOr(Matrix4x4f::identity()),
         .cameraPos = cameraTransform.m_transform3d.m_position
     };
 

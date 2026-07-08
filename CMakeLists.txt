@@ -219,7 +219,7 @@ list(FILTER project_nekomata_LIBRARY_SOURCES EXCLUDE REGEX ".*/(bin)/.*")
 list(FILTER project_nekomata_LIBRARY_MODULE_SOURCES EXCLUDE REGEX ".*/(bin)/.*")
 
 file(GLOB_RECURSE project_nekomata_SHADER_SOURCES CONFIGURE_DEPENDS
-        ${CMAKE_SOURCE_DIR}/src/graphics/shaders/*.slang
+        ${CMAKE_SOURCE_DIR}/src/graphics/shaders/bin/*.slang
 )
 
 file(GLOB_RECURSE project_nekomata_BINARIES CONFIGURE_DEPENDS

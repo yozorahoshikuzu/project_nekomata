@@ -18,6 +18,7 @@ struct Transforms {
 
 struct RenderingGlobalData {
     Matrix4x4f projview;
+    Matrix4x4f projviewInverse;
     Vector3f cameraPos;
 };
 

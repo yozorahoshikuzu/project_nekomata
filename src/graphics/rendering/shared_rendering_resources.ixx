@@ -24,9 +24,6 @@ public:
     SharedRenderingResources(std::nullptr_t);
     SharedRenderingResources();
 
-    [[nodiscard]] VulkanPipelineLayout& simpleLayout() { return m_simpleLayout; }
-    [[nodiscard]] VulkanGraphicsPipeline& simplePipeline() { return m_simplePipeline; }
-
     // Temporary, remove later
     std::chrono::steady_clock::time_point m_tmStart;
 
@@ -62,10 +59,14 @@ public:
 
     VulkanPipelineLayout m_uiTextureRendererLayout = nullptr;
     VulkanGraphicsPipeline m_uiTextureRendererPipeline = nullptr;
-private:
-    VulkanPipelineLayout m_simpleLayout = nullptr;
-    VulkanGraphicsPipeline m_simplePipeline = nullptr;
 
+    VulkanPipelineLayout m_mainGeometryRenderLayout = nullptr;
+    VulkanGraphicsPipeline m_mainGeometryRenderPipeline = nullptr;
+
+    VulkanPipelineLayout m_mainLightingPassLayout = nullptr;
+    VulkanGraphicsPipeline m_mainLightingPassPipeline = nullptr;
+
+private:
 
     // --------------------------------------------------------------------------------------------------------------------------------------------------------
     // Hysteresis State

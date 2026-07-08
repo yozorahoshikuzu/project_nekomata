@@ -17,6 +17,16 @@ std::unordered_map<vk::Format, ImageFormatMd> VulkanImage::s_formatMetadata = {
     {vk::Format::eR8Unorm,                                    ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 1 }},
     {vk::Format::eR8G8Unorm,                                  ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 2 }},
     {vk::Format::eR8G8B8A8Unorm,                              ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 4 }},
+    {vk::Format::eR8Snorm,                                    ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 1 }},
+    {vk::Format::eR8G8Snorm,                                  ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 2 }},
+    {vk::Format::eR8G8B8A8Snorm,                              ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 4 }},
+
+    {vk::Format::eR16Unorm,                                   ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 2 }},
+    {vk::Format::eR16G16Unorm,                                ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 4 }},
+    {vk::Format::eR16G16B16A16Unorm,                          ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 8 }},
+    {vk::Format::eR16Snorm,                                   ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 2 }},
+    {vk::Format::eR16G16Snorm,                                ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 4 }},
+    {vk::Format::eR16G16B16A16Snorm,                          ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 8 }},
 
     {vk::Format::eR8G8B8A8Srgb,                               ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 4 }},
     {vk::Format::eB8G8R8A8Srgb,                               ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 4 }},

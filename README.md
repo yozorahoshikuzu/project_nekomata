@@ -18,13 +18,13 @@ Well, maybe in the future..
 - Textures
 - Async loading of KTX2 textures
 - Bindless textures and samplers
+- Dynamic deferred lighting with PBR IBL
 - Bitmap font rendering with on-the-fly font atlas generation
 - Basic script system
 - `vk::PipelineCache`-based pipeline caching
 
 ## Planned Features
 
-- Lighting, deferred lighting, and PBR
 - Shadow mapping
 - A more full UI solution
 - MSDF font rendering

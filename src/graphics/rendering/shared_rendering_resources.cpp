@@ -93,21 +93,21 @@ SharedRenderingResources::SharedRenderingResources() {
         .setMultiviewViewsMask(0b111111)
         .build();
 
-    m_simpleLayout = VulkanPipelineLayout::builder()
+    m_mainGeometryRenderLayout = VulkanPipelineLayout::builder()
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
         .addPushConstantRange(
-            0, 56,
+            0, 32,
             vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation
             | vk::ShaderStageFlagBits::eFragment
         )
         .build();
-    auto shader = SpirvShaderCode::loadFromFile("../spirv/tess_test.spv").unwrap();
-    m_simplePipeline = VulkanGraphicsPipeline::builder()
-        .setPipelineLayout(m_simpleLayout)
-        .addShader(shader, vk::ShaderStageFlagBits::eVertex)
-        .addShader(shader, vk::ShaderStageFlagBits::eTessellationControl)
-        .addShader(shader, vk::ShaderStageFlagBits::eTessellationEvaluation)
-        .addShader(shader, vk::ShaderStageFlagBits::eFragment)
+    auto geometryRenderShader = SpirvShaderCode::loadFromFile("../spirv/mainrender_geom.spv").unwrap();
+    m_mainGeometryRenderPipeline = VulkanGraphicsPipeline::builder()
+        .setPipelineLayout(m_mainGeometryRenderLayout)
+        .addShader(geometryRenderShader, vk::ShaderStageFlagBits::eVertex)
+        .addShader(geometryRenderShader, vk::ShaderStageFlagBits::eTessellationControl)
+        .addShader(geometryRenderShader, vk::ShaderStageFlagBits::eTessellationEvaluation)
+        .addShader(geometryRenderShader, vk::ShaderStageFlagBits::eFragment)
         .setInputTopology(vk::PrimitiveTopology::ePatchList)
         .setTessellationPatchControlPoints(3)
         .setRastPolygonMode(vk::PolygonMode::eFill)
@@ -121,6 +121,44 @@ SharedRenderingResources::SharedRenderingResources() {
             vk::PipelineColorBlendAttachmentState{}
                  .setBlendEnable(false)
                  .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
+            vk::Format::eR8G8B8A8Unorm
+        )
+        .pushRenderingAttachment(
+            vk::PipelineColorBlendAttachmentState{}
+                 .setBlendEnable(false)
+                 .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
+            vk::Format::eR16G16Snorm
+        )
+        .pushRenderingAttachment(
+            vk::PipelineColorBlendAttachmentState{}
+                 .setBlendEnable(false)
+                 .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
+            vk::Format::eR8G8Unorm
+        )
+        .build();
+
+    m_mainLightingPassLayout = VulkanPipelineLayout::builder()
+        .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
+        .addPushConstantRange(
+            0, 56,
+            vk::ShaderStageFlagBits::eFragment
+        )
+        .build();
+    auto lightingPassShader = SpirvShaderCode::loadFromFile("../spirv/mainrender_lighting.spv").unwrap();
+    m_mainLightingPassPipeline = VulkanGraphicsPipeline::builder()
+        .setPipelineLayout(m_mainLightingPassLayout)
+        .addShader(lightingPassShader, vk::ShaderStageFlagBits::eVertex)
+        .addShader(lightingPassShader, vk::ShaderStageFlagBits::eFragment)
+        .setInputTopology(vk::PrimitiveTopology::eTriangleList)
+        .setRastPolygonMode(vk::PolygonMode::eFill)
+        .setRastCulling(vk::CullModeFlagBits::eNone, vk::FrontFace::eCounterClockwise)
+        .setRastLineWidth(1.0f)
+        .disableMultisampling()
+        .disableDepthTest()
+        .pushRenderingAttachment(
+        vk::PipelineColorBlendAttachmentState{}
+             .setBlendEnable(false)
+             .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
             vk::Format::eA2R10G10B10UnormPack32
         )
         .build();
@@ -140,7 +178,6 @@ SharedRenderingResources::SharedRenderingResources() {
         .setRastLineWidth(1.0f)
         .disableMultisampling()
         .disableDepthTest()
-        .setDepthAttachmentFormat(vk::Format::eD32Sfloat)
         .pushRenderingAttachment(
         vk::PipelineColorBlendAttachmentState{}
                     .setBlendEnable(true)
@@ -169,7 +206,6 @@ SharedRenderingResources::SharedRenderingResources() {
         .setRastLineWidth(1.0f)
         .disableMultisampling()
         .disableDepthTest()
-        .setDepthAttachmentFormat(vk::Format::eD32Sfloat)
         .pushRenderingAttachment(
         vk::PipelineColorBlendAttachmentState{}
                     .setBlendEnable(true)
@@ -199,7 +235,6 @@ SharedRenderingResources::SharedRenderingResources() {
         .setRastLineWidth(1.0f)
         .disableMultisampling()
         .disableDepthTest()
-        .setDepthAttachmentFormat(vk::Format::eD32Sfloat)
         .pushRenderingAttachment(
         vk::PipelineColorBlendAttachmentState{}
                     .setBlendEnable(true)
