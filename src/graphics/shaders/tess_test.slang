@@ -264,8 +264,8 @@ float3 computePixelColor(float3 fragmentPosWS, float3 norm, float3 albedo, float
 [shader("fragment")]
 float4 main(TESOut input) : SV_Target {
     float3 albedo = textures[push_consts.textureId].Sample(samplers[push_consts.samplerId], input.uv).rgb / 8.0f;
-    float metallic = 0.03f;
-    float roughness = 0.001f;
+    float metallic = 0.9f;
+    float roughness = 1.0f;
     float ao = 0.95f;
 
     float3 norm = normalize(input.normal);

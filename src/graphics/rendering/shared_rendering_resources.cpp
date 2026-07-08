@@ -9,7 +9,8 @@ import :graphics.vulkan.vk_commands_barriers;
 
 namespace projnekomata::graphics {
 
-constexpr u32 prefilterImageMips = 7;
+constexpr u32 prefilterImageSize = 512;
+constexpr u32 prefilterImageMips = std::bit_width(prefilterImageSize);
 
 SharedRenderingResources::SharedRenderingResources(std::nullptr_t) {}
 SharedRenderingResources::SharedRenderingResources() {
@@ -32,7 +33,7 @@ SharedRenderingResources::SharedRenderingResources() {
     );
 
     m_skyPrefilterCubemap = texturesystem::TextureManager::get().createTexture(
-        512, 512, 1, 1, prefilterImageMips, true,
+        prefilterImageSize, prefilterImageSize, 1, 1, prefilterImageMips, true,
         vk::Format::eB10G11R11UfloatPack32,
         vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
         samplerParams
@@ -71,7 +72,7 @@ SharedRenderingResources::SharedRenderingResources() {
 
     m_iblPrefilterCubeGeneratorLayout = VulkanPipelineLayout::builder()
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
-        .addPushConstantRange(0, 12, vk::ShaderStageFlagBits::eFragment)
+        .addPushConstantRange(0, 16, vk::ShaderStageFlagBits::eFragment)
         .build();
     m_iblPrefilterCubeGeneratorPipeline = VulkanGraphicsPipeline::builder()
         .setPipelineLayout(m_iblPrefilterCubeGeneratorLayout)
@@ -346,6 +347,8 @@ auto SharedRenderingResources::buildIblSecondaryCubemaps() -> void {
             .roughness = prefilterImageMips > 1 ? static_cast<f32>(mip) / (static_cast<f32>(prefilterImageMips) - 1.0f) : 0.0f,
             .cubeResolution = static_cast<f32>(prefilterImage.extent().width) // in cubemaps, width == height
         };
+
+        log::info("mip {} roughness: {:.2f}", mip, pc.roughness);
 
         cmd.pushConstants<PushConstants>(m_iblPrefilterCubeGeneratorLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, pc);
         cmd.draw(3, 1, 0, 0);
