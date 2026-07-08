@@ -140,7 +140,7 @@ SharedRenderingResources::SharedRenderingResources() {
     m_mainLightingPassLayout = VulkanPipelineLayout::builder()
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
         .addPushConstantRange(
-            0, 56,
+            0, 60,
             vk::ShaderStageFlagBits::eFragment
         )
         .build();

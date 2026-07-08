@@ -380,6 +380,9 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     u32 prefilterTextureId = renderingData.m_textureToImageShaderIndexSnapshot[sharedRenderingResources.m_skyPrefilterCubemap.index];
     u32 iblLutTextureId = renderingData.m_textureToImageShaderIndexSnapshot[sharedRenderingResources.m_brdfLUT.index];
     u32 linearSamplerId = renderingData.m_textureToSamplerShaderIndexSnapshot[sharedRenderingResources.m_skyCubemap.index];
+    u32 nearestSamplerId = texturesystem::TextureManager::get().samplerCache().acquireSampler(
+        texturesystem::SamplerParams::defaultValues().setMinFilter(vk::Filter::eNearest).setMagFilter(vk::Filter::eNearest).setMipmapMode(vk::SamplerMipmapMode::eNearest).setMaxLod(0.0f)
+    );
 
     auto drawImageAttachmentInfo = vk::RenderingAttachmentInfo{}
         .setImageView(transientRenderingResources.finalDrawBuffer().vkImageViewWholeSize())
@@ -412,6 +415,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         u32 prefiltTextureId;
         u32 iblLutTextureId;
         u32 linearSamplerIndex;
+        u32 nearestSamplerIndex;
     };
 
     auto pushconstData = LightingStagePushConstantData {
@@ -426,7 +430,8 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         .irradianceTextureId = irradianceTextureId,
         .prefiltTextureId = prefilterTextureId,
         .iblLutTextureId = iblLutTextureId,
-        .linearSamplerIndex = linearSamplerId
+        .linearSamplerIndex = linearSamplerId,
+        .nearestSamplerIndex = nearestSamplerId
     };
 
     cb.pushConstants<LightingStagePushConstantData>(sharedRenderingResources.m_mainLightingPassLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, pushconstData);

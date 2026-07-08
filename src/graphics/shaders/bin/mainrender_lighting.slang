@@ -24,6 +24,7 @@ struct PushConstants {
     uint prefiltTextureId;
     uint iblLutTextureId;
     uint linearSamplerIndex;
+    uint nearestSamplerIndex;
 };
 
 [vk::push_constant] PushConstants pushConstants;
@@ -184,14 +185,17 @@ float3 computePixelColor(float3 fragmentPosWS, float3 norm, float3 albedo, float
 
 [shader("fragment")]
 float4 main(VSOut input) : SV_Target {
-    let depth = s_textures2D[pushConstants.depthTextureIndex].Sample(s_samplers[pushConstants.linearSamplerIndex], input.texcoord).r;
-    let albedoAndRoughness = s_textures2D[pushConstants.albedoAndRoughnessTextureIndex].Sample(s_samplers[pushConstants.linearSamplerIndex], input.texcoord);
-    let pn = s_textures2D[pushConstants.normalTextureIndex].Sample(s_samplers[pushConstants.linearSamplerIndex], input.texcoord).xy;
-    let metallicAo = s_textures2D[pushConstants.metallicAoTextureIndex].Sample(s_samplers[pushConstants.linearSamplerIndex], input.texcoord).xy;
+    let depth = s_textures2D[pushConstants.depthTextureIndex].SampleLevel(s_samplers[pushConstants.nearestSamplerIndex], input.texcoord, 0).r;
+    let albedoAndRoughness = s_textures2D[pushConstants.albedoAndRoughnessTextureIndex].SampleLevel(s_samplers[pushConstants.nearestSamplerIndex], input.texcoord, 0);
+    let pn = s_textures2D[pushConstants.normalTextureIndex].SampleLevel(s_samplers[pushConstants.nearestSamplerIndex], input.texcoord, 0).xy;
+    let metallicAo = s_textures2D[pushConstants.metallicAoTextureIndex].SampleLevel(s_samplers[pushConstants.nearestSamplerIndex], input.texcoord, 0).xy;
+
+    float3 viewdir = reconstructViewdir(input.positionCS);
+    float3 vddx = ddx(viewdir);
+    float3 vddy = ddy(viewdir);
 
     if (depth == 0.0) {
-        float3 viewdir = reconstructViewdir(input.positionCS);
-        return s_texturesCube[pushConstants.skyboxTextureId].Sample(s_samplers[pushConstants.linearSamplerIndex], viewdir);
+        return s_texturesCube[pushConstants.skyboxTextureId].SampleGrad(s_samplers[pushConstants.linearSamplerIndex], viewdir, vddx, vddy);
     }
 
     float3 position = reconstructPositionWS(input.positionCS, depth);
