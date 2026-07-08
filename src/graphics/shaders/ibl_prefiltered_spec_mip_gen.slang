@@ -2,6 +2,7 @@ struct PushConstants {
     uint envmapTextureId;
     uint envmapSamplerId;
     float roughness;
+    float cubeResolution;
 };
 
 [vk::push_constant] PushConstants pushConstants;
@@ -22,7 +23,6 @@ VSOut main(uint vertexId : SV_VulkanVertexID) {
     output.positionCS = pos;
     return output;
 }
-
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -54,6 +54,13 @@ float3 ggxImportanceSample(float2 xi, float3 n, float roughness) {
     return tangent * h.x + bitangent * h.y + n * h.z;
 }
 
+float ggxDistribution(float nh, float roughness) {
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float denom = (nh * nh) * (a2 - 1.0) + 1.0;
+    return a2 / (float::getPi() * denom * denom);
+}
+
 float3 computeEnvDirection(uint viewid, float2 position) {
     float3 pdirection;
     switch (viewid) {
@@ -74,8 +81,6 @@ float4 main(VSOut input, uint viewid : SV_ViewID) : SV_Target {
 
     if (pushConstants.roughness < 0.001f) return s_texturesCube[pushConstants.envmapTextureId].Sample(s_samplers[pushConstants.envmapSamplerId], n);
 
-    // TODO: fix small high value spots causing artifacts
-
     float3 accum = float3(0.0f);
     float weight = 0.0f;
     for (uint i = 0u; i < samples; i++) {
@@ -84,7 +89,15 @@ float4 main(VSOut input, uint viewid : SV_ViewID) : SV_Target {
         float3 l = normalize(2.0f * dot(n, h) * h - n);
         float nl = max(dot(n, l), 0.0f);
         if (nl > 0.0f) {
-            accum += s_texturesCube[pushConstants.envmapTextureId].Sample(s_samplers[pushConstants.envmapSamplerId], l).rgb * nl;
+            float nh = max(dot(n, h), 0.0f);
+
+            float pdf = ggxDistribution(nh, pushConstants.roughness) * nh / (4.0f * nh) + 0.0001f;
+            float sample = 1.0f / (float(samples) * pdf);
+            float texel = 4.0 * float::getPi() / (6.0f * pushConstants.cubeResolution * pushConstants.cubeResolution);
+
+            float mip = max(pushConstants.roughness < 0.01f ? 0.0f : log2(sample / texel), 0.0f);
+
+            accum += s_texturesCube[pushConstants.envmapTextureId].SampleLevel(s_samplers[pushConstants.envmapSamplerId], l, mip).rgb * nl;
             weight += nl;
         }
     }

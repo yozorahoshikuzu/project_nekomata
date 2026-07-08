@@ -337,12 +337,14 @@ auto SharedRenderingResources::buildIblSecondaryCubemaps() -> void {
             u32 envmapTextureIndex;
             u32 envmapSamplerIndex;
             float roughness;
+            float cubeResolution;
         };
 
         auto pc = PushConstants {
             .envmapTextureIndex = texturesystem::TextureManager::get().textureToShaderIndexTable().textureToShaderImageIndex(m_skyCubemap.index),
             .envmapSamplerIndex = texturesystem::TextureManager::get().textureToShaderIndexTable().textureToShaderSamplerIndex(m_skyCubemap.index),
-            .roughness = prefilterImageMips > 1 ? static_cast<f32>(mip) / (static_cast<f32>(prefilterImageMips) - 1.0f) : 0.0f
+            .roughness = prefilterImageMips > 1 ? static_cast<f32>(mip) / (static_cast<f32>(prefilterImageMips) - 1.0f) : 0.0f,
+            .cubeResolution = static_cast<f32>(prefilterImage.extent().width) // in cubemaps, width == height
         };
 
         cmd.pushConstants<PushConstants>(m_iblPrefilterCubeGeneratorLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, pc);
