@@ -11,7 +11,7 @@ export namespace projnekomata {
 using AnyVulkanObject = std::variant<vk::raii::CommandPool, vk::raii::CommandBuffer, vk::raii::Image, vk::raii::ImageView, vk::raii::SwapchainKHR,
                                      vk::raii::Semaphore, vk::raii::Fence, vma::raii::Allocation, vk::raii::PipelineLayout, vk::raii::Pipeline,
                                      vk::raii::Buffer, vma::raii::VirtualBlock, vk::raii::DescriptorSetLayout, vk::raii::DescriptorSet,
-                                     vk::raii::DescriptorPool, vk::raii::Sampler>;
+                                     vk::raii::DescriptorPool, vk::raii::Sampler, vk::raii::QueryPool>;
 
 struct ResourceDeletionQueueEntry {
     u64 m_graphicsQueueRetireValue;

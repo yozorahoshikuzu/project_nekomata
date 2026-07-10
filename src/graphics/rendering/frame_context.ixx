@@ -18,11 +18,22 @@ public:
     FrameContext(std::nullptr_t);
     FrameContext();
 
+    auto waitForLastFrame() -> void;
+
     [[nodiscard]] auto execute(TransientRenderingResources& transientRenderingResources, SharedRenderingResources& sharedRenderingResources,
-                               VulkanSwapchain& swapchain, MRThreadsSharedDataLeaf& renderingData) -> FrameResult;
+                               VulkanSwapchain& swapchain, MRThreadsSharedDataLeaf& renderingData, bool recordStatistics) -> FrameResult;
+
+    // ---------------------------------------------------------------------------------------------------------------------------------------------------------
+    // Statistics
+
+    VulkanQueryPool m_timestampsQueryPool = nullptr;
+    VulkanQueryPool m_pipelineStatisticsQueryPool = nullptr;
+    bool m_queryPoolsHaveResultsOnFinish = false;
+    u64 m_numDrawcalls = 0;
 
 private:
     FrameRenderingResources m_frameRenderingResources = nullptr;
+
 
 };
 

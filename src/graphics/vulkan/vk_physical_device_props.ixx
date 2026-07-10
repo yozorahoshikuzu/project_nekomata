@@ -26,6 +26,7 @@ enum class PhysicalDevicePropertyQueryErrorKind {
     MissingVk11Multiview,
     MissingVk10TessellationShader,
     MissingVk10SamplerAnisotropy,
+    MissingVk10PipelineStatisticsQuery,
     MissingExtImageViewMinLod,
 };
 
@@ -83,6 +84,9 @@ struct PhysicalDevicePropertyQueryError {
             case PhysicalDevicePropertyQueryErrorKind::MissingVk10SamplerAnisotropy:
                 cause = "Missing Vulkan 1.0 feature samplerAnisotropy";
                 break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk10PipelineStatisticsQuery:
+                cause = "Missing Vulkan 1.0 feature pipelineStatisticsQuery";
+                break;
             case PhysicalDevicePropertyQueryErrorKind::MissingExtImageViewMinLod:
                 cause = "Missing Vulkan extension VK_EXT_image_view_min_lod";
                 break;
@@ -113,6 +117,8 @@ public:
     u32 m_apiVersion                    = 0_u32;
 
     u32 m_vramMemoryHeapIndex = 0_u32;
+
+    f32 m_timestampPeriod = 0.0_f32;
 
     bool m_hasFp16              = false;
     bool m_hasExtMemoryBudget   = false;

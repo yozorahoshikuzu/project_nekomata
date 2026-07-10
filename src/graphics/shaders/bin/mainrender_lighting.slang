@@ -78,7 +78,6 @@ float3 reconstructViewdir(float2 ndc) {
     worldNear.xyz /= worldNear.w;
 
     float3 viewDir = normalize(worldNear.xyz - pushConstants.globalData.cameraPos);
-    viewDir.y *= -1.0;
 
     return viewDir;
 }
@@ -147,7 +146,7 @@ float3 computeLightContribution(float3 norm, float3 viewdir, float3 lightdir, fl
     return brdfterm * radiance * nl;
 }
 
-constexpr static float roughnessMaxLod = 7.0f;
+const static float roughnessMaxLod = 6.0f;
 float3 computePixelColor(float3 fragmentPosWS, float3 norm, float3 albedo, float metallic, float roughness, float ao) {
     float3 viewdir = normalize(pushConstants.globalData.cameraPos - fragmentPosWS);
     float3 accum = float3(0.0);
@@ -167,14 +166,14 @@ float3 computePixelColor(float3 fragmentPosWS, float3 norm, float3 albedo, float
     float3 diffuseibl = irradiance * albedo;
 
     // ---- Specular IBL -----------------------------------------------------------------------------------------------
-    float nv = max(dot(norm, viewdir), 0.0001);
+    float nv = max(dot(norm, viewdir), 0.0f);
     float3 r = reflect(-viewdir, norm);
 
     float3 prefiltered = s_texturesCube[pushConstants.prefiltTextureId].SampleLevel(s_samplers[pushConstants.linearSamplerIndex], r, roughness * roughnessMaxLod).rgb;
     float2 envbrdf = s_textures2D[pushConstants.iblLutTextureId].Sample(s_samplers[pushConstants.linearSamplerIndex], float2(nv, roughness)).rg;
 
     float3 f0 = lerp(float3(0.04), albedo, metallic);
-    float3 fibl = fresnelSchlickRoughnessApprox(max(dot(norm, viewdir), 0.0001), f0, roughness);
+    float3 fibl = fresnelSchlickRoughnessApprox(nv, f0, roughness);
     float3 kdibl = (float3(1.0) - fibl) * (1.0 - metallic);
 
     float3 specularibl = prefiltered * (fibl * envbrdf.x + envbrdf.y);
@@ -190,12 +189,13 @@ float4 main(VSOut input) : SV_Target {
     let pn = s_textures2D[pushConstants.normalTextureIndex].SampleLevel(s_samplers[pushConstants.nearestSamplerIndex], input.texcoord, 0).xy;
     let metallicAo = s_textures2D[pushConstants.metallicAoTextureIndex].SampleLevel(s_samplers[pushConstants.nearestSamplerIndex], input.texcoord, 0).xy;
 
-    float3 viewdir = reconstructViewdir(input.positionCS);
+    float3 viewdir = reconstructViewdir(input.positionCS.xy);
     float3 vddx = ddx(viewdir);
     float3 vddy = ddy(viewdir);
 
     if (depth == 0.0) {
-        return s_texturesCube[pushConstants.skyboxTextureId].SampleGrad(s_samplers[pushConstants.linearSamplerIndex], viewdir, vddx, vddy);
+        float3 col = s_texturesCube[pushConstants.skyboxTextureId].SampleGrad(s_samplers[pushConstants.linearSamplerIndex], viewdir, vddx, vddy).rgb * 0.25;
+        return float4(AcesTonemap::map(col), 1.0);
     }
 
     float3 position = reconstructPositionWS(input.positionCS, depth);

@@ -16,10 +16,10 @@ struct SamplerParams {
     vk::Filter m_minFilter = vk::Filter::eLinear;
     vk::Filter m_magFilter = vk::Filter::eLinear;
     vk::SamplerMipmapMode m_mipmapMode = vk::SamplerMipmapMode::eLinear;
-    vk::SamplerAddressMode m_addressModeU = vk::SamplerAddressMode::eRepeat;
-    vk::SamplerAddressMode m_addressModeV = vk::SamplerAddressMode::eRepeat;
-    vk::SamplerAddressMode m_addressModeW = vk::SamplerAddressMode::eRepeat;
-    f32 m_anisotropy = 1.0f;
+    vk::SamplerAddressMode m_addressModeU = vk::SamplerAddressMode::eClampToEdge;
+    vk::SamplerAddressMode m_addressModeV = vk::SamplerAddressMode::eClampToEdge;
+    vk::SamplerAddressMode m_addressModeW = vk::SamplerAddressMode::eClampToEdge;
+    f32 m_anisotropy = 0.0f;
     f32 m_maxLod = vk::LodClampNone;
     f32 m_minLod = 0.0f;
     f32 m_mipLodBias = 0.0f;

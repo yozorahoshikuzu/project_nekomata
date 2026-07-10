@@ -1,0 +1,15 @@
+[package]
+name = "ddstoktx2"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1"
+byteorder = "1"
+clap = { version = "4.6.1" }
+clap_derive = "4.6.1"
+binrw = "0.15.1"
+vulkanite = "0.0.12"
+ddsfile = "0.6.0"
+num-traits = "0.2.19"
+ktx2-rw = "0.2.4"

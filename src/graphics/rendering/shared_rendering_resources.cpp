@@ -10,7 +10,7 @@ import :graphics.vulkan.vk_commands_barriers;
 namespace projnekomata::graphics {
 
 constexpr u32 prefilterImageSize = 512;
-constexpr u32 prefilterImageMips = std::bit_width(prefilterImageSize);
+constexpr u32 prefilterImageMips = std::bit_width(prefilterImageSize) - 3;
 
 SharedRenderingResources::SharedRenderingResources(std::nullptr_t) {}
 SharedRenderingResources::SharedRenderingResources() {
@@ -49,7 +49,7 @@ SharedRenderingResources::SharedRenderingResources() {
 
     m_iblIrradianceCubeGeneratorLayout = VulkanPipelineLayout::builder()
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
-        .addPushConstantRange(0, 8, vk::ShaderStageFlagBits::eFragment)
+        .addPushConstantRange(0, 12, vk::ShaderStageFlagBits::eFragment)
         .build();
     m_iblIrradianceCubeGeneratorPipeline = VulkanGraphicsPipeline::builder()
         .setPipelineLayout(m_iblIrradianceCubeGeneratorLayout)
@@ -96,7 +96,7 @@ SharedRenderingResources::SharedRenderingResources() {
     m_mainGeometryRenderLayout = VulkanPipelineLayout::builder()
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
         .addPushConstantRange(
-            0, 32,
+            0, 40,
             vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation
             | vk::ShaderStageFlagBits::eFragment
         )
@@ -140,7 +140,7 @@ SharedRenderingResources::SharedRenderingResources() {
     m_mainLightingPassLayout = VulkanPipelineLayout::builder()
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
         .addPushConstantRange(
-            0, 60,
+            0, 64,
             vk::ShaderStageFlagBits::eFragment
         )
         .build();
@@ -159,7 +159,7 @@ SharedRenderingResources::SharedRenderingResources() {
         vk::PipelineColorBlendAttachmentState{}
              .setBlendEnable(false)
              .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
-            vk::Format::eA2R10G10B10UnormPack32
+            vk::Format::eR8G8B8A8Srgb
         )
         .build();
 
@@ -188,7 +188,7 @@ SharedRenderingResources::SharedRenderingResources() {
                     .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
                     .setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
                     .setAlphaBlendOp(vk::BlendOp::eAdd),
-                vk::Format::eA2R10G10B10UnormPack32
+                vk::Format::eR8G8B8A8Srgb
         )
         .build();
 
@@ -216,7 +216,7 @@ SharedRenderingResources::SharedRenderingResources() {
                     .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
                     .setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
                     .setAlphaBlendOp(vk::BlendOp::eAdd),
-            vk::Format::eA2R10G10B10UnormPack32
+            vk::Format::eR8G8B8A8Srgb
         )
     .build();
 
@@ -245,7 +245,7 @@ SharedRenderingResources::SharedRenderingResources() {
                     .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
                     .setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
                     .setAlphaBlendOp(vk::BlendOp::eAdd),
-            vk::Format::eA2R10G10B10UnormPack32
+            vk::Format::eR8G8B8A8Srgb
         )
         .build();
 
@@ -263,9 +263,14 @@ auto SharedRenderingResources::refitHysteresisStates(usize renderableSparseCount
 auto SharedRenderingResources::buildIblSecondaryCubemaps() -> void {
     auto& irradianceImage = texturesystem::TextureManager::get().getTextureResources(m_skyIrradianceCubemap).image();
     auto& prefilterImage = texturesystem::TextureManager::get().getTextureResources(m_skyPrefilterCubemap).image();
+    f32 cubeResolution = static_cast<f32>(texturesystem::TextureManager::get().getTextureResources(m_skyCubemap).image().extent().width);
 
     auto irradianceImageArrayView = irradianceImage.createImageView(
         0, 1, 0, 6, false
+    );
+
+    u32 sampler = texturesystem::TextureManager::get().samplerCache().acquireSampler(
+        texturesystem::SamplerParams::defaultValues()
     );
 
     auto prefilterImageArrayViews = Vec<VulkanImageView>::withCapacity(prefilterImageMips);
@@ -327,11 +332,13 @@ auto SharedRenderingResources::buildIblSecondaryCubemaps() -> void {
     struct PushConstants {
         u32 envmapTextureIndex;
         u32 envmapSamplerIndex;
+        float cubeResolution;
     };
 
     auto pc = PushConstants {
         .envmapTextureIndex = texturesystem::TextureManager::get().textureToShaderIndexTable().textureToShaderImageIndex(m_skyCubemap.index),
-        .envmapSamplerIndex = texturesystem::TextureManager::get().textureToShaderIndexTable().textureToShaderSamplerIndex(m_skyCubemap.index)
+        .envmapSamplerIndex = sampler,
+        .cubeResolution = cubeResolution
     };
 
     cmd.pushConstants<PushConstants>(m_iblIrradianceCubeGeneratorLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, pc);
@@ -378,9 +385,9 @@ auto SharedRenderingResources::buildIblSecondaryCubemaps() -> void {
 
         auto pc = PushConstants {
             .envmapTextureIndex = texturesystem::TextureManager::get().textureToShaderIndexTable().textureToShaderImageIndex(m_skyCubemap.index),
-            .envmapSamplerIndex = texturesystem::TextureManager::get().textureToShaderIndexTable().textureToShaderSamplerIndex(m_skyCubemap.index),
+            .envmapSamplerIndex = sampler,
             .roughness = prefilterImageMips > 1 ? static_cast<f32>(mip) / (static_cast<f32>(prefilterImageMips) - 1.0f) : 0.0f,
-            .cubeResolution = static_cast<f32>(prefilterImage.extent().width) // in cubemaps, width == height
+            .cubeResolution = cubeResolution
         };
 
         log::info("mip {} roughness: {:.2f}", mip, pc.roughness);
@@ -404,8 +411,11 @@ auto SharedRenderingResources::buildIblSecondaryCubemaps() -> void {
 
     vkCheckResult(cmd.end());
 
+    auto timeBefore = std::chrono::steady_clock::now();
     VulkanContext::get().vkQueueGraphics().submitOneCommandBuffer(cmd, {}, {}, None)
         .await();
+    auto time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - timeBefore);
+    log::info("Irradiance and Prefiltered Spec Maps built in {:.2f}ms", time.count() / 1000.0f);
 }
 
 } // namespace projnekomata::graphics

@@ -14,5 +14,8 @@
 !src/
 !src/**
 
+!tools/
+!tools/**
+
 !Assets/
 !Assets/**

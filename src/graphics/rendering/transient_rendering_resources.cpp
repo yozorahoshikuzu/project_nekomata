@@ -17,13 +17,6 @@ TransientRenderingResources::TransientRenderingResources(vk::Extent2D renderImag
     m_metallicAndAoBufferIndex = srt.allocateImageIndex();
 
     setupRenderingAttachments(renderImageExtent);
-
-
-
-    log::info("Depth Buffer Index: {}", m_depthBufferIndex.imageIndex);
-    log::info("Albedo And Roughness Buffer Index: {}", m_albedoAndRoughnessBufferIndex.imageIndex);
-    log::info("Normal Buffer Index: {}", m_normalBufferIndex.imageIndex);
-    log::info("Metallic And Ao Buffer Index: {}", m_metallicAndAoBufferIndex.imageIndex);
 }
 
 auto TransientRenderingResources::handleWindowSizeChange(vk::Extent2D newWindowSize) -> void {
@@ -39,7 +32,7 @@ auto TransientRenderingResources::setupRenderingAttachments(vk::Extent2D renderI
     m_normalBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR16G16Snorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
     m_metallicAndAoBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR8G8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
 
-    m_finalDrawBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eA2R10G10B10UnormPack32, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
+    m_finalDrawBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
 
     srt.bindImage(m_depthBuffer, m_depthBufferIndex);
     srt.bindImage(m_albedoAndRoughnessBuffer, m_albedoAndRoughnessBufferIndex);

@@ -61,7 +61,7 @@ public:
 
         projnekomata::graphics::texturesystem::Texture ts1 = ts.loadKtx2TextureAsync("../../Assets/ui_test.ktx2", samplerSettings);
         projnekomata::graphics::texturesystem::Texture ts2 = ts.loadKtx2TextureAsync("../../Assets/ui_test2.ktx2", samplerSettings);
-        //projnekomata::graphics::texturesystem::Texture ts3 = ts.loadKtx2TextureAsync("../../Assets/ui_test3.ktx2", samplerSettings);
+        projnekomata::graphics::texturesystem::Texture ts3 = ts.loadKtx2TextureAsync("../../Assets/ui_test3.ktx2", samplerSettings);
         projnekomata::graphics::texturesystem::Texture ts4 = ts.loadKtx2TextureAsync("../../Assets/ui_test4.ktx2", samplerSettings);
         projnekomata::graphics::texturesystem::Texture ts5 = ts.loadKtx2TextureAsync("../../Assets/ui_test5.ktx2", samplerSettings);
 
@@ -90,7 +90,7 @@ public:
         auto escapeOverlayMeme3 = projnekomata::ui::UiNode::builder()
             .position({800.0f, 640.0f})
             .extent({250.0f, 275.0f})
-           // .texture(ts3)
+            .texture(ts3)
             .build();
 
         auto escapeOverlayMeme4 = projnekomata::ui::UiNode::builder()
@@ -277,7 +277,7 @@ public:
         }
 
         auto camPos = m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position;
-        std::get<projnekomata::ui::UiText>(m_text->element).text = fmt::format("pos: {:.2f}, {:.2f}, {:.2f}", camPos.x(), camPos.y(), camPos.z());
+        std::get<projnekomata::ui::UiText>(m_text->element).text = "";
     }
 
     bool m_handleMouseMovement = true;
@@ -396,19 +396,40 @@ void onGameInit(std::unique_ptr<projnekomata::ecs::World>& world) {
     std::uniform_real_distribution<float> phiSpeedDist(0.01f, 0.07f);
     std::uniform_real_distribution<float> rotationConstDist(0.05f, 0.15f);
     std::uniform_real_distribution<float> lightradianceDist(60.0f, 20000.0f);
-    for (usize i = 0; i < 1990; i++) {
-        auto ent = world->createEntity();
-        world->emplace<projnekomata::ecs::components::Transform>(ent);
-        world->emplace<projnekomata::ecs::components::Renderable>(ent, mesh, ts1);
-        world->addScript<MovingScript>(ent, 0.0f, radiusDist(gen), thetaSpeedDist(gen), phiSpeedDist(gen), thetaDist(gen), phiDist(gen), rotationConstDist(gen), rotationConstDist(gen));
-        if (i % 100 == 0) {
-            world->emplace<projnekomata::ecs::components::PointLight>(ent, Vector3f{lightradianceDist(gen), 0.0f, lightradianceDist(gen)});
+    //for (usize i = 0; i < 1990; i++) {
+    //    auto ent = world->createEntity();
+    //    world->emplace<projnekomata::ecs::components::Transform>(ent);
+    //    world->emplace<projnekomata::ecs::components::Renderable>(ent, mesh, ts1);
+    //    world->addScript<MovingScript>(ent, 0.0f, radiusDist(gen), thetaSpeedDist(gen), phiSpeedDist(gen), thetaDist(gen), phiDist(gen), rotationConstDist(gen), rotationConstDist(gen));
+    //    if (i % 100 == 0) {
+    //        world->emplace<projnekomata::ecs::components::PointLight>(ent, Vector3f{lightradianceDist(gen), 0.0f, lightradianceDist(gen)});
+    //    }
+    //}
+
+    // for demo
+    usize inOneDim = 11;
+    float spacing = 2.5f;
+    for (usize x = 0; x < inOneDim; x++) {
+        for (usize y = 0; y < inOneDim; y++) {
+                auto scale = Vector3f(1.0f);
+                auto rotation = Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+                auto translation = Vector3f(x * spacing, 0.0f, y * spacing);
+                auto transform = projnekomata::ecs::components::Transform(translation, rotation, scale);
+
+                auto ent = world->createEntity();
+                world->emplace<projnekomata::ecs::components::Transform>(ent, std::move(transform));
+                world->emplace<projnekomata::ecs::components::Renderable>(ent, mesh, ts1);
         }
     }
+    auto scale = Vector3f(1.0f);
+    auto rotation = Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+    auto translation = Vector3f(10.0f, 40.0f, 10.0f);
+    auto transform = projnekomata::ecs::components::Transform(translation, rotation, scale);
 
     auto lightEnt = world->createEntity();
-    world->emplace<projnekomata::ecs::components::PointLight>(lightEnt, Vector3f{10000.0f, 10000.0f, 10000.0f});
 
+    world->emplace<projnekomata::ecs::components::PointLight>(lightEnt, Vector3f{100.0f, 100.0f, 100.0f});
+    world->emplace<projnekomata::ecs::components::Transform>(lightEnt, std::move(transform));
 
     auto cameraEnt = world->createEntity();
     world->emplace<projnekomata::ecs::components::Camera>(cameraEnt, projnekomata::ecs::components::Camera{0.01f, 10000.0f, 60.0f, true});

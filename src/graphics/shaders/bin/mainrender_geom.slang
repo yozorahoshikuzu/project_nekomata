@@ -25,6 +25,8 @@ struct PushConstants {
     GlobalData* globalData;
     uint textureId;
     uint samplerId;
+    float roughmess;
+    float metallic;
 };
 
 [vk::push_constant] PushConstants push_consts;
@@ -151,10 +153,11 @@ struct FSOut {
 
 [shader("fragment")]
 FSOut main(TESOut input) {
-    float3 albedo = textures[push_consts.textureId].Sample(samplers[push_consts.samplerId], input.uv).rgb;
-    float metallic = 0.1f;
-    float roughness = 0.01f;
-    float ao = 0.95f;
+    //float3 albedo = textures[push_consts.textureId].Sample(samplers[push_consts.samplerId], input.uv).rgb;
+    float3 albedo = float3(0.8);
+    float metallic = push_consts.metallic;
+    float roughness = 1.0 - push_consts.roughmess;
+    float ao = 1.0f;
 
     float3 n = normalize(input.normal);
     float2 pn = octahedronNormalPack(n);

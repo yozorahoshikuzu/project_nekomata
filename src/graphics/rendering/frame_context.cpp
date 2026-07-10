@@ -27,6 +27,18 @@ using namespace projnekomata::math;
 FrameContext::FrameContext(std::nullptr_t) {  }
 FrameContext::FrameContext() {
     m_frameRenderingResources = FrameRenderingResources(2048);
+
+    m_timestampsQueryPool = VulkanQueryPool::create(vk::QueryType::eTimestamp, 4, {});
+    m_pipelineStatisticsQueryPool = VulkanQueryPool::create(vk::QueryType::ePipelineStatistics, 1,
+        vk::QueryPipelineStatisticFlagBits::eVertexShaderInvocations
+            | vk::QueryPipelineStatisticFlagBits::eTessellationControlShaderPatches
+            | vk::QueryPipelineStatisticFlagBits::eTessellationEvaluationShaderInvocations
+            | vk::QueryPipelineStatisticFlagBits::eFragmentShaderInvocations
+    );
+
+}
+auto FrameContext::waitForLastFrame() -> void {
+    m_frameRenderingResources.frameDoneFence().waitForSignal(std::numeric_limits<u64>::max());
 }
 
 inline vk::Offset3D toOffset3D(const vk::Extent3D& extent) {
@@ -64,9 +76,8 @@ inline bool isObjectVisible(
     return true;
 }
 
-auto FrameContext::execute(TransientRenderingResources& transientRenderingResources, SharedRenderingResources& sharedRenderingResources, VulkanSwapchain& swapchain, MRThreadsSharedDataLeaf& renderingData) -> FrameResult {
-    m_frameRenderingResources.frameDoneFence().waitForSignal(std::numeric_limits<u64>::max());
-
+auto FrameContext::execute(TransientRenderingResources& transientRenderingResources, SharedRenderingResources& sharedRenderingResources, VulkanSwapchain& swapchain,
+    MRThreadsSharedDataLeaf& renderingData, bool recordStatistics) -> FrameResult {
     auto imageAcquire = swapchain.acquireNextImage(std::numeric_limits<u64>::max(), m_frameRenderingResources.imageAcquiredSemaphore());
 
     if (imageAcquire.first.isNone() || imageAcquire.second) {
@@ -75,6 +86,8 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
     m_frameRenderingResources.frameDoneFence().reset();
     sharedRenderingResources.refitHysteresisStates(renderingData.m_renderables.m_sparseToStorage.size());
+    m_numDrawcalls = 0;
+    m_queryPoolsHaveResultsOnFinish = recordStatistics;
 
     // ---------------------------------------------------------------- Render Pass starts here ----------------------------------------------------------------
 
@@ -125,6 +138,11 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     auto beginInfo = vk::CommandBufferBeginInfo{}
         .setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     vkCheckResult(cb.begin(beginInfo));
+
+    if (recordStatistics) {
+        cb.resetQueryPool(m_timestampsQueryPool.vkQueryPool(), 0, m_timestampsQueryPool.queryCount());
+        cb.resetQueryPool(m_pipelineStatisticsQueryPool.vkQueryPool(), 0, m_pipelineStatisticsQueryPool.queryCount());
+    }
 
     // ---- Font Rasterization ---------------------------------------------------------------------------------------------------------------------------------
 
@@ -224,6 +242,11 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         )
         .flush(m_frameRenderingResources.commandBuffer());
 
+    if (recordStatistics) {
+        cb.writeTimestamp2(vk::PipelineStageFlagBits2::eTopOfPipe, m_timestampsQueryPool.vkQueryPool(), 0);
+        cb.beginQuery(m_pipelineStatisticsQueryPool.vkQueryPool(), 0, {});
+    }
+
     auto albedoAndRoughnessAttachmentInfo = vk::RenderingAttachmentInfo{}
         .setImageView(transientRenderingResources.albedoAndRoughnessBuffer().vkImageViewWholeSize())
         .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
@@ -270,6 +293,8 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         vk::DeviceAddress globaldataAddr;
         u32 textureId;
         u32 samplerId;
+        float roughness;
+        float metallic;
     };
 
     for (auto [i, renderable] : renderingData.m_renderables.m_storage.iter().enumerate()) {
@@ -334,21 +359,32 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
         auto vboDeviceAddr = lod.meshSuballocation.vertexBuffer.deviceAddress;
 
+        float roughness = static_cast<float>(i % 11) / 10.0f;
+        float metallic = static_cast<float>(i / 11) / 10.0f;
+
         auto pushconstData = RenderPushConstantData {
             .objectUniformAddr = uboFinalAddr,
             .vertexbufferAddr = vboDeviceAddr,
             .globaldataAddr = globaldataAddr,
             .textureId = textureImageId,
-            .samplerId = textureSamplerId
+            .samplerId = textureSamplerId,
+            .roughness = roughness,
+            .metallic = metallic,
         };
 
         cb.bindIndexBuffer(lod.meshSuballocation.indexBuffer.buffer, lod.meshSuballocation.indexBuffer.offset, vk::IndexType::eUint32);
 
         cb.pushConstants<RenderPushConstantData>(sharedRenderingResources.m_mainGeometryRenderLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation, 0, pushconstData);
         cb.drawIndexed(lod.meshSuballocation.indexBuffer.size / sizeof(u32), 1, 0, 0, 0);
+        m_numDrawcalls++;
     }
 
     cb.endRendering();
+
+    if (recordStatistics) {
+        cb.writeTimestamp2(vk::PipelineStageFlagBits2::eBottomOfPipe, m_timestampsQueryPool.vkQueryPool(), 1);
+        cb.endQuery(m_pipelineStatisticsQueryPool.vkQueryPool(), 0);
+    }
 
     // ---- Deferred Lighting Stage ----------------------------------------------------------------------------------------------------------------------------
 
@@ -374,6 +410,10 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
             vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite
         )
         .flush(m_frameRenderingResources.commandBuffer());
+
+    if (recordStatistics) {
+        cb.writeTimestamp2(vk::PipelineStageFlagBits2::eTopOfPipe, m_timestampsQueryPool.vkQueryPool(), 2);
+    }
 
     u32 skyboxTextureId = renderingData.m_textureToImageShaderIndexSnapshot[sharedRenderingResources.m_skyCubemap.index];
     u32 irradianceTextureId = renderingData.m_textureToImageShaderIndexSnapshot[sharedRenderingResources.m_skyIrradianceCubemap.index];
@@ -436,6 +476,10 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
     cb.pushConstants<LightingStagePushConstantData>(sharedRenderingResources.m_mainLightingPassLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, pushconstData);
     cb.draw(3, 1, 0, 0);
+
+    if (recordStatistics) {
+        cb.writeTimestamp2(vk::PipelineStageFlagBits2::eBottomOfPipe, m_timestampsQueryPool.vkQueryPool(), 3);
+    }
 
     auto textInstanceBuffers = Vec<VulkanBuffer>::create();
 

@@ -26,6 +26,10 @@ VSOut main(uint vertexId : SV_VulkanVertexID) {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
+float hash1d(float x) {
+    return frac(sin(x) * 43758.5453123);
+}
+
 uint revbits32(uint x) {
     x = ((x & 0x55555555u) << 1) | ((x & 0xaaaaaaaau) >> 1);
     x = ((x & 0x33333333u) << 2) | ((x & 0xccccccccu) >> 2);
@@ -77,14 +81,20 @@ float3 computeEnvDirection(uint viewid, float2 position) {
 [shader("fragment")]
 float4 main(VSOut input, uint viewid : SV_ViewID) : SV_Target {
     float3 n = computeEnvDirection(viewid, input.positionCS.xy);
-    const uint samples = 1024u;
+    const uint samples = 4096u;
 
-    if (pushConstants.roughness < 0.001f) return s_texturesCube[pushConstants.envmapTextureId].Sample(s_samplers[pushConstants.envmapSamplerId], n);
+    if (pushConstants.roughness < 0.001f) return float4(s_texturesCube[pushConstants.envmapTextureId].Sample(s_samplers[pushConstants.envmapSamplerId], n).rgb, 1.0);
+
+    float2 rot = float2(
+        hash1d(input.positionCS.x * 12.9898 + input.positionCS.y * 78.233),
+        hash1d(input.positionCS.x * 39.346 + input.positionCS.y * 11.135)
+    );
 
     float3 accum = float3(0.0f);
     float weight = 0.0f;
     for (uint i = 0u; i < samples; i++) {
         float2 xi = hammersleySeq(i, samples);
+        xi = fract(rot + xi);
         float3 h = ggxImportanceSample(xi, n, pushConstants.roughness);
         float3 l = normalize(2.0f * dot(n, h) * h - n);
         float nl = max(dot(n, l), 0.0f);
@@ -95,7 +105,7 @@ float4 main(VSOut input, uint viewid : SV_ViewID) : SV_Target {
             float sample = 1.0f / (float(samples) * pdf);
             float texel = 4.0 * float::getPi() / (6.0f * pushConstants.cubeResolution * pushConstants.cubeResolution);
 
-            float mip = max(pushConstants.roughness < 0.01f ? 0.0f : log2(sample / texel), 0.0f);
+            float mip = max(pushConstants.roughness < 0.01f ? 0.0f : 0.75f * log2(sample / texel), 0.0f);
 
             accum += s_texturesCube[pushConstants.envmapTextureId].SampleLevel(s_samplers[pushConstants.envmapSamplerId], l, mip).rgb * nl;
             weight += nl;

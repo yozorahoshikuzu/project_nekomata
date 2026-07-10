@@ -8,6 +8,7 @@ import :graphics.vulkan.sync_primitives.binary_semaphore;
 import :core.runtime.shared_data;
 import :core.ecs.world.camera;
 import :core.ecs.world.transform;
+import :graphics.vulkan.vk_query_pool;
 
 export namespace projnekomata::graphics {
 

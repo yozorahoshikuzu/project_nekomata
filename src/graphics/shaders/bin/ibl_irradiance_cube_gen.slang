@@ -1,6 +1,7 @@
 struct PushConstants {
     uint envmapTextureId;
     uint envmapSamplerId;
+    float cubeResolution;
 };
 
 [vk::push_constant] PushConstants pushConstants;
@@ -70,7 +71,7 @@ float4 main(VSOut input, uint viewid : SV_ViewID) : SV_Target {
     float3 tgy = float3(b, nsign + n.y * n.y * a, -n.y);
 
     var irradiance = float3(0.0f);
-    const uint samples = 1024u;
+    const uint samples = 16384u;
 
     for (uint i = 0u; i < samples; i++) {
         float2 xi = hammersleySeq(i, samples);

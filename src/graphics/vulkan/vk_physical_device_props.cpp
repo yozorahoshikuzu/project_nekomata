@@ -71,6 +71,7 @@ static constexpr auto kRequiredPhysicalDeviceFeatures = std::to_array<RequiredFe
     { "timelineSemaphore"sv,                                 {}, {}, &vk::PhysicalDeviceVulkan12Features::timelineSemaphore, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12TimelineSemaphore },
     { "multiview"sv,                                         {}, &vk::PhysicalDeviceVulkan11Features::multiview, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk11Multiview },
     { "samplerAnisotropy"sv,                                 &vk::PhysicalDeviceFeatures::samplerAnisotropy, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10SamplerAnisotropy },
+    { "pipelineStatisticsQuery"sv,                           &vk::PhysicalDeviceFeatures::pipelineStatisticsQuery, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10PipelineStatisticsQuery },
     { "tessellationShader"sv,                                &vk::PhysicalDeviceFeatures::tessellationShader, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10TessellationShader },
 });
 
@@ -320,6 +321,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     props.m_apiVersion = coreProperties.apiVersion;
     props.m_vramSize = vramSize;
     props.m_vramMemoryHeapIndex = vramHeapIndex;
+    props.m_timestampPeriod = propertiesQuery.get<vk::PhysicalDeviceProperties2>().properties.limits.timestampPeriod;
     props.m_accelerationStructureProperties = accelerationStructureProperties;
     props.m_rayTracingPipelineProperties = rayTracingPipelineProperties;
     props.m_enabledVk10Features = enabledVk10Features;
