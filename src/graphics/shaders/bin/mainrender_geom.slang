@@ -25,11 +25,11 @@ struct PushConstants {
     GlobalData* globalData;
     uint textureId;
     uint samplerId;
-    float roughmess;
+    float roughness;
     float metallic;
 };
 
-[vk::push_constant] PushConstants push_consts;
+[vk::push_constant] PushConstants pushConsts;
 [vk::binding(0, 0)] Texture2D textures[];
 [vk::binding(0, 0)] TextureCube s_texturesCube[];
 [vk::binding(1, 0)] SamplerState samplers[];
@@ -43,17 +43,17 @@ struct VSOut {
 
 [shader("vertex")]
 VSOut main(uint vertexID: SV_VulkanVertexID) {
-    float3 position = push_consts.vertexbuffer[vertexID].position;
-    float3 normal = push_consts.vertexbuffer[vertexID].normal;
-    float2 uv = float2(push_consts.vertexbuffer[vertexID].uvX, push_consts.vertexbuffer[vertexID].uvY);
+    float3 position = pushConsts.vertexbuffer[vertexID].position;
+    float3 normal = pushConsts.vertexbuffer[vertexID].normal;
+    float2 uv = float2(pushConsts.vertexbuffer[vertexID].uvX, pushConsts.vertexbuffer[vertexID].uvY);
 
-    float4 hposition = mul(push_consts.data.model, float4(position, 1.0));
+    float4 hposition = mul(pushConsts.data.model, float4(position, 1.0));
 
     VSOut output;
     output.position = hposition.xyz / hposition.w;
     output.color = float3(1.0);
     output.uv = uv;
-    output.normal = mul(push_consts.data.normalMatrix, normal);
+    output.normal = mul(pushConsts.data.normalMatrix, normal);
 
     return output;
 }
@@ -135,7 +135,7 @@ TESOut main(TCSPatchConst patchConst, float3 barycoord : SV_DomainLocation, Outp
     float hsv_v = 0.85;
 
     TESOut output;
-    output.positionCS = mul(push_consts.globalData.projview, float4(position, 1.0));
+    output.positionCS = mul(pushConsts.globalData.projview, float4(position, 1.0));
     output.positionWS = position;
     output.color = hsv_to_rgb(float3(hsv_h, hsv_s, hsv_v));
     output.uv = uv;
@@ -155,8 +155,8 @@ struct FSOut {
 FSOut main(TESOut input) {
     //float3 albedo = textures[push_consts.textureId].Sample(samplers[push_consts.samplerId], input.uv).rgb;
     float3 albedo = float3(0.8);
-    float metallic = push_consts.metallic;
-    float roughness = 1.0 - push_consts.roughmess;
+    float metallic = pushConsts.metallic;
+    float roughness = 1.0 - pushConsts.roughness;
     float ao = 1.0f;
 
     float3 n = normalize(input.normal);

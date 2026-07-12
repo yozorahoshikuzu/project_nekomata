@@ -60,6 +60,7 @@ static constexpr auto kRequiredPhysicalDeviceFeatures = std::to_array<RequiredFe
     { "maintenance5"sv,                                      {}, {}, {}, {}, &vk::PhysicalDeviceVulkan14Features::maintenance5, PhysicalDevicePropertyQueryErrorKind::MissingVk14Maintenance5 },
     { "synchronization2"sv,                                  {}, {}, {}, &vk::PhysicalDeviceVulkan13Features::synchronization2, {},   PhysicalDevicePropertyQueryErrorKind::MissingVk13Synchronization2 },
     { "dynamicRendering"sv,                                  {}, {}, {}, &vk::PhysicalDeviceVulkan13Features::dynamicRendering, {},   PhysicalDevicePropertyQueryErrorKind::MissingVk13DynamicRendering },
+    { "shaderDemoteToHelperInvocation"sv,                    {}, {}, {}, &vk::PhysicalDeviceVulkan13Features::shaderDemoteToHelperInvocation, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk13ShaderDemoteToHelperInvocation },
     { "bufferDeviceAddress"sv,                               {}, {}, &vk::PhysicalDeviceVulkan12Features::bufferDeviceAddress, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12BufferDeviceAddress },
     { "descriptorIndexing"sv,                                {}, {}, &vk::PhysicalDeviceVulkan12Features::descriptorIndexing,  {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12DescriptorIndexing },
     { "shaderSampledImageArrayNonUniformIndexing"sv,         {}, {}, &vk::PhysicalDeviceVulkan12Features::shaderSampledImageArrayNonUniformIndexing, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12ShaderSampledImageArrayNonUniformIndexing },
@@ -73,6 +74,7 @@ static constexpr auto kRequiredPhysicalDeviceFeatures = std::to_array<RequiredFe
     { "samplerAnisotropy"sv,                                 &vk::PhysicalDeviceFeatures::samplerAnisotropy, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10SamplerAnisotropy },
     { "pipelineStatisticsQuery"sv,                           &vk::PhysicalDeviceFeatures::pipelineStatisticsQuery, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10PipelineStatisticsQuery },
     { "tessellationShader"sv,                                &vk::PhysicalDeviceFeatures::tessellationShader, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10TessellationShader },
+    { "shaderImageGatherExtended"sv,                         &vk::PhysicalDeviceFeatures::shaderImageGatherExtended, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10ShaderImageGatherExtended },
 });
 
 // ---- Optional Features --------------------------------------------------------------------------------------------------------------------------------------
@@ -229,6 +231,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     if (!featuresQuery.get<vk::PhysicalDeviceImageViewMinLodFeaturesEXT>().minLod) {
         return Err(PhysicalDevicePropertyQueryError{.m_kind = PhysicalDevicePropertyQueryErrorKind::MissingExtImageViewMinLod});
     }
+
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
     // Check for availability of optional features

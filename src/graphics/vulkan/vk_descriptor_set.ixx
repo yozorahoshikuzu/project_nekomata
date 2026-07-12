@@ -38,12 +38,19 @@ public:
     VulkanDescriptorSetWriter& operator=(const VulkanDescriptorSetWriter&) = delete;
     VulkanDescriptorSetWriter& operator=(VulkanDescriptorSetWriter&&) = default;
 
-    // TODO: Make rest of code compatible to use plain image views for descriptors then replace
     [[nodiscard]] constexpr auto bindImage(u32 binding, u32 dstDescriptorIndex, const VulkanImage& image) -> VulkanDescriptorSetWriter& {
         auto imageInfo = vk::DescriptorImageInfo{}
             .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
             .setSampler(nullptr)
             .setImageView(image.vkImageViewWholeSize());
+        m_descriptorImageInfos.emplace_back(binding, dstDescriptorIndex, vk::DescriptorType::eSampledImage, imageInfo);
+        return *this;
+    }
+    [[nodiscard]] constexpr auto bindImage(u32 binding, u32 dstDescriptorIndex, const VulkanImageView& imageView) -> VulkanDescriptorSetWriter& {
+        auto imageInfo = vk::DescriptorImageInfo{}
+            .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+            .setSampler(nullptr)
+            .setImageView(imageView.vkImageView());
         m_descriptorImageInfos.emplace_back(binding, dstDescriptorIndex, vk::DescriptorType::eSampledImage, imageInfo);
         return *this;
     }

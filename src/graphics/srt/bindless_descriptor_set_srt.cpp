@@ -79,6 +79,11 @@ auto BindlessDescriptorSetShaderResourceTable::bindImage(const VulkanImage& imag
         .bindImage(0, index.imageIndex, image)
         .commit();
 }
+auto BindlessDescriptorSetShaderResourceTable::bindImageView(const VulkanImageView& imageView, SRTResourceIndex index) -> void {
+    VulkanDescriptorSetWriter(m_descriptorSet)
+        .bindImage(0, index.imageIndex, imageView)
+        .commit();
+}
 
 auto BindlessDescriptorSetShaderResourceTable::bindSampler(const VulkanSampler& sampler, SRTResourceIndex index) -> void {
     VulkanDescriptorSetWriter(m_descriptorSet)

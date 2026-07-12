@@ -40,11 +40,11 @@ Well, maybe in the future..
 Note that the version numbers provided are what the project works with. Earlier or later versions of a given dependency might or might not build/work.
 
 To build the project, you need the following dependencies:
-- Base development packages (e.g. `base-devel` on Arch Linux)
-- CMake 4.0 or later
+- Base development packages (e.g. `base-devel` on Arch Linux).
+- CMake 4.3.4. Not lower, not higher.
 - Clang 22 or later (GCC may work but not tested and is not really supported in the long run)
 - Vulkan SDK (the project typically requires the very latest version of the SDK but a couple versions back might work fine)
-- Slang compiler v2026.9.1 or later
+- Slang compiler v2026.11 or later. Older versions might cause issues on AMD graphics cards due to a bug in the Slang compiler with NURI.
 - SDL3 3.4.8 or later
 - FreeType2 2.14.3 or later
 - utfcpp 4.0.9 or later

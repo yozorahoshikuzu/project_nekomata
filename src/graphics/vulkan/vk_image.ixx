@@ -34,6 +34,7 @@ public:
     VulkanImage& operator=(VulkanImage&&) = default;
 
     static auto create(vk::ImageType type, vk::Extent3D extent, u32 layerCount, u32 mipLevelCount, bool isCubemap, vk::Format format, vk::ImageUsageFlags usage, vk::ImageTiling tiling, vma::MemoryUsage memoryUsage, vk::MemoryPropertyFlags memoryRequiredFlags, const std::span<const u32>& queueFamilyIndices, vk::ImageLayout initialLayout) -> VulkanImage;
+    static auto createMutableFormat(vk::ImageType type, vk::Extent3D extent, u32 layerCount, u32 mipLevelCount, bool isCubemap, vk::Format format, vk::ImageUsageFlags usage, vk::ImageTiling tiling, vma::MemoryUsage memoryUsage, vk::MemoryPropertyFlags memoryRequiredFlags, const std::span<const u32>& queueFamilyIndices, vk::ImageLayout initialLayout, const std::span<const vk::Format>& formats) -> VulkanImage;
 
     // clang-format off
     static std::unordered_map<vk::Format, ImageFormatMd> s_formatMetadata;
@@ -47,6 +48,9 @@ public:
 
     auto createImageView(u32 baseMipLevel, u32 mipLevelCount, u32 baseArrayLayer, u32 arrayLayerCount, bool keepCube) -> VulkanImageView;
     auto createImageViewWithMinLod(u32 baseMipLevel, u32 mipLevelCount, u32 baseArrayLayer, u32 arrayLayerCount, float minLod, bool keepCube) -> VulkanImageView;
+
+    auto createImageViewWithFormat(vk::Format format, vk::ImageAspectFlags aspectFlags, u32 baseMipLevel, u32 mipLevelCount, u32 baseArrayLayer, u32 arrayLayerCount, bool keepCube) -> VulkanImageView;
+    auto createImageViewWithFormatAndMinLod(vk::Format format, vk::ImageAspectFlags aspectFlags, u32 baseMipLevel, u32 mipLevelCount, u32 baseArrayLayer, u32 arrayLayerCount, float minLod, bool keepCube) -> VulkanImageView;
 
 private:
     VulkanAsyncRaiiWrapper<vk::raii::Image> m_vkImage = nullptr;

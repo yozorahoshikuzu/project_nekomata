@@ -44,6 +44,16 @@ SharedRenderingResources::SharedRenderingResources() {
         samplerParams
     );
 
+    m_smaaAreaTexture = texturesystem::TextureManager::get().loadKtx2TextureBlocking(
+        "../../Assets/smaa_areatex.ktx2",
+        samplerParams
+    );
+
+    m_smaaSearchTexture = texturesystem::TextureManager::get().loadKtx2TextureBlocking(
+        "../../Assets/smaa_searchtex.ktx2",
+        samplerParams
+    );
+
     auto iblIrradianceGenShader = SpirvShaderCode::loadFromFile("../spirv/ibl_irradiance_cube_gen.spv").unwrap();
     auto iblPrefilterGenShader = SpirvShaderCode::loadFromFile("../spirv/ibl_prefiltered_spec_mip_gen.spv").unwrap();
 
@@ -141,7 +151,7 @@ SharedRenderingResources::SharedRenderingResources() {
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
         .addPushConstantRange(
             0, 64,
-            vk::ShaderStageFlagBits::eFragment
+            vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
         )
         .build();
     auto lightingPassShader = SpirvShaderCode::loadFromFile("../spirv/mainrender_lighting.spv").unwrap();
@@ -249,9 +259,76 @@ SharedRenderingResources::SharedRenderingResources() {
         )
         .build();
 
-    m_tmStart = std::chrono::steady_clock::now();
+    // ---- SMAA -----------------------------------------------------------------------------------------------------------------------------------------------
 
-    m_fontFace = fonts::FontManager::get().loadFont("/usr/share/fonts/noto/NotoSans-Regular.ttf");
+    m_smaaEdgeDetectLayout = VulkanPipelineLayout::builder()
+        .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
+        .addPushConstantRange(0, 32, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+        .build();
+    auto smaaEdgeDetectShader = SpirvShaderCode::loadFromFile("../spirv/smaa_edgedetect.spv").unwrap();
+    m_smaaEdgeDetectPipeline = VulkanGraphicsPipeline::builder()
+        .setPipelineLayout(m_smaaEdgeDetectLayout)
+        .addShader(smaaEdgeDetectShader, vk::ShaderStageFlagBits::eVertex)
+        .addShader(smaaEdgeDetectShader, vk::ShaderStageFlagBits::eFragment)
+        .setInputTopology(vk::PrimitiveTopology::eTriangleList)
+        .setRastPolygonMode(vk::PolygonMode::eFill)
+        .setRastCulling(vk::CullModeFlagBits::eNone, vk::FrontFace::eCounterClockwise)
+        .setRastLineWidth(1.0f)
+        .disableMultisampling()
+        .disableDepthTest()
+        .pushRenderingAttachment(
+        vk::PipelineColorBlendAttachmentState{}
+             .setBlendEnable(false)
+             .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
+            vk::Format::eR8G8Unorm
+        )
+        .build();
+
+    m_smaaBlendWeightLayout = VulkanPipelineLayout::builder()
+        .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
+        .addPushConstantRange(0, 36, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+        .build();
+    auto smaaBlendWeightShader = SpirvShaderCode::loadFromFile("../spirv/smaa_blendweight.spv").unwrap();
+    m_smaaBlendWeightPipeline = VulkanGraphicsPipeline::builder()
+        .setPipelineLayout(m_smaaBlendWeightLayout)
+        .addShader(smaaBlendWeightShader, vk::ShaderStageFlagBits::eVertex)
+        .addShader(smaaBlendWeightShader, vk::ShaderStageFlagBits::eFragment)
+        .setInputTopology(vk::PrimitiveTopology::eTriangleList)
+        .setRastPolygonMode(vk::PolygonMode::eFill)
+        .setRastCulling(vk::CullModeFlagBits::eNone, vk::FrontFace::eCounterClockwise)
+        .setRastLineWidth(1.0f)
+        .disableMultisampling()
+        .disableDepthTest()
+        .pushRenderingAttachment(
+        vk::PipelineColorBlendAttachmentState{}
+             .setBlendEnable(false)
+             .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
+            vk::Format::eR8G8B8A8Unorm
+        )
+        .build();
+
+    m_smaaNeighborhoodBlendLayout = VulkanPipelineLayout::builder()
+        .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
+        .addPushConstantRange(0, 32, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+        .build();
+    auto smaaNeighborhoodBlendShader = SpirvShaderCode::loadFromFile("../spirv/smaa_neighborhoodblend.spv").unwrap();
+    m_smaaNeighborhoodBlendPipeline = VulkanGraphicsPipeline::builder()
+        .setPipelineLayout(m_smaaNeighborhoodBlendLayout)
+        .addShader(smaaNeighborhoodBlendShader, vk::ShaderStageFlagBits::eVertex)
+        .addShader(smaaNeighborhoodBlendShader, vk::ShaderStageFlagBits::eFragment)
+        .setInputTopology(vk::PrimitiveTopology::eTriangleList)
+        .setRastPolygonMode(vk::PolygonMode::eFill)
+        .setRastCulling(vk::CullModeFlagBits::eNone, vk::FrontFace::eCounterClockwise)
+        .setRastLineWidth(1.0f)
+        .disableMultisampling()
+        .disableDepthTest()
+        .pushRenderingAttachment(
+        vk::PipelineColorBlendAttachmentState{}
+             .setBlendEnable(false)
+             .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
+            vk::Format::eR8G8B8A8Unorm
+        )
+        .build();
 
     buildIblSecondaryCubemaps();
 }
@@ -390,7 +467,7 @@ auto SharedRenderingResources::buildIblSecondaryCubemaps() -> void {
             .cubeResolution = cubeResolution
         };
 
-        log::info("mip {} roughness: {:.2f}", mip, pc.roughness);
+        log::trace("Prefilter Spec Map Mip {} Roughness: {:.2f}", mip, pc.roughness);
 
         cmd.pushConstants<PushConstants>(m_iblPrefilterCubeGeneratorLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, pc);
         cmd.draw(3, 1, 0, 0);
@@ -415,7 +492,7 @@ auto SharedRenderingResources::buildIblSecondaryCubemaps() -> void {
     VulkanContext::get().vkQueueGraphics().submitOneCommandBuffer(cmd, {}, {}, None)
         .await();
     auto time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - timeBefore);
-    log::info("Irradiance and Prefiltered Spec Maps built in {:.2f}ms", time.count() / 1000.0f);
+    log::trace("Irradiance and Prefiltered Spec Maps built in {:.2f}ms", time.count() / 1000.0f);
 }
 
 } // namespace projnekomata::graphics

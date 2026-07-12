@@ -24,18 +24,10 @@ public:
     SharedRenderingResources(std::nullptr_t);
     SharedRenderingResources();
 
-    // Temporary, remove later
-    std::chrono::steady_clock::time_point m_tmStart;
-
     auto refitHysteresisStates(usize renderableSparseCount) -> void;
     auto getHysteresisState(usize renderableSparseIndex) -> MeshHysteresisState& { return m_meshHysteresisStates[renderableSparseIndex]; }
 
 
-    // do the funny top corner text
-    std::string m_textToDisplay = "Unregistered HyperCam 2";
-
-    bool glyphsRendered = false;
-    fonts::FontFace m_fontFace;
     rendering::DynamicBitmapFontAtlas m_fontAtlas;
 
     float displayMs = 0.0f;
@@ -44,6 +36,9 @@ public:
     texturesystem::Texture m_skyIrradianceCubemap = {};
     texturesystem::Texture m_skyPrefilterCubemap = {};
     texturesystem::Texture m_brdfLUT = {};
+
+    texturesystem::Texture m_smaaAreaTexture = {};
+    texturesystem::Texture m_smaaSearchTexture = {};
 
     VulkanPipelineLayout m_iblIrradianceCubeGeneratorLayout = nullptr;
     VulkanGraphicsPipeline m_iblIrradianceCubeGeneratorPipeline = nullptr;
@@ -65,6 +60,15 @@ public:
 
     VulkanPipelineLayout m_mainLightingPassLayout = nullptr;
     VulkanGraphicsPipeline m_mainLightingPassPipeline = nullptr;
+
+    VulkanPipelineLayout m_smaaBlendWeightLayout = nullptr;
+    VulkanGraphicsPipeline m_smaaBlendWeightPipeline = nullptr;
+
+    VulkanPipelineLayout m_smaaEdgeDetectLayout = nullptr;
+    VulkanGraphicsPipeline m_smaaEdgeDetectPipeline = nullptr;
+
+    VulkanPipelineLayout m_smaaNeighborhoodBlendLayout = nullptr;
+    VulkanGraphicsPipeline m_smaaNeighborhoodBlendPipeline = nullptr;
 
 private:
 

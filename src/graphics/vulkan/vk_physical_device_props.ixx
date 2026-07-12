@@ -14,6 +14,7 @@ enum class PhysicalDevicePropertyQueryErrorKind {
     MissingVk14Maintenance5,
     MissingVk13Synchronization2,
     MissingVk13DynamicRendering,
+    MissingVk13ShaderDemoteToHelperInvocation,
     MissingVk12BufferDeviceAddress,
     MissingVk12DescriptorIndexing,
     MissingVk12ShaderSampledImageArrayNonUniformIndexing,
@@ -24,6 +25,7 @@ enum class PhysicalDevicePropertyQueryErrorKind {
     MissingVk12ScalarBlockLayout,
     MissingVk12TimelineSemaphore,
     MissingVk11Multiview,
+    MissingVk10ShaderImageGatherExtended,
     MissingVk10TessellationShader,
     MissingVk10SamplerAnisotropy,
     MissingVk10PipelineStatisticsQuery,
@@ -47,6 +49,9 @@ struct PhysicalDevicePropertyQueryError {
                 break;
             case PhysicalDevicePropertyQueryErrorKind::MissingVk13DynamicRendering:
                 cause = "Missing Vulkan 1.3 feature dynamicRendering";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk13ShaderDemoteToHelperInvocation:
+                cause = "Missing Vulkan 1.3 feature shaderDemoteToHelperInvocation";
                 break;
             case PhysicalDevicePropertyQueryErrorKind::MissingVk12BufferDeviceAddress:
                 cause = "Missing Vulkan 1.2 feature bufferDeviceAddress";
@@ -86,6 +91,9 @@ struct PhysicalDevicePropertyQueryError {
                 break;
             case PhysicalDevicePropertyQueryErrorKind::MissingVk10PipelineStatisticsQuery:
                 cause = "Missing Vulkan 1.0 feature pipelineStatisticsQuery";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk10ShaderImageGatherExtended:
+                cause = "Missing Vulkan 1.0 feature shaderImageGatherExtended";
                 break;
             case PhysicalDevicePropertyQueryErrorKind::MissingExtImageViewMinLod:
                 cause = "Missing Vulkan extension VK_EXT_image_view_min_lod";

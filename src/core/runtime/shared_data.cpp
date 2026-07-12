@@ -1,6 +1,5 @@
 module projnekomata;
 import :core.runtime.shared_data;
-
 namespace projnekomata {
 
 MRThreadsSharedData::MRThreadsSharedData(vk::Extent2D windowCurrentRes)

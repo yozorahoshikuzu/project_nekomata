@@ -33,6 +33,7 @@ public:
     auto allocateSamplerIndices(u32 count, std::span<SRTResourceIndex> dstIndices) -> void override;
 
     auto bindImage(const VulkanImage& image, SRTResourceIndex index) -> void override;
+    auto bindImageView(const VulkanImageView& imageView, SRTResourceIndex index) -> void override;
     auto bindSampler(const VulkanSampler& sampler, SRTResourceIndex index) -> void override;
 
     auto bindToCommandBuffer(const VulkanCommandBuffer& cmd, const VulkanPipelineLayout& pipelineLayout, vk::PipelineBindPoint pipelineBindPoint) -> void override;

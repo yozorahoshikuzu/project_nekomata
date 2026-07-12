@@ -113,6 +113,56 @@ auto VulkanImage::create(vk::ImageType type, vk::Extent3D extent, u32 layerCount
     return VulkanImage(std::move(image), std::move(allocation), std::move(imageView), imageViewSubresRange, extent, layerCount, mipLevelCount, isCubemap, format, type);
 }
 
+auto VulkanImage::createMutableFormat(vk::ImageType type, vk::Extent3D extent, u32 layerCount, u32 mipLevelCount, bool isCubemap, vk::Format format,
+                                      vk::ImageUsageFlags usage, vk::ImageTiling tiling, vma::MemoryUsage memoryUsage,
+                                      vk::MemoryPropertyFlags memoryRequiredFlags, const std::span<const u32>& queueFamilyIndices,
+                                      vk::ImageLayout initialLayout, const std::span<const vk::Format>& formats) -> VulkanImage {
+    u32 arrayLayerCount = isCubemap ? layerCount * 6 : layerCount;
+    auto imageCreateInfo = vk::ImageCreateInfo{}
+        .setImageType(type)
+        .setExtent(extent)
+        .setFormat(format)
+        .setUsage(usage)
+        .setTiling(tiling)
+        .setArrayLayers(arrayLayerCount)
+        .setMipLevels(mipLevelCount)
+        .setSamples(vk::SampleCountFlagBits::e1)
+        .setInitialLayout(initialLayout)
+        .setQueueFamilyIndices(queueFamilyIndices)
+        .setSharingMode(queueFamilyIndices.size() == 1 ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent)
+        .setFlags(vk::ImageCreateFlagBits::eMutableFormat);
+
+    auto formatList = vk::ImageFormatListCreateInfo{}
+        .setViewFormats(formats);
+
+    auto sc = vk::StructureChain{imageCreateInfo, formatList};
+
+    if (isCubemap) imageCreateInfo.flags |= vk::ImageCreateFlagBits::eCubeCompatible;
+
+    auto allocationCreateInfo = vma::AllocationCreateInfo{}
+        .setUsage(memoryUsage)
+        .setRequiredFlags(memoryRequiredFlags);
+
+    auto [allocation, image] = vkCheckResult(VulkanContext::get().vmaAllocator().createImage(sc.get<vk::ImageCreateInfo>(), allocationCreateInfo)).split();
+
+    auto imageViewType = selectImageViewType(type, arrayLayerCount, isCubemap);
+    auto imageViewSubresRange = vk::ImageSubresourceRange{}
+        .setBaseMipLevel(0)
+        .setLevelCount(mipLevelCount)
+        .setBaseArrayLayer(0)
+        .setLayerCount(arrayLayerCount)
+        .setAspectMask(s_formatMetadata[format].aspectFlags);
+
+    auto imageViewCreateInfo = vk::ImageViewCreateInfo{}
+        .setImage(image)
+        .setViewType(imageViewType)
+        .setFormat(format)
+        .setSubresourceRange(imageViewSubresRange);
+
+    auto imageView = vkCheckResult(VulkanContext::get().vkDevice().createImageView(imageViewCreateInfo));
+    return VulkanImage(std::move(image), std::move(allocation), std::move(imageView), imageViewSubresRange, extent, layerCount, mipLevelCount, isCubemap, format, type);
+}
+
 auto VulkanImage::createImageView(u32 baseMipLevel, u32 mipLevelCount, u32 baseArrayLayer, u32 arrayLayerCount, bool keepCube) -> VulkanImageView {
     auto subresourceRange = vk::ImageSubresourceRange{}
         .setBaseMipLevel(baseMipLevel)
@@ -143,6 +193,45 @@ auto VulkanImage::createImageViewWithMinLod(u32 baseMipLevel, u32 mipLevelCount,
         .setImage(m_vkImage.vkHandle())
         .setViewType(imageViewType)
         .setFormat(m_vkImageFormat)
+        .setSubresourceRange(subresourceRange);
+
+    auto minLodInfo = vk::ImageViewMinLodCreateInfoEXT{}
+        .setMinLod(minLod);
+    auto sc = vk::StructureChain{imageViewCreateInfo, minLodInfo};
+    return VulkanImageView(vkCheckResult(VulkanContext::get().vkDevice().createImageView(sc.get<vk::ImageViewCreateInfo>())));
+}
+auto VulkanImage::createImageViewWithFormat(vk::Format format, vk::ImageAspectFlags aspectFlags, u32 baseMipLevel, u32 mipLevelCount, u32 baseArrayLayer,
+                                            u32 arrayLayerCount, bool keepCube) -> VulkanImageView {
+    auto subresourceRange = vk::ImageSubresourceRange{}
+        .setBaseMipLevel(baseMipLevel)
+        .setLevelCount(mipLevelCount)
+        .setBaseArrayLayer(baseArrayLayer)
+        .setLayerCount(arrayLayerCount)
+        .setAspectMask(aspectFlags);
+
+    auto imageViewType = selectImageViewType(m_vkImageType, arrayLayerCount, m_isCubemap && keepCube);
+    auto imageViewCreateInfo = vk::ImageViewCreateInfo{}
+        .setImage(m_vkImage.vkHandle())
+        .setViewType(imageViewType)
+        .setFormat(format)
+        .setSubresourceRange(subresourceRange);
+
+    return VulkanImageView(vkCheckResult(VulkanContext::get().vkDevice().createImageView(imageViewCreateInfo)));
+}
+auto VulkanImage::createImageViewWithFormatAndMinLod(vk::Format format, vk::ImageAspectFlags aspectFlags, u32 baseMipLevel, u32 mipLevelCount,
+                                                     u32 baseArrayLayer, u32 arrayLayerCount, float minLod, bool keepCube) -> VulkanImageView {
+    auto subresourceRange = vk::ImageSubresourceRange{}
+        .setBaseMipLevel(baseMipLevel)
+        .setLevelCount(mipLevelCount)
+        .setBaseArrayLayer(baseArrayLayer)
+        .setLayerCount(arrayLayerCount)
+        .setAspectMask(aspectFlags);
+
+    auto imageViewType = selectImageViewType(m_vkImageType, arrayLayerCount, m_isCubemap && keepCube);
+    auto imageViewCreateInfo = vk::ImageViewCreateInfo{}
+        .setImage(m_vkImage.vkHandle())
+        .setViewType(imageViewType)
+        .setFormat(format)
         .setSubresourceRange(subresourceRange);
 
     auto minLodInfo = vk::ImageViewMinLodCreateInfoEXT{}

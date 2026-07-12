@@ -29,6 +29,7 @@ public:
     virtual auto allocateSamplerIndices(u32 count, std::span<SRTResourceIndex> dstIndices) -> void = 0;
 
     virtual auto bindImage(const VulkanImage& image, SRTResourceIndex index) -> void = 0;
+    virtual auto bindImageView(const VulkanImageView& imageView, SRTResourceIndex index) -> void = 0;
     virtual auto bindSampler(const VulkanSampler& sampler, SRTResourceIndex index) -> void = 0;
 
     virtual auto bindToCommandBuffer(const VulkanCommandBuffer& cmd, const VulkanPipelineLayout& pipelineLayout, vk::PipelineBindPoint pipelineBindPoint) -> void = 0;
