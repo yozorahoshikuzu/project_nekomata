@@ -28,7 +28,7 @@ FrameContext::FrameContext(std::nullptr_t) {  }
 FrameContext::FrameContext() {
     m_frameRenderingResources = FrameRenderingResources(2048);
 
-    m_timestampsQueryPool = VulkanQueryPool::create(vk::QueryType::eTimestamp, 4, {});
+    m_timestampsQueryPool = VulkanQueryPool::create(vk::QueryType::eTimestamp, 6, {});
     m_pipelineStatisticsQueryPool = VulkanQueryPool::create(vk::QueryType::ePipelineStatistics, 1,
         vk::QueryPipelineStatisticFlagBits::eVertexShaderInvocations
             | vk::QueryPipelineStatisticFlagBits::eTessellationControlShaderPatches
@@ -483,6 +483,10 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
     // ---- SMAA -----------------------------------------------------------------------------------------------------------------------------------------------
 
+    if (recordStatistics) {
+        cb.writeTimestamp2(vk::PipelineStageFlagBits2::eTopOfPipe, m_timestampsQueryPool.vkQueryPool(), 4);
+    }
+
     auto smaaRtMetrics = Vector4f(1.0f / renderingArea.x(), 1.0f / renderingArea.y(), renderingArea.x(), renderingArea.y());
 
     auto smaaLinearSamplerSrtID = texturesystem::TextureManager::get().samplerCache().acquireSampler(
@@ -666,6 +670,9 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
     cb.endRendering();
 
+    if (recordStatistics) {
+        cb.writeTimestamp2(vk::PipelineStageFlagBits2::eBottomOfPipe, m_timestampsQueryPool.vkQueryPool(), 5);
+    }
 
     // ---- UI -------------------------------------------------------------------------------------------------------------------------------------------------
 
