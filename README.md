@@ -21,7 +21,8 @@ Well, maybe in the future..
 - Dynamic deferred lighting with PBR IBL
 - Bitmap font rendering with on-the-fly font atlas generation
 - Basic script system
-- `vk::PipelineCache`-based pipeline caching
+- `VK_KHR_pipeline_binary`-based pipeline caching
+- SMAA antialiasing
 
 ## Planned Features
 
@@ -33,7 +34,7 @@ Well, maybe in the future..
 - `VK_EXT_descriptor_heap`-based texture and sampler tables
 - Ray tracing
 - Render graph
-- Post-processing effects (SMAA, bloom, etc.)
+- Post-processing effects (bloom, etc.)
 
 ## Building
 
