@@ -1,3 +1,5 @@
+import "../globallayout";
+
 import "../normalpack/normalpack";
 
 struct ObjectUniforms {
@@ -23,16 +25,13 @@ struct PushConstants {
     ObjectUniforms* data;
     Vertex* vertexbuffer;
     GlobalData* globalData;
-    uint textureId;
-    uint samplerId;
+    uint textureSrtID;
+    uint samplerSrtID;
     float roughness;
     float metallic;
 };
 
-[vk::push_constant] PushConstants pushConsts;
-[vk::binding(0, 0)] Texture2D textures[];
-[vk::binding(0, 0)] TextureCube s_texturesCube[];
-[vk::binding(1, 0)] SamplerState samplers[];
+[vk::push_constant] PushConstants s_pushConstants;
 
 struct VSOut {
     float3 position : SV_Position;
@@ -43,17 +42,17 @@ struct VSOut {
 
 [shader("vertex")]
 VSOut main(uint vertexID: SV_VulkanVertexID) {
-    float3 position = pushConsts.vertexbuffer[vertexID].position;
-    float3 normal = pushConsts.vertexbuffer[vertexID].normal;
-    float2 uv = float2(pushConsts.vertexbuffer[vertexID].uvX, pushConsts.vertexbuffer[vertexID].uvY);
+    float3 position = s_pushConstants.vertexbuffer[vertexID].position;
+    float3 normal = s_pushConstants.vertexbuffer[vertexID].normal;
+    float2 uv = float2(s_pushConstants.vertexbuffer[vertexID].uvX, s_pushConstants.vertexbuffer[vertexID].uvY);
 
-    float4 hposition = mul(pushConsts.data.model, float4(position, 1.0));
+    float4 hposition = mul(s_pushConstants.data.model, float4(position, 1.0));
 
     VSOut output;
     output.position = hposition.xyz / hposition.w;
     output.color = float3(1.0);
     output.uv = uv;
-    output.normal = mul(pushConsts.data.normalMatrix, normal);
+    output.normal = mul(s_pushConstants.data.normalMatrix, normal);
 
     return output;
 }
@@ -135,7 +134,7 @@ TESOut main(TCSPatchConst patchConst, float3 barycoord : SV_DomainLocation, Outp
     float hsv_v = 0.85;
 
     TESOut output;
-    output.positionCS = mul(pushConsts.globalData.projview, float4(position, 1.0));
+    output.positionCS = mul(s_pushConstants.globalData.projview, float4(position, 1.0));
     output.positionWS = position;
     output.color = hsv_to_rgb(float3(hsv_h, hsv_s, hsv_v));
     output.uv = uv;
@@ -153,10 +152,10 @@ struct FSOut {
 
 [shader("fragment")]
 FSOut main(TESOut input) {
-    //float3 albedo = textures[push_consts.textureId].Sample(samplers[push_consts.samplerId], input.uv).rgb;
+    //float3 albedo = s_textures2D[push_consts.textureSrtID].Sample(s_samplers[push_consts.samplerSrtID], input.uv).rgb;
     float3 albedo = float3(0.8);
-    float metallic = pushConsts.metallic;
-    float roughness = 1.0 - pushConsts.roughness;
+    float metallic = s_pushConstants.metallic;
+    float roughness = 1.0 - s_pushConstants.roughness;
     float ao = 1.0f;
 
     float3 n = normalize(input.normal);

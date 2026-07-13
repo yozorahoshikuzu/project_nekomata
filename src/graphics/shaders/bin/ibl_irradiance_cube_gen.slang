@@ -1,12 +1,12 @@
+import "../globallayout";
+
 struct PushConstants {
-    uint envmapTextureId;
-    uint envmapSamplerId;
+    uint envmapTextureSrtID;
+    uint envmapSamplerSrtID;
     float cubeResolution;
 };
 
-[vk::push_constant] PushConstants pushConstants;
-[vk::binding(0, 0)] TextureCube s_texturesCube[];
-[vk::binding(1, 0)] SamplerState s_samplers[];
+[vk::push_constant] PushConstants s_pushConstants;
 
 struct VSOut {
     float4 position : SV_Position;
@@ -77,7 +77,7 @@ float4 main(VSOut input, uint viewid : SV_ViewID) : SV_Target {
         float2 xi = hammersleySeq(i, samples);
         float3 sampleTangent = getHemisphereSampleDirection(xi);
         float3 sampleDirection = sampleTangent.x * tgx + sampleTangent.y * tgy + sampleTangent.z * n;
-        irradiance += s_texturesCube[pushConstants.envmapTextureId].Sample(s_samplers[pushConstants.envmapSamplerId], sampleDirection).rgb;
+        irradiance += s_texturesCube[s_pushConstants.envmapTextureSrtID].Sample(s_samplers[s_pushConstants.envmapSamplerSrtID], sampleDirection).rgb;
     }
 
     let finalIrradiance = irradiance / float(samples);

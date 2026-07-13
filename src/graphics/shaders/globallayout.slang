@@ -4,7 +4,7 @@
 [vk::binding(0, 0)] Texture2DArray s_textures2DArray[];
 [vk::binding(0, 0)] Texture3D s_textures3D[];
 [vk::binding(0, 0)] TextureCube s_texturesCube[];
-[vk::binding(1, 0)] SamplerState samplers[];
+[vk::binding(1, 0)] SamplerState s_samplers[];
 
 namespace pipeline {
 
@@ -33,7 +33,7 @@ TextureCube getTextureCubeBySrtId(uint srtId) {
 }
 
 SamplerState getSamplerBySrtId(uint srtId) {
-    return samplers[srtId];
+    return s_samplers[srtId];
 }
 
 }

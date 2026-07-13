@@ -172,7 +172,8 @@ function(add_slang_shaders TARGET)
         set(SLANG_FLAGS
                 -target spirv
                 -profile spirv_1_6
-                # -O3 # adding this breaks a current waterfall workaround - keep off for now
+                -O3
+                -Wno-39001
                 -fvk-use-scalar-layout
         )
 

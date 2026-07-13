@@ -1,13 +1,13 @@
+import "../globallayout";
+
 struct PushConstants {
-    uint envmapTextureId;
-    uint envmapSamplerId;
+    uint envmapTextureSrtID;
+    uint envmapSamplerSrtID;
     float roughness;
     float cubeResolution;
 };
 
-[vk::push_constant] PushConstants pushConstants;
-[vk::binding(0, 0)] TextureCube s_texturesCube[];
-[vk::binding(1, 0)] SamplerState s_samplers[];
+[vk::push_constant] PushConstants s_pushConstants;
 
 struct VSOut {
     float4 position : SV_Position;
@@ -83,7 +83,7 @@ float4 main(VSOut input, uint viewid : SV_ViewID) : SV_Target {
     float3 n = computeEnvDirection(viewid, input.positionCS.xy);
     const uint samples = 4096u;
 
-    if (pushConstants.roughness < 0.001f) return float4(s_texturesCube[pushConstants.envmapTextureId].Sample(s_samplers[pushConstants.envmapSamplerId], n).rgb, 1.0);
+    if (s_pushConstants.roughness < 0.001f) return float4(s_texturesCube[s_pushConstants.envmapTextureSrtID].Sample(s_samplers[s_pushConstants.envmapSamplerSrtID], n).rgb, 1.0);
 
     float2 rot = float2(
         hash1d(input.positionCS.x * 12.9898 + input.positionCS.y * 78.233),
@@ -95,19 +95,19 @@ float4 main(VSOut input, uint viewid : SV_ViewID) : SV_Target {
     for (uint i = 0u; i < samples; i++) {
         float2 xi = hammersleySeq(i, samples);
         xi = fract(rot + xi);
-        float3 h = ggxImportanceSample(xi, n, pushConstants.roughness);
+        float3 h = ggxImportanceSample(xi, n, s_pushConstants.roughness);
         float3 l = normalize(2.0f * dot(n, h) * h - n);
         float nl = max(dot(n, l), 0.0f);
         if (nl > 0.0f) {
             float nh = max(dot(n, h), 0.0f);
 
-            float pdf = ggxDistribution(nh, pushConstants.roughness) * nh / (4.0f * nh) + 0.0001f;
+            float pdf = ggxDistribution(nh, s_pushConstants.roughness) * nh / (4.0f * nh) + 0.0001f;
             float sample = 1.0f / (float(samples) * pdf);
-            float texel = 4.0 * float::getPi() / (6.0f * pushConstants.cubeResolution * pushConstants.cubeResolution);
+            float texel = 4.0 * float::getPi() / (6.0f * s_pushConstants.cubeResolution * s_pushConstants.cubeResolution);
 
-            float mip = max(pushConstants.roughness < 0.01f ? 0.0f : 0.75f * log2(sample / texel), 0.0f);
+            float mip = max(s_pushConstants.roughness < 0.01f ? 0.0f : 0.75f * log2(sample / texel), 0.0f);
 
-            accum += s_texturesCube[pushConstants.envmapTextureId].SampleLevel(s_samplers[pushConstants.envmapSamplerId], l, mip).rgb * nl;
+            accum += s_texturesCube[s_pushConstants.envmapTextureSrtID].SampleLevel(s_samplers[s_pushConstants.envmapSamplerSrtID], l, mip).rgb * nl;
             weight += nl;
         }
     }

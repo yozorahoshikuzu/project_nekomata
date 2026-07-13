@@ -1,3 +1,4 @@
+import "../globallayout";
 import "../normalpack/normalpack";
 
 struct GlobalData {
@@ -15,22 +16,19 @@ struct PushConstants {
     GlobalData* globalData;
     Pointlight* pointlights;
     uint pointlightCount;
-    uint depthTextureIndex;
-    uint albedoAndRoughnessTextureIndex;
-    uint normalTextureIndex;
-    uint metallicAoTextureIndex;
-    uint skyboxTextureId;
-    uint irradianceTextureId;
-    uint prefiltTextureId;
-    uint iblLutTextureId;
-    uint linearSamplerIndex;
-    uint nearestSamplerIndex;
+    uint depthTextureSrtID;
+    uint albedoAndRoughnessTextureSrtID;
+    uint normalTextureSrtID;
+    uint metallicAoTextureSrtID;
+    uint skyboxTextureSrtID;
+    uint irradianceTextureSrtID;
+    uint prefiltTextureSrtID;
+    uint iblLutTextureSrtID;
+    uint linearSamplerSrtID;
+    uint nearestSamplerSrtID;
 };
 
-[vk::push_constant] PushConstants pushConstants;
-[vk::binding(0, 0)] Texture2D s_textures2D[];
-[vk::binding(0, 0)] TextureCube s_texturesCube[];
-[vk::binding(1, 0)] SamplerState s_samplers[];
+[vk::push_constant] PushConstants s_pushConstants;
 
 struct VSOut {
     float4 position : SV_Position;
@@ -65,7 +63,7 @@ namespace AcesTonemap {
 
 float3 reconstructPositionWS(float2 ndc, float depth) {
     float4 positionSS = float4(ndc, depth, 1.0);
-    float4 positionWS = mul(pushConstants.globalData.projviewInverse, positionSS);
+    float4 positionWS = mul(s_pushConstants.globalData.projviewInverse, positionSS);
     return positionWS.xyz / positionWS.w;
 }
 
@@ -73,11 +71,11 @@ float3 reconstructViewdir(float2 ndc) {
     const float near = 0.0001;
 
     float4 nearClip = float4(ndc, near, 1.0);
-    float4 worldNear = mul(pushConstants.globalData.projviewInverse, nearClip);
+    float4 worldNear = mul(s_pushConstants.globalData.projviewInverse, nearClip);
 
     worldNear.xyz /= worldNear.w;
 
-    float3 viewDir = normalize(worldNear.xyz - pushConstants.globalData.cameraPos);
+    float3 viewDir = normalize(worldNear.xyz - s_pushConstants.globalData.cameraPos);
 
     return viewDir;
 }
@@ -148,12 +146,12 @@ float3 computeLightContribution(float3 norm, float3 viewdir, float3 lightdir, fl
 
 const static float roughnessMaxLod = 6.0f;
 float3 computePixelColor(float3 fragmentPosWS, float3 norm, float3 albedo, float metallic, float roughness, float ao) {
-    float3 viewdir = normalize(pushConstants.globalData.cameraPos - fragmentPosWS);
+    float3 viewdir = normalize(s_pushConstants.globalData.cameraPos - fragmentPosWS);
     float3 accum = float3(0.0);
 
     // ---- The static pointlights
-    for (uint i = 0; i < pushConstants.pointlightCount; i++) {
-        let light = pushConstants.pointlights[i];
+    for (uint i = 0; i < s_pushConstants.pointlightCount; i++) {
+        let light = s_pushConstants.pointlights[i];
         float3 lz = light.position - fragmentPosWS;
         float3 l = normalize(lz);
         float3 ld = length(lz);
@@ -162,15 +160,15 @@ float3 computePixelColor(float3 fragmentPosWS, float3 norm, float3 albedo, float
     }
 
     // ---- Diffuse IBL ------------------------------------------------------------------------------------------------
-    float3 irradiance = s_texturesCube[pushConstants.irradianceTextureId].Sample(s_samplers[pushConstants.linearSamplerIndex], norm).rgb;
+    float3 irradiance = s_texturesCube[s_pushConstants.irradianceTextureSrtID].Sample(s_samplers[s_pushConstants.linearSamplerSrtID], norm).rgb;
     float3 diffuseibl = irradiance * albedo;
 
     // ---- Specular IBL -----------------------------------------------------------------------------------------------
     float nv = max(dot(norm, viewdir), 0.0f);
     float3 r = reflect(-viewdir, norm);
 
-    float3 prefiltered = s_texturesCube[pushConstants.prefiltTextureId].SampleLevel(s_samplers[pushConstants.linearSamplerIndex], r, roughness * roughnessMaxLod).rgb;
-    float2 envbrdf = s_textures2D[pushConstants.iblLutTextureId].Sample(s_samplers[pushConstants.linearSamplerIndex], float2(nv, roughness)).rg;
+    float3 prefiltered = s_texturesCube[s_pushConstants.prefiltTextureSrtID].SampleLevel(s_samplers[s_pushConstants.linearSamplerSrtID], r, roughness * roughnessMaxLod).rgb;
+    float2 envbrdf = s_textures2D[s_pushConstants.iblLutTextureSrtID].Sample(s_samplers[s_pushConstants.linearSamplerSrtID], float2(nv, roughness)).rg;
 
     float3 f0 = lerp(float3(0.04), albedo, metallic);
     float3 fibl = fresnelSchlickRoughnessApprox(nv, f0, roughness);
@@ -184,17 +182,17 @@ float3 computePixelColor(float3 fragmentPosWS, float3 norm, float3 albedo, float
 
 [shader("fragment")]
 float4 main(VSOut input) : SV_Target {
-    let depth = s_textures2D[pushConstants.depthTextureIndex].SampleLevel(s_samplers[pushConstants.nearestSamplerIndex], input.texcoord, 0).r;
-    let albedoAndRoughness = s_textures2D[pushConstants.albedoAndRoughnessTextureIndex].SampleLevel(s_samplers[pushConstants.nearestSamplerIndex], input.texcoord, 0);
-    let pn = s_textures2D[pushConstants.normalTextureIndex].SampleLevel(s_samplers[pushConstants.nearestSamplerIndex], input.texcoord, 0).xy;
-    let metallicAo = s_textures2D[pushConstants.metallicAoTextureIndex].SampleLevel(s_samplers[pushConstants.nearestSamplerIndex], input.texcoord, 0).xy;
+    let depth = s_textures2D[s_pushConstants.depthTextureSrtID].SampleLevel(s_samplers[s_pushConstants.nearestSamplerSrtID], input.texcoord, 0).r;
+    let albedoAndRoughness = s_textures2D[s_pushConstants.albedoAndRoughnessTextureSrtID].SampleLevel(s_samplers[s_pushConstants.nearestSamplerSrtID], input.texcoord, 0);
+    let pn = s_textures2D[s_pushConstants.normalTextureSrtID].SampleLevel(s_samplers[s_pushConstants.nearestSamplerSrtID], input.texcoord, 0).xy;
+    let metallicAo = s_textures2D[s_pushConstants.metallicAoTextureSrtID].SampleLevel(s_samplers[s_pushConstants.nearestSamplerSrtID], input.texcoord, 0).xy;
 
     float3 viewdir = reconstructViewdir(input.positionCS.xy);
     float3 vddx = ddx(viewdir);
     float3 vddy = ddy(viewdir);
 
     if (depth == 0.0) {
-        float3 col = s_texturesCube[pushConstants.skyboxTextureId].SampleGrad(s_samplers[pushConstants.linearSamplerIndex], viewdir, vddx, vddy).rgb * 0.25;
+        float3 col = s_texturesCube[s_pushConstants.skyboxTextureSrtID].SampleGrad(s_samplers[s_pushConstants.linearSamplerSrtID], viewdir, vddx, vddy).rgb * 0.25;
         return float4(AcesTonemap::map(col), 1.0);
     }
 
