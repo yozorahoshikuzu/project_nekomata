@@ -3,6 +3,7 @@ import std;
 import vulkan;
 import :core.platform.int_def;
 import :core.cs.result;
+import :core.cs.vec;
 
 export namespace projnekomata {
 
@@ -15,7 +16,7 @@ enum class ShaderLoadError {
 class SpirvShaderCode {
 public:
     SpirvShaderCode(std::nullptr_t);
-    SpirvShaderCode(std::vector<u32>&& spvCode);
+    SpirvShaderCode(Vec<u32>&& spvCode);
 
     SpirvShaderCode(const SpirvShaderCode&) = delete;
     SpirvShaderCode(SpirvShaderCode&&) = default;
@@ -25,9 +26,9 @@ public:
     static auto loadFromFile(const std::filesystem::path& path) -> Result<SpirvShaderCode, ShaderLoadError>;
     [[nodiscard]] auto shaderModuleCreateInfo() const           -> vk::ShaderModuleCreateInfo;
 
-    [[nodiscard]] auto spvCode() const -> std::span<const u32> { return m_spvCode; }
+    [[nodiscard]] auto spvCode() const -> Slice<const u32> { return m_spvCode.asSlice(); }
 private:
-    std::vector<u32> m_spvCode;
+    Vec<u32> m_spvCode;
 };
 
 }

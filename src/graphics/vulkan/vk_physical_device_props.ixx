@@ -113,7 +113,7 @@ class VulkanPhysicalDeviceProperties {
 public:
     static auto query(const vk::raii::PhysicalDevice& vkPhysicalDevice, const vk::raii::SurfaceKHR& vkSurface) -> Result<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError>;
     [[nodiscard]] auto autoselectPriorityScore() const -> u64;
-    [[nodiscard]] auto queueCreateInfos() const -> std::vector<vk::DeviceQueueCreateInfo>;
+    [[nodiscard]] auto queueCreateInfos() const -> Vec<vk::DeviceQueueCreateInfo>;
     [[nodiscard]] auto vmaAllocatorCreateFlags() const -> vma::AllocatorCreateFlags;
 
     std::string m_deviceName            = "(unknown)";
@@ -127,6 +127,8 @@ public:
     u32 m_vramMemoryHeapIndex = 0_u32;
 
     f32 m_timestampPeriod = 0.0_f32;
+
+    bool m_debugEnabled = false;
 
     bool m_hasFp16              = false;
     bool m_hasExtMemoryBudget   = false;

@@ -169,17 +169,10 @@ consteval auto defaultEnabledVk14Features() -> vk::PhysicalDeviceVulkan14Feature
     return features;
 }
 
-auto findBestQueue(const std::vector<u32>& queueIndices, std::unordered_set<u32>& hashset) -> u32 {
-    auto it = std::ranges::find_if(queueIndices, [&](u32 x) -> bool {
-        return !hashset.contains(x);
-    });
-
-    return it != queueIndices.end() ? *it : queueIndices.front();
-}
-
-auto dedupQueueIndices(std::vector<u32>& queueIndices) {
-    std::unordered_set<u32> queueIndicesSet(queueIndices.begin(), queueIndices.end());
-    queueIndices.assign(queueIndicesSet.begin(), queueIndicesSet.end());
+auto findBestQueue(Slice<const u32> queueIndices, std::unordered_set<u32>& hashset) -> u32 {
+    return queueIndices.iter()
+        .find([&](u32 x) { return !hashset.contains(x); })
+        .unwrapOr(queueIndices.first());
 }
 
 auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhysicalDevice, const vk::raii::SurfaceKHR& vkSurface)
@@ -275,6 +268,13 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
         }
     }
 
+    auto enableDebug = kVulkanDebugEnable && supportedExtensionNames.contains(vk::EXTDebugUtilsExtensionName);
+    if (enableDebug) enabledExtensions.emplace(vk::EXTDebugUtilsExtensionName);
+
+    if (kVulkanDebugEnable && !enableDebug) {
+        log::warn("Vulkan debug extension is enabled but not supported by the device");
+    }
+
     auto propertiesQuery = vkPhysicalDevice.getProperties2<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceVulkan12Properties,
         vk::PhysicalDeviceAccelerationStructurePropertiesKHR, vk::PhysicalDeviceRayTracingPipelinePropertiesKHR>();
     auto coreProperties = propertiesQuery.get<vk::PhysicalDeviceProperties2>().properties;
@@ -297,24 +297,20 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     }
 
     auto queueProps = vkPhysicalDevice.getQueueFamilyProperties();
-    std::vector<u32> graphicsIndices, presentIndices, asyncComputeIndices;
+    Vec<u32> graphicsIndices, presentIndices, asyncComputeIndices;
     
     for (u32 queueIndex = 0; queueIndex < queueProps.size(); queueIndex++) {
         vk::QueueFamilyProperties& family = queueProps[queueIndex];
 
-        if (family.queueFlags & vk::QueueFlagBits::eGraphics) graphicsIndices.emplace_back(queueIndex);
-        if (family.queueFlags & vk::QueueFlagBits::eCompute && !(family.queueFlags & vk::QueueFlagBits::eGraphics)) asyncComputeIndices.emplace_back(queueIndex);
-        if (vkCheckResult(vkPhysicalDevice.getSurfaceSupportKHR(queueIndex, vkSurface))) presentIndices.emplace_back(queueIndex);
+        if (family.queueFlags & vk::QueueFlagBits::eGraphics) graphicsIndices.emplace(queueIndex);
+        if (family.queueFlags & vk::QueueFlagBits::eCompute && !(family.queueFlags & vk::QueueFlagBits::eGraphics)) asyncComputeIndices.emplace(queueIndex);
+        if (vkCheckResult(vkPhysicalDevice.getSurfaceSupportKHR(queueIndex, vkSurface))) presentIndices.emplace(queueIndex);
     }
 
     std::unordered_set<u32> usedQueueIndices;
-    u32 graphicsQueueIndex = findBestQueue(graphicsIndices, usedQueueIndices);
-    u32 presentQueueIndex = findBestQueue(presentIndices, usedQueueIndices);
-    u32 asyncComputeQueueIndex = findBestQueue(asyncComputeIndices, usedQueueIndices);
-    std::vector<u32> allQueueIndices = { graphicsQueueIndex, presentQueueIndex, asyncComputeQueueIndex };
-    dedupQueueIndices(allQueueIndices);
-    std::vector<u32> swapchainImageQueueIndices = { graphicsQueueIndex, presentQueueIndex };
-    dedupQueueIndices(swapchainImageQueueIndices);
+    u32 graphicsQueueIndex = findBestQueue(graphicsIndices.asSlice(), usedQueueIndices);
+    u32 presentQueueIndex = findBestQueue(presentIndices.asSlice(), usedQueueIndices);
+    u32 asyncComputeQueueIndex = findBestQueue(asyncComputeIndices.asSlice(), usedQueueIndices);
 
     props.m_deviceName = deviceName;
     props.m_driverName = driverName;
@@ -336,6 +332,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     props.m_graphicsQueueIndex = graphicsQueueIndex;
     props.m_presentQueueIndex = presentQueueIndex;
     props.m_asyncComputeQueueIndex = asyncComputeQueueIndex;
+    props.m_debugEnabled = enableDebug;
     props.m_queueFamilies = VulkanQueueFamilySwizzling(graphicsQueueIndex, presentQueueIndex, asyncComputeQueueIndex);
 
     return Ok(std::move(props));
@@ -369,16 +366,15 @@ auto VulkanPhysicalDeviceProperties::vmaAllocatorCreateFlags() const -> vma::All
 
 static f32 g_queuePriority = 1.0f;
 
-auto VulkanPhysicalDeviceProperties::queueCreateInfos() const -> std::vector<vk::DeviceQueueCreateInfo> {
-    auto infos = m_queueFamilies.allUniqueQueueIndices()
-        | std::views::transform([&](u32 index) -> vk::DeviceQueueCreateInfo {
+auto VulkanPhysicalDeviceProperties::queueCreateInfos() const -> Vec<vk::DeviceQueueCreateInfo> {
+    return m_queueFamilies.allUniqueQueueIndices().iter()
+        .map([](const u32 idx) {
             return vk::DeviceQueueCreateInfo{}
-                .setQueueFamilyIndex(index)
+                .setQueueFamilyIndex(idx)
                 .setQueueCount(1)
                 .setQueuePriorities(g_queuePriority);
         })
-        | std::ranges::to<std::vector>();
-    return infos;
+        .collect<Vec>();
 }
 
 

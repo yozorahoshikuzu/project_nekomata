@@ -37,7 +37,7 @@ public:
 
     static auto create() -> std::unique_ptr<TextureManager>;
 
-    // auto loadTextureFromMemory(u32 width, u32 height, u32 depth, u32 arrayLayers, u32 mipLevels, vk::Format format, const std::span<const u8>& data) -> Texture;
+    // auto loadTextureFromMemory(u32 width, u32 height, u32 depth, u32 arrayLayers, u32 mipLevels, vk::Format format, Slice<const u8>& data) -> Texture;
 
     auto createTexture(u32 width, u32 height, u32 depth, u32 layers, u32 mipLevels, bool isCube, vk::Format format, vk::ImageUsageFlags usage, const SamplerParams& samplerParams) -> Texture;
 
@@ -57,7 +57,7 @@ private:
 
     auto allocateTexture(VulkanImage&& img) -> Texture;
 
-    auto loadTextureFromMemoryInternal(u32 width, u32 height, u32 depth, u32 arrayLayers, u32 mipLevels, vk::Format format, const std::span<const u8>& data, const SamplerParams& samplerParams) -> Texture;
+    auto loadTextureFromMemoryInternal(u32 width, u32 height, u32 depth, u32 arrayLayers, u32 mipLevels, vk::Format format, Slice<const u8> data, const SamplerParams& samplerParams) -> Texture;
 
     static auto temporary_uploadTheImage(Texture texture, const std::filesystem::path& path, const SamplerParams& params) -> void;
 

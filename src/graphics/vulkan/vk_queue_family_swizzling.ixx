@@ -1,6 +1,7 @@
 export module projnekomata:graphics.vulkan.vk_queue_family_swizzling;
 import std;
 import :core.platform.int_def;
+import :core.cs.slice;
 
 export namespace projnekomata {
 
@@ -41,8 +42,8 @@ public:
         const u32* oldBase = other.m_queueFamilyIndexPermutationTable.data();
         const u32* newBase = m_queueFamilyIndexPermutationTable.data();
         for (auto& span : m_queueFamilyIndexPermutationViews)
-            if (!span.empty())
-                span = std::span<const u32>(newBase + (span.data() - oldBase), span.size());
+            if (!span.isEmpty())
+                span = Slice<const u32>(newBase + (span.data() - oldBase), span.len());
     }
 
     // TODO: This is horrible AF. Fix the physical device props struct to be properly initialized instead later
@@ -57,32 +58,32 @@ public:
 
         const u32* newBase = m_queueFamilyIndexPermutationTable.data();
         for (auto& span : m_queueFamilyIndexPermutationViews)
-            if (!span.empty())
-                span = std::span<const u32>(newBase + (span.data() - oldBase), span.size());
+            if (!span.isEmpty())
+                span = Slice<const u32>(newBase + (span.data() - oldBase), span.len());
 
         return *this;
     }
 
-    auto allUniqueQueueIndices() const -> std::span<const u32> {
+    auto allUniqueQueueIndices() const -> Slice<const u32> {
         return (*this)[QueueFamily::Graphics | QueueFamily::Present | QueueFamily::AsyncCompute];
     }
 
-    auto operator[](QueueFamily queueFamily) const -> std::span<const u32> {
+    auto operator[](QueueFamily queueFamily) const -> Slice<const u32> {
         return m_queueFamilyIndexPermutationViews[static_cast<u8>(queueFamily)];
     }
 
 private:
     std::array<u32, 5> m_queueFamilyIndexPermutationTable = {};
     u32 m_queueFamilyIndexPermutationTableSize = 0;
-    std::array<std::span<const u32>, 8> m_queueFamilyIndexPermutationViews = {};
+    std::array<Slice<const u32>, 8> m_queueFamilyIndexPermutationViews = {};
 
     void correctSpans(const VulkanQueueFamilySwizzling& other) noexcept {
         const u32* oldBase = other.m_queueFamilyIndexPermutationTable.data();
         const u32* newBase = m_queueFamilyIndexPermutationTable.data();
 
         for (auto& span : m_queueFamilyIndexPermutationViews)
-            if (!span.empty())
-                span = std::span<const u32>(newBase + (span.data() - oldBase), span.size());
+            if (!span.isEmpty())
+                span = Slice<const u32>(newBase + (span.data() - oldBase), span.len());
     }
 };
 

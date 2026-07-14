@@ -7,12 +7,12 @@ namespace projnekomata {
 VulkanBuffer::VulkanBuffer(std::nullptr_t) {}
 VulkanBuffer::VulkanBuffer(vk::raii::Buffer&& buffer, vma::raii::Allocation&& allocation, u64 size, u8* mVkBufferMemoryHostPtr, vk::DeviceAddress mVkBufferMemoryDevicePtr) : m_vkBuffer(std::move(buffer)), m_vmaAllocation(std::move(allocation)), m_vkBufferMemoryHostPtr(mVkBufferMemoryHostPtr), m_vkBufferMemoryDevicePtr(mVkBufferMemoryDevicePtr), m_size(size) {}
 
-auto VulkanBuffer::create(u64 size, vk::BufferUsageFlags usage, VulkanBufferMemoryMapping hostMemoryMapping, vma::MemoryUsage memoryUsage, vk::MemoryPropertyFlags memoryRequiredFlags, const std::span<const u32>& queueFamilyIndices) -> VulkanBuffer {
+auto VulkanBuffer::create(u64 size, vk::BufferUsageFlags usage, VulkanBufferMemoryMapping hostMemoryMapping, vma::MemoryUsage memoryUsage, vk::MemoryPropertyFlags memoryRequiredFlags, Slice<const u32> queueFamilyIndices) -> VulkanBuffer {
     auto bufferCreateInfo = vk::BufferCreateInfo{}
         .setSize(size)
         .setUsage(usage)
         .setQueueFamilyIndices(queueFamilyIndices)
-        .setSharingMode(queueFamilyIndices.size() == 1 ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent);
+        .setSharingMode(queueFamilyIndices.len() == 1 ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent);
 
     vma::AllocationCreateFlags mappedMemoryBit;
 

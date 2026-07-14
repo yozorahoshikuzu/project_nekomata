@@ -72,7 +72,7 @@ std::unordered_map<vk::Format, ImageFormatMd> VulkanImage::s_formatMetadata = {
 };
 // clang-format on
 
-auto VulkanImage::create(vk::ImageType type, vk::Extent3D extent, u32 layerCount, u32 mipLevelCount, bool isCubemap, vk::Format format, vk::ImageUsageFlags usage, vk::ImageTiling tiling, vma::MemoryUsage memoryUsage, vk::MemoryPropertyFlags memoryRequiredFlags, const std::span<const u32>& queueFamilyIndices, vk::ImageLayout initialLayout) -> VulkanImage {
+auto VulkanImage::create(vk::ImageType type, vk::Extent3D extent, u32 layerCount, u32 mipLevelCount, bool isCubemap, vk::Format format, vk::ImageUsageFlags usage, vk::ImageTiling tiling, vma::MemoryUsage memoryUsage, vk::MemoryPropertyFlags memoryRequiredFlags, Slice<const u32> queueFamilyIndices, vk::ImageLayout initialLayout) -> VulkanImage {
     u32 arrayLayerCount = isCubemap ? layerCount * 6 : layerCount;
     auto imageCreateInfo = vk::ImageCreateInfo{}
         .setImageType(type)
@@ -115,8 +115,8 @@ auto VulkanImage::create(vk::ImageType type, vk::Extent3D extent, u32 layerCount
 
 auto VulkanImage::createMutableFormat(vk::ImageType type, vk::Extent3D extent, u32 layerCount, u32 mipLevelCount, bool isCubemap, vk::Format format,
                                       vk::ImageUsageFlags usage, vk::ImageTiling tiling, vma::MemoryUsage memoryUsage,
-                                      vk::MemoryPropertyFlags memoryRequiredFlags, const std::span<const u32>& queueFamilyIndices,
-                                      vk::ImageLayout initialLayout, const std::span<const vk::Format>& formats) -> VulkanImage {
+                                      vk::MemoryPropertyFlags memoryRequiredFlags, Slice<const u32> queueFamilyIndices,
+                                      vk::ImageLayout initialLayout, Slice<const vk::Format> formats) -> VulkanImage {
     u32 arrayLayerCount = isCubemap ? layerCount * 6 : layerCount;
     auto imageCreateInfo = vk::ImageCreateInfo{}
         .setImageType(type)

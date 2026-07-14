@@ -152,7 +152,7 @@ struct FSOut {
 
 [shader("fragment")]
 FSOut main(TESOut input) {
-    //float3 albedo = s_textures2D[push_consts.textureSrtID].Sample(s_samplers[push_consts.samplerSrtID], input.uv).rgb;
+    //float3 albedo = s_textures2D[s_pushConstants.textureSrtID].Sample(s_samplers[s_pushConstants.samplerSrtID], input.uv).rgb;
     float3 albedo = float3(0.8);
     float metallic = s_pushConstants.metallic;
     float roughness = 1.0 - s_pushConstants.roughness;

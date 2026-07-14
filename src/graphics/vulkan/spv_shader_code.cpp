@@ -6,7 +6,7 @@ import :core.platform.int_def;
 namespace projnekomata {
 
 SpirvShaderCode::SpirvShaderCode(std::nullptr_t) {}
-SpirvShaderCode::SpirvShaderCode(std::vector<u32>&& spvCode) : m_spvCode(std::move(spvCode)) {}
+SpirvShaderCode::SpirvShaderCode(Vec<u32>&& spvCode) : m_spvCode(std::move(spvCode)) {}
 
 auto SpirvShaderCode::loadFromFile(const std::filesystem::path& path) -> Result<SpirvShaderCode, ShaderLoadError> {
     log::info("loading file: {}", path.string());
@@ -24,7 +24,7 @@ auto SpirvShaderCode::loadFromFile(const std::filesystem::path& path) -> Result<
     }
 
     auto shaderCodeDwordCount = fileSize / 4;
-    std::vector<u32> spvCode(shaderCodeDwordCount);
+    auto spvCode = Vec<u32>::fromValue(shaderCodeDwordCount, 0);
 
     shaderCodeFile.seekg(0);
     shaderCodeFile.read(reinterpret_cast<char*>(spvCode.data()), fileSize);

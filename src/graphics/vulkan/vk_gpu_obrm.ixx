@@ -37,4 +37,23 @@ private:
     T m_vkHandle = nullptr;
 };
 
+extern template class VulkanAsyncRaiiWrapper<vk::raii::CommandPool>;
+extern template class VulkanAsyncRaiiWrapper<vk::raii::CommandBuffer>;
+extern template class VulkanAsyncRaiiWrapper<vk::raii::Image>;
+extern template class VulkanAsyncRaiiWrapper<vk::raii::ImageView>;
+extern template class VulkanAsyncRaiiWrapper<vk::raii::SwapchainKHR>;
+extern template class VulkanAsyncRaiiWrapper<vk::raii::Semaphore>;
+extern template class VulkanAsyncRaiiWrapper<vk::raii::Fence>;
+extern template class VulkanAsyncRaiiWrapper<vma::raii::Allocation>;
+extern template class VulkanAsyncRaiiWrapper<vk::raii::PipelineLayout>;
+extern template class VulkanAsyncRaiiWrapper<vk::raii::Pipeline>;
+extern template class VulkanAsyncRaiiWrapper<vk::raii::Buffer>;
+extern template class VulkanAsyncRaiiWrapper<vma::raii::VirtualBlock>;
+extern template class VulkanAsyncRaiiWrapper<vk::raii::DescriptorSetLayout>;
+extern template class VulkanAsyncRaiiWrapper<vk::raii::DescriptorSet>;
+extern template class VulkanAsyncRaiiWrapper<vk::raii::DescriptorPool>;
+extern template class VulkanAsyncRaiiWrapper<vk::raii::Sampler>;
+extern template class VulkanAsyncRaiiWrapper<vk::raii::QueryPool>;
+
+
 } // namespace projnekomata

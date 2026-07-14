@@ -34,11 +34,11 @@ public:
     VulkanQueue& operator=(const VulkanQueue&) = delete;
     VulkanQueue& operator=(VulkanQueue&&) = delete;
 
-    auto submitOneCommandBuffer(const vk::raii::CommandBuffer& buf, const std::span<GPUFuture>& asyncWaits,
-                                   const std::span<vk::PipelineStageFlags2>& asyncWaitStages, const Option<std::reference_wrapper<VulkanFence>>& fence)
+    auto submitOneCommandBuffer(const vk::raii::CommandBuffer& buf, Slice<const GPUFuture> asyncWaits,
+                                   Slice<const vk::PipelineStageFlags2> asyncWaitStages, const Option<std::reference_wrapper<VulkanFence>>& fence)
         -> GPUFuture;
-    auto submitOneCommandBufferWithBinarySemaphores(const vk::raii::CommandBuffer& buf, const std::span<GPUFuture>& asyncWaits,
-                                              const std::span<vk::PipelineStageFlags2>& asyncWaitStages, const VulkanBinarySemaphore& binaryWait,
+    auto submitOneCommandBufferWithBinarySemaphores(const vk::raii::CommandBuffer& buf, Slice<const GPUFuture> asyncWaits,
+                                              Slice<const vk::PipelineStageFlags2> asyncWaitStages, const VulkanBinarySemaphore& binaryWait,
                                               const VulkanBinarySemaphore& binarySignal, const vk::PipelineStageFlags2& binaryWaitStage,
                                               const vk::PipelineStageFlags2& binarySignalStage,
                                               const Option<std::reference_wrapper<VulkanFence>>& fence) -> GPUFuture;

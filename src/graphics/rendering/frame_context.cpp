@@ -128,7 +128,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     float aspectRatio = static_cast<float>(transientRenderingResources.finalDrawBuffer().extent().width) / static_cast<float>(transientRenderingResources.finalDrawBuffer().extent().height);
     float perspFocalLength = renderingArea.y() / (2.0f * std::tan(0.5f * degreesToRadians(firstCamera.fov)));
 
-    m_frameRenderingResources.prepareBuffers(renderingData, firstCamera, firstCameraTransform, aspectRatio);
+    m_frameRenderingResources.prepareBuffers(renderingData, firstCamera, firstCameraTransform, aspectRatio, renderingData.m_frameIndex);
     auto& swapchainImage = swapchain.imageAtIndex(imageAcquire.first.unwrap());
 
     m_frameRenderingResources.commandPool().reset();
@@ -162,7 +162,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         auto pixelBuffer = Vec<u8>::create();
         auto newImageIndices = Vec<u32>::create();
         auto bufferImageCopyRegions = HashMap<u32, Vec<vk::BufferImageCopy2>>::create();
-        fonts::FontRasterInfo rasterInfo = { all_texts_iter, sharedRenderingResources.m_fontAtlas, bufferImageCopyRegions, pixelBuffer, newImageIndices };
+        fonts::FontRasterInfo rasterInfo = { all_texts_iter.asSlice(), sharedRenderingResources.m_fontAtlas, bufferImageCopyRegions, pixelBuffer, newImageIndices };
         fonts::FontManager::get().rasterizeGlyphs(rasterInfo);
 
         // there can be glyphs that don't rasterize to anything but appeared in the batch, so the buffer might be zero-sized

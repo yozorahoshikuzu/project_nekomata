@@ -4,6 +4,7 @@ import vulkan;
 import vk_mem_alloc;
 import :core.platform.int_def;
 import :graphics.vulkan.vk_gpu_obrm;
+import :core.cs.slice;
 
 export namespace projnekomata {
 
@@ -23,7 +24,7 @@ public:
     VulkanBuffer& operator=(const VulkanBuffer&) = delete;
     VulkanBuffer& operator=(VulkanBuffer&&)  noexcept = default;
 
-    static auto create(u64 size, vk::BufferUsageFlags usage, VulkanBufferMemoryMapping hostMemoryMapping, vma::MemoryUsage memoryUsage, vk::MemoryPropertyFlags memoryRequiredFlags, const std::span<const u32>& queueFamilyIndices) -> VulkanBuffer;
+    static auto create(u64 size, vk::BufferUsageFlags usage, VulkanBufferMemoryMapping hostMemoryMapping, vma::MemoryUsage memoryUsage, vk::MemoryPropertyFlags memoryRequiredFlags, Slice<const u32> queueFamilyIndices) -> VulkanBuffer;
 
     [[nodiscard]] auto vkBuffer() const        -> const vk::raii::Buffer& { return m_vkBuffer.vkHandle(); }
     [[nodiscard]] auto size() const            -> u64 { return m_size; }

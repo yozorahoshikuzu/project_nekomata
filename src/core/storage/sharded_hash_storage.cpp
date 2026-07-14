@@ -8,7 +8,7 @@ namespace projnekomata::storage {
 ShardedHashStorage::ShardedHashStorage(const std::filesystem::path& directory, u32 nibblesPerLevel, u32 levelCount)
     : m_directory(directory), m_nibblesPerLevel(nibblesPerLevel), m_levelCount(levelCount) {}
 
-auto ShardedHashStorage::store(const std::span<const u8>& hash, const std::span<const u8>& data) -> Result<std::monostate, HashStorageWriteError> {
+auto ShardedHashStorage::store(Slice<const u8> hash, Slice<const u8> data) -> Result<std::monostate, HashStorageWriteError> {
     auto fullpath = buildPathFromHash(hash);
 
     std::error_code ec;
@@ -22,13 +22,13 @@ auto ShardedHashStorage::store(const std::span<const u8>& hash, const std::span<
     std::ofstream file(fullpath, std::ios::binary | std::ios::trunc);
     if (!file) return Err(HashStorageWriteError::FileOpenError);
 
-    file.write(reinterpret_cast<const char*>(data.data()), data.size());
+    file.write(reinterpret_cast<const char*>(data.data()), data.len());
     if (!file) return Err(HashStorageWriteError::FileWriteError);
 
     return Ok(std::monostate{});
 }
 
-auto ShardedHashStorage::load(const std::span<const u8>& hash, std::vector<u8>& dst) -> Result<std::monostate, HashStorageLoadError> {
+auto ShardedHashStorage::load(Slice<const u8> hash, Vec<u8>& dst) -> Result<std::monostate, HashStorageLoadError> {
     auto fullpath = buildPathFromHash(hash);
     if (!std::filesystem::exists(fullpath))
         return Err(HashStorageLoadError::ObjectMissing);
@@ -38,7 +38,7 @@ auto ShardedHashStorage::load(const std::span<const u8>& hash, std::vector<u8>& 
     dst.resize(file.tellg());
     file.seekg(0);
 
-    file.read(reinterpret_cast<char*>(dst.data()), dst.size());
+    file.read(reinterpret_cast<char*>(dst.data()), dst.len());
     if (!file) return Err(HashStorageLoadError::FileReadError);
 
     return Ok(std::monostate{});
@@ -47,11 +47,11 @@ auto ShardedHashStorage::invalidate() -> void {
     std::filesystem::remove_all(m_directory);
 }
 
-auto ShardedHashStorage::buildPathFromHash(const std::span<const u8>& hash) const -> std::filesystem::path {
+auto ShardedHashStorage::buildPathFromHash(Slice<const u8> hash) const -> std::filesystem::path {
     static constexpr char kHexLut[] = "0123456789abcdef";
 
-    std::string hashHexStr(hash.size() * 2, '\0');
-    for (usize i = 0; i < hash.size(); i++) {
+    std::string hashHexStr(hash.len() * 2, '\0');
+    for (usize i = 0; i < hash.len(); i++) {
         hashHexStr[i * 2    ] = kHexLut[hash[i] >> 4];
         hashHexStr[i * 2 + 1] = kHexLut[hash[i] & 0xf];
     }

@@ -8,42 +8,13 @@ import :core.platform.int_def;
 import :core.cs.iterators;
 import :core.cs.mem;
 import :core.cs.nonzero_ptr;
+import :core.cs.slice;
 
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 export template <typename T> struct TTriviallyRelocatable : std::bool_constant<std::is_trivially_copyable_v<T>> {};
 
 template <typename T> inline constexpr bool TTriviallyRelocatableValue = TTriviallyRelocatable<T>::value;
-
-template <typename T> class VecSliceIter : public IteratorBase<VecSliceIter<T>> {
-public:
-    using Item = IteratorInternalNonNullPtr<T>;
-
-    constexpr VecSliceIter(T* begin, T* end) : m_begin(begin), m_end(end) {}
-    constexpr auto next() -> Option<Item> {
-        if (m_begin == m_end) return None;
-        return Some(IteratorInternalNonNullPtr(NonNullPtr<T>(m_begin++)));
-    }
-
-private:
-    T* m_begin;
-    T* m_end;
-};
-
-template <typename T> class VecReverseSliceIter : public IteratorBase<VecReverseSliceIter<T>> {
-public:
-    using Item = IteratorInternalNonNullPtr<T>;
-
-    constexpr VecReverseSliceIter(T* begin, T* end) : m_begin(begin), m_end(end) {}
-    constexpr auto next() -> Option<Item> {
-        if (m_begin == m_end) return None;
-        return Some(IteratorInternalNonNullPtr(NonNullPtr<T>(m_begin--)));
-    }
-
-private:
-    T* m_begin;
-    T* m_end;
-};
 
 export template <typename T> class Vec {
 public:
@@ -207,6 +178,20 @@ public:
         m_len = 0;
     }
 
+    constexpr auto sort() -> void {
+        if (m_len == 0) return;
+        std::sort(m_data, m_data + m_len);
+    }
+
+    /// Removes consecutive elements in the vector.
+    ///
+    /// If the vector is sorted, then this removes all duplicates.
+    constexpr auto dedup() -> void {
+        if (m_len == 0) return;
+        auto it = std::unique(m_data, m_data + m_len);
+        m_len = std::distance(m_data, it);
+    }
+
     template <typename P> constexpr auto retain(P pred) requires requires(T& d) { { pred(d) } -> std::convertible_to<bool>; }
     {
         usize newLen = 0;
@@ -229,13 +214,33 @@ public:
         m_len = newLen;
     }
 
+    // ---- Insertion ------------------------------------------------------------------------------------------------------------------------------------------
+
+    // todo: insert
+    // todo: splice
+    constexpr auto extend(Slice<const T> other) {
+        reserve(m_len + other.len());
+
+        if constexpr (std::is_trivially_copyable_v<T>) {
+            std::memcpy(m_data + m_len, other.data(), other.len() * sizeof(T));
+            m_len += other.len();
+        } else {
+            for (auto& elem : other) emplace(std::move(elem));
+        }
+    }
+
+    // ---- Slice Conversion -----------------------------------------------------------------------------------------------------------------------------------
+
+    constexpr auto asSlice() const -> Slice<const T> { return Slice<const T>(m_data, m_len); }
+    constexpr auto asSliceMut() -> Slice<T> { return Slice<T>(m_data, m_len); }
+
     // ---- Iterators ------------------------------------------------------------------------------------------------------------------------------------------
 
-    constexpr auto iter() -> VecSliceIter<T> { return VecSliceIter<T>(m_data, m_data + m_len); }
-    constexpr auto iter() const -> VecSliceIter<const T> { return VecSliceIter<const T>(m_data, m_data + m_len); }
+    constexpr auto iter() const -> SliceIter<const T> { return asSlice().iter(); }
+    constexpr auto iterMut() -> SliceIter<T> { return asSliceMut().iter(); }
 
-    constexpr auto iterRev() -> VecReverseSliceIter<T> { return VecReverseSliceIter<T>(m_data + m_len - 1, m_data - 1); }
-    constexpr auto iterRev() const -> VecReverseSliceIter<const T> { return VecReverseSliceIter<const T>(m_data + m_len - 1, m_data - 1); }
+    constexpr auto iterRev() const -> ReverseSliceIter<const T> { return asSlice().iterRev(); }
+    constexpr auto iterRevMut() -> ReverseSliceIter<T> { return asSliceMut().iterRev(); }
 
 private:
     constexpr Vec(T* data, usize len, usize capacity) noexcept : m_data(data), m_len(len), m_capacity(capacity) {}

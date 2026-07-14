@@ -5,6 +5,7 @@ import vk_mem_alloc;
 import :core.platform.int_def;
 import :graphics.vulkan.vk_buffer;
 import :core.cs.option;
+import :core.cs.slice;
 
 export namespace projnekomata {
 
@@ -49,7 +50,7 @@ struct BufferPoolConfig {
     u32 defaultDeferFrames = 4;
 
     vk::BufferUsageFlags bufferUsageFlags;
-    std::span<const u32> queueFamilyIndices;
+    Slice<const u32> queueFamilyIndices;
     vma::MemoryUsage memoryUsage;
     vk::MemoryPropertyFlags memoryRequiredFlags;
     VulkanBufferMemoryMapping hostMemoryMapping;
@@ -125,7 +126,7 @@ struct MeshPoolConfig {
     u32 maxSlabCount = 16;
     u64 dedicatedAllocationThreshold = 8 * 1024 * 1024;
     u32 defaultDeferFrames = 4;
-    std::span<const u32> queueFamilyIndices;
+    Slice<const u32> queueFamilyIndices;
 };
 
 class MeshPool {

@@ -21,12 +21,12 @@ public:
     virtual auto modelName() const -> std::string_view = 0;
 
     virtual auto allocateImageIndex() -> SRTResourceIndex = 0;
-    virtual auto allocateImageIndices(u32 count, std::span<SRTResourceIndex> dstIndices) -> void = 0;
+    virtual auto allocateImageIndices(u32 count, Slice<SRTResourceIndex> dstIndices) -> void = 0;
     virtual auto freeImageIndex(SRTResourceIndex index) -> void = 0;
-    virtual auto freeImageIndices(std::span<SRTResourceIndex> indices) -> void = 0;
+    virtual auto freeImageIndices(Slice<const SRTResourceIndex> indices) -> void = 0;
 
     virtual auto allocateSamplerIndex() -> SRTResourceIndex = 0;
-    virtual auto allocateSamplerIndices(u32 count, std::span<SRTResourceIndex> dstIndices) -> void = 0;
+    virtual auto allocateSamplerIndices(u32 count, Slice<SRTResourceIndex> dstIndices) -> void = 0;
 
     virtual auto bindImage(const VulkanImage& image, SRTResourceIndex index) -> void = 0;
     virtual auto bindImageView(const VulkanImageView& imageView, SRTResourceIndex index) -> void = 0;

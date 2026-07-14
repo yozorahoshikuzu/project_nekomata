@@ -23,15 +23,15 @@ VulkanQueue::~VulkanQueue() {
 }
 
 // TODO: Timeline semaphore support
-auto VulkanQueue::submitOneCommandBuffer(const vk::raii::CommandBuffer& buf, const std::span<GPUFuture>& asyncWaits,
-                                            const std::span<vk::PipelineStageFlags2>& asyncWaitStages,
+auto VulkanQueue::submitOneCommandBuffer(const vk::raii::CommandBuffer& buf, Slice<const GPUFuture> asyncWaits,
+                                            Slice<const vk::PipelineStageFlags2> asyncWaitStages,
                                             const Option<std::reference_wrapper<VulkanFence>>& fence) -> GPUFuture {
     std::scoped_lock lock(m_queueMutex);
     auto signalValue = m_lastTimelineSubmissionValue.fetch_add(1, std::memory_order_relaxed) + 1;
 
     auto semaphoreWaitInfos = Vec<vk::SemaphoreSubmitInfo>::withCapacity(asyncWaits.size());
 
-    for (auto [op, flags] : std::views::zip(asyncWaits, asyncWaitStages)) {
+    for (auto [op, flags] : asyncWaits.iter().zip(asyncWaitStages.iter())) {
         auto semaphoreSubmit = vk::SemaphoreSubmitInfo{}
             .setSemaphore(op.timelineSemaphore())
             .setValue(op.timelineSemaphoreTargetValue())
@@ -62,8 +62,8 @@ auto VulkanQueue::submitOneCommandBuffer(const vk::raii::CommandBuffer& buf, con
     return asyncOp;
 }
 
-auto VulkanQueue::submitOneCommandBufferWithBinarySemaphores(const vk::raii::CommandBuffer& buf, const std::span<GPUFuture>& asyncWaits,
-                                                       const std::span<vk::PipelineStageFlags2>& asyncWaitStages, const VulkanBinarySemaphore& binaryWait,
+auto VulkanQueue::submitOneCommandBufferWithBinarySemaphores(const vk::raii::CommandBuffer& buf, Slice<const GPUFuture> asyncWaits,
+                                                       Slice<const vk::PipelineStageFlags2> asyncWaitStages, const VulkanBinarySemaphore& binaryWait,
                                                        const VulkanBinarySemaphore& binarySignal, const vk::PipelineStageFlags2& binaryWaitStage,
                                                        const vk::PipelineStageFlags2& binarySignalStage,
                                                        const Option<std::reference_wrapper<VulkanFence>>& fence) -> GPUFuture {
@@ -72,7 +72,7 @@ auto VulkanQueue::submitOneCommandBufferWithBinarySemaphores(const vk::raii::Com
 
     auto semaphoreWaitInfos = Vec<vk::SemaphoreSubmitInfo>::withCapacity(asyncWaits.size() + 1);
 
-    for (auto [op, flags] : std::views::zip(asyncWaits, asyncWaitStages)) {
+    for (auto [op, flags] : asyncWaits.iter().zip(asyncWaitStages.iter())) {
         auto semaphoreSubmit = vk::SemaphoreSubmitInfo{}
             .setSemaphore(op.timelineSemaphore())
             .setValue(op.timelineSemaphoreTargetValue())

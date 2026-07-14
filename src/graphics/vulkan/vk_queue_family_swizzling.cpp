@@ -38,7 +38,7 @@ VulkanQueueFamilySwizzling::VulkanQueueFamilySwizzling(u32 graphicsQueueFamilyIn
             );
 
         if (query != m_queueFamilyIndexPermutationTable.begin() + m_queueFamilyIndexPermutationTableSize) {
-            m_queueFamilyIndexPermutationViews[i] = std::span(query, searchPatternSize);
+            m_queueFamilyIndexPermutationViews[i] = Slice<const u32>(query, searchPatternSize);
             continue;
         }
 
@@ -47,8 +47,8 @@ VulkanQueueFamilySwizzling::VulkanQueueFamilySwizzling(u32 graphicsQueueFamilyIn
         }
 
         u32* copyDst = m_queueFamilyIndexPermutationTable.data() + m_queueFamilyIndexPermutationTableSize;
-        m_queueFamilyIndexPermutationViews[i] = std::span(copyDst, searchPatternSize);
-        std::copy(searchPattern.begin(), searchPattern.begin() + searchPatternSize, copyDst);
+        m_queueFamilyIndexPermutationViews[i] = Slice<const u32>(copyDst, searchPatternSize);
+        std::copy_n(searchPattern.begin(), searchPatternSize, copyDst);
         m_queueFamilyIndexPermutationTableSize += searchPatternSize;
     }
 }

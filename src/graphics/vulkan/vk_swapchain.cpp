@@ -15,8 +15,8 @@ auto SwapchainImage::from(vk::Image vkImage, vk::Extent2D extent, vk::Format for
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-static constexpr std::array<vk::PresentModeKHR, 4> PRESENT_MODE_PRIORITY_VSYNC = { vk::PresentModeKHR::eFifoRelaxed, vk::PresentModeKHR::eFifo, vk::PresentModeKHR::eMailbox, vk::PresentModeKHR::eImmediate };
-static constexpr std::array<vk::PresentModeKHR, 4> PRESENT_MODE_PRIORITY_NO_VSYNC = { vk::PresentModeKHR::eMailbox, vk::PresentModeKHR::eImmediate, vk::PresentModeKHR::eFifoRelaxed, vk::PresentModeKHR::eFifo };
+static constexpr auto PRESENT_MODE_PRIORITY_VSYNC = StaticSlice<const vk::PresentModeKHR>::inst<vk::PresentModeKHR::eFifoRelaxed, vk::PresentModeKHR::eFifo, vk::PresentModeKHR::eMailbox, vk::PresentModeKHR::eImmediate>();
+static constexpr auto PRESENT_MODE_PRIORITY_NO_VSYNC = StaticSlice<const vk::PresentModeKHR>::inst<vk::PresentModeKHR::eMailbox, vk::PresentModeKHR::eImmediate, vk::PresentModeKHR::eFifoRelaxed, vk::PresentModeKHR::eFifo>();
 
 VulkanSwapchain::VulkanSwapchain(std::nullptr_t) {}
 VulkanSwapchain::VulkanSwapchain(vk::raii::SwapchainKHR&& swapchain, vk::Extent2D swapchainImageExtent, Vec<SwapchainImage>&& swapchainImages) : m_vkSwapchain(std::move(swapchain)), m_swapchainImageExtent(swapchainImageExtent), m_vkSwapchainImages(std::move(swapchainImages)) {}
@@ -33,9 +33,9 @@ auto VulkanSwapchain::create(vk::Extent2D windowDrawableExtent, Option<VulkanSwa
 
 
     auto& presentModePriority = vsyncEnable ? PRESENT_MODE_PRIORITY_VSYNC : PRESENT_MODE_PRIORITY_NO_VSYNC;
-    auto presentMode = *std::ranges::find_if(presentModePriority, [&](const auto& pmode) -> bool {
-        return std::ranges::contains(surfaceProps.m_presentModes, pmode);
-    });
+    auto presentMode = presentModePriority.iter()
+        .find([&](const auto& pmode) { return surfaceProps.m_presentModes.contains(pmode); })
+        .unwrapOr(presentModePriority[0]);
 
     vk::Extent2D imageExtent = surfaceProps.m_capabilities.currentExtent.width == std::numeric_limits<u32>::max() ? windowDrawableExtent : surfaceProps.m_capabilities.currentExtent;
 

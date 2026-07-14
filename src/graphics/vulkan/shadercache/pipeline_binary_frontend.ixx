@@ -20,19 +20,27 @@ constexpr u32 uint32Le(u32 x) {
 
 class PipelineKeysToBinaryKeyObjectsSerde {
 public:
-    static auto serialize(const std::span<const vk::PipelineBinaryKeyKHR>& pipelineKeys, std::vector<u8>& buffer) -> void {
+    static auto serialize(Slice<const vk::PipelineBinaryKeyKHR> pipelineKeys, Vec<u8>& buffer) -> void {
         u32 keyCount = uint32Le(pipelineKeys.size());
-        buffer.insert(buffer.end(), reinterpret_cast<const u8*>(&keyCount), reinterpret_cast<const u8*>(&keyCount) + sizeof(keyCount));
+        auto keyCountBytes = Slice<const u8>(reinterpret_cast<const u8*>(&keyCount), sizeof(keyCount));
+        buffer.extend(keyCountBytes);
+
 
         for (const auto& pipelineKey : pipelineKeys) {
             u32 keySize = uint32Le(pipelineKey.keySize);
-            buffer.insert(buffer.end(), reinterpret_cast<const u8*>(&keySize), reinterpret_cast<const u8*>(&keySize) + sizeof(keySize));
-            buffer.insert(buffer.end(), pipelineKey.key.begin(), pipelineKey.key.end());
+            auto keySizeBytes = Slice<const u8>(reinterpret_cast<const u8*>(&keySize), sizeof(keySize));
+            auto keyBytes = Slice<const u8>(pipelineKey.key.data(), pipelineKey.keySize);
+
+            buffer.extend(keySizeBytes);
+            buffer.extend(keyBytes);
         }
     }
 
-    static auto deserialize(std::span<const u8> buffer, std::vector<vk::PipelineBinaryKeyKHR>& pipelineKeys) -> bool {
-        if (buffer.size() < 4) return false;
+    static auto deserialize(Slice<const u8> buffer, Vec<vk::PipelineBinaryKeyKHR>& pipelineKeys) -> bool {
+        if (buffer.len() < 4) {
+            log::error("[Deserialization Error] Pipeline binary key objects buffer too small to read keyCount! (len = {})", buffer.len());
+            return false;
+        }
         u32 keyCount;
         memcpy(&keyCount, buffer.data(), sizeof(keyCount));
         keyCount = uint32Le(keyCount);
@@ -40,18 +48,24 @@ public:
         usize cursor = 4;
 
         for (u32 i = 0; i < keyCount; i++) {
-            if (buffer.size() < cursor + 4) return false;
+            if (buffer.size() < cursor + 4) {
+                log::error("[Deserialization Error] Pipeline binary key objects buffer too small to read keySize! (i = {}, len = {})", i, buffer.len());
+                return false;
+            }
             u32 keySize;
             memcpy(&keySize, buffer.data() + cursor, sizeof(keySize));
             keySize = uint32Le(keySize);
             cursor += 4;
-            if (buffer.size() < cursor + keySize) return false;
+            if (buffer.size() < cursor + keySize) {
+                log::error("[Deserialization Error] Pipeline binary key objects buffer too small to read key! (i = {}, len = {})", i, buffer.len());
+                return false;
+            }
 
             auto pipelineKey = vk::PipelineBinaryKeyKHR{};
             pipelineKey.keySize = keySize;
             memcpy(pipelineKey.key.data(), buffer.data() + cursor, keySize);
             cursor += keySize;
-            pipelineKeys.push_back(pipelineKey);
+            pipelineKeys.emplace(pipelineKey);
         }
 
         return true;
@@ -67,14 +81,14 @@ public:
 
     void checkGlobalKeyAndInvalidateStale() {
         auto globalKey = vkCheckResult(VulkanContext::get().vkDevice().getPipelineKeyKHR());
-        std::span<const u8> gpkKey = { globalKey.key.data(), globalKey.keySize };
-        std::vector<u8> byteBuffer;
+        Slice<const u8> gpkKey = { globalKey.key.data(), globalKey.keySize };
+        Vec<u8> byteBuffer;
         if (!getGlobalKeyFromStorage(byteBuffer)) {
             log::warn("Failed to load global pipeline key, will try to invalidate pipeline cache");
             m_pipelineKeysToBinaryKeyObjects.invalidate();
             m_binaryKeysToBinaryObjects.invalidate();
         } else {
-            bool globalKeyMatches = std::ranges::equal(byteBuffer, gpkKey);
+            bool globalKeyMatches = gpkKey == byteBuffer.asSlice();
             if (!globalKeyMatches) {
                 log::warn("Global pipeline key mismatch, invalidating pipeline cache.");
                 m_pipelineKeysToBinaryKeyObjects.invalidate();
@@ -94,18 +108,18 @@ public:
 
 
         auto pipelineKey = vkCheckResult(VulkanContext::get().vkDevice().getPipelineKeyKHR(pipelineCreateInfo));
-        std::vector<vk::PipelineBinaryKeyKHR> binaryKeys;
+        Vec<vk::PipelineBinaryKeyKHR> binaryKeys;
         if (!getBinaryKeysForPipelineKey(pipelineKey, binaryKeys)) {
             return handleCreateGraphicsPipelineUncached(chain, pipelineKey);
         }
-        std::vector<vk::raii::PipelineBinaryKHR> binaries;
-        if (!getBinariesForBinaryKeys(binaryKeys, binaries)) {
+        Vec<vk::raii::PipelineBinaryKHR> binaries;
+        if (!getBinariesForBinaryKeys(binaryKeys.asSlice(), binaries)) {
             return handleCreateGraphicsPipelineUncached(chain, pipelineKey);
         }
 
-        std::vector<vk::PipelineBinaryKHR> binaryHandles(binaries.size());
-        std::transform(binaries.begin(), binaries.end(), binaryHandles.begin(),
-                       [](const auto& b) { return *b; });
+        auto binaryHandles = binaries.iter()
+            .map([&](auto&& binary) { return *binary; })
+            .template collect<Vec>();
 
         chain.template get<vk::PipelineBinaryInfoKHR>()
             .setPipelineBinaries(binaryHandles);
@@ -121,9 +135,9 @@ private:
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
     // Storage Helpers
 
-    auto getBinaryKeysForPipelineKey(vk::PipelineBinaryKeyKHR pipelineKey, std::vector<vk::PipelineBinaryKeyKHR>& buffer) -> bool {
-        std::span<const u8> key = { pipelineKey.key.data(), pipelineKey.keySize };
-        std::vector<u8> byteBuffer;
+    auto getBinaryKeysForPipelineKey(vk::PipelineBinaryKeyKHR pipelineKey, Vec<vk::PipelineBinaryKeyKHR>& buffer) -> bool {
+        auto key = Slice<const u8>(pipelineKey.key.data(), pipelineKey.keySize);
+        Vec<u8> byteBuffer;
 
         auto result = m_pipelineKeysToBinaryKeyObjects.load(key, byteBuffer);
         if (result.isErr()) {
@@ -136,18 +150,18 @@ private:
             return false;
         }
 
-        if (!PipelineKeysToBinaryKeyObjectsSerde::deserialize(byteBuffer, buffer)) {
+        if (!PipelineKeysToBinaryKeyObjectsSerde::deserialize(byteBuffer.asSlice(), buffer)) {
             log::error("Failed to deserialize pipeline binary key objects");
             return false;
         }
         return true;
     }
 
-    auto getBinariesForBinaryKeys(const std::span<const vk::PipelineBinaryKeyKHR> binaryKeys, std::vector<vk::raii::PipelineBinaryKHR>& buffer) -> bool {
-        std::vector<std::vector<u8>> byteBuffers;
+    auto getBinariesForBinaryKeys(Slice<const vk::PipelineBinaryKeyKHR> binaryKeys, Vec<vk::raii::PipelineBinaryKHR>& buffer) -> bool {
+        Vec<Vec<u8>> byteBuffers;
         for (const auto& binaryKey : binaryKeys) {
-            std::span<const u8> key = { binaryKey.key.data(), binaryKey.keySize };
-            std::vector<u8> byte_buffer;
+            auto key = Slice<const u8>(binaryKey.key.data(), binaryKey.keySize);
+            Vec<u8> byte_buffer;
             auto result = m_binaryKeysToBinaryObjects.load(key, byte_buffer);
             if (result.isErr()) {
                 auto err = result.unwrapErr();
@@ -158,14 +172,12 @@ private:
                 }
                 return false;
             }
-            byteBuffers.emplace_back(std::move(byte_buffer));
+            byteBuffers.emplace(std::move(byte_buffer));
         }
 
-        std::vector<vk::PipelineBinaryDataKHR> binaryData(byteBuffers.size());
-        for (usize i = 0; i < byteBuffers.size(); i++) {
-            binaryData[i] = vk::PipelineBinaryDataKHR{}
-                .setData<u8>(byteBuffers[i]);
-        }
+        auto binaryData = byteBuffers.iterMut()
+            .map([&](auto&& byteBuffer) { return vk::PipelineBinaryDataKHR{}.setData<u8>(byteBuffer); })
+            .collect<Vec>();
 
         auto binaryAndDataInfo = vk::PipelineBinaryKeysAndDataKHR{}
             .setPipelineBinaryKeys(binaryKeys)
@@ -174,7 +186,7 @@ private:
         auto binaryCreateInfo = vk::PipelineBinaryCreateInfoKHR{}
             .setPKeysAndDataInfo(&binaryAndDataInfo);
 
-        buffer = vkCheckResult(VulkanContext::get().vkDevice().createPipelineBinariesKHR(binaryCreateInfo));
+        buffer = Vec<vk::raii::PipelineBinaryKHR>::fromStdVector(vkCheckResult(VulkanContext::get().vkDevice().createPipelineBinariesKHR(binaryCreateInfo)));
 
         return true;
     }
@@ -182,7 +194,7 @@ private:
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
     // GPK Key Utils
 
-    auto getGlobalKeyFromStorage(std::vector<u8>& buffer) -> bool {
+    auto getGlobalKeyFromStorage(Vec<u8>& buffer) -> bool {
         std::filesystem::path keyPath = m_pipelineCacheDirectory / "gpk";
 
         if (!std::filesystem::exists(keyPath)) {
@@ -203,7 +215,7 @@ private:
         return true;
     }
 
-    auto storeGlobalKeyToStorage(const std::span<const u8>& data) -> bool {
+    auto storeGlobalKeyToStorage(Slice<const u8> data) -> bool {
         std::filesystem::create_directories(m_pipelineCacheDirectory);
         std::filesystem::path keyPath = m_pipelineCacheDirectory / "gpk";
         std::ofstream keyFile(keyPath, std::ios::binary);
@@ -211,7 +223,7 @@ private:
             log::error("Failed to open global pipeline key file!");
             return false;
         }
-        keyFile.write(reinterpret_cast<const std::ostream::char_type*>(data.data()), data.size());
+        keyFile.write(reinterpret_cast<const std::ostream::char_type*>(data.data()), data.len());
         if (!keyFile) {
             log::error("Failed to write global pipeline key!");
             return false;
@@ -237,16 +249,17 @@ private:
         auto binaries = vkCheckResult(VulkanContext::get().vkDevice().createPipelineBinariesKHR(binaryCreateInfo));
 
         bool silentlyFailPipelineKeyWrite = false;
-        std::vector<vk::PipelineBinaryKeyKHR> binaryKeys;
+        Vec<vk::PipelineBinaryKeyKHR> binaryKeys;
         for (const auto& binary : binaries) {
             auto binaryDataInfo = vk::PipelineBinaryDataInfoKHR{}
                 .setPipelineBinary(binary);
 
-            auto [binaryDataKey, binaryData] = vkCheckResult(VulkanContext::get().vkDevice().getPipelineBinaryDataKHR(binaryDataInfo));
-            binaryKeys.emplace_back(binaryDataKey);
+            auto [binaryDataKey, stbinaryData] = vkCheckResult(VulkanContext::get().vkDevice().getPipelineBinaryDataKHR(binaryDataInfo));
+            binaryKeys.emplace(binaryDataKey);
+            auto binaryData = Vec<u8>::fromStdVector(std::move(stbinaryData));
 
-            std::span<const u8> binaryDataKeySpan = { binaryDataKey.key.data(), binaryDataKey.keySize };
-            auto storeResult = m_binaryKeysToBinaryObjects.store(binaryDataKeySpan, binaryData);
+            auto binaryDataKeySpan = Slice<const u8>(binaryDataKey.key.data(), binaryDataKey.keySize);
+            auto storeResult = m_binaryKeysToBinaryObjects.store(binaryDataKeySpan, binaryData.asSlice());
 
             if (storeResult.isErr()) {
                 log::error("Failed to store pipeline binary object!");
@@ -263,10 +276,10 @@ private:
             return pipeline;
         }
 
-        std::vector<u8> byteBuffer;
-        PipelineKeysToBinaryKeyObjectsSerde::serialize(binaryKeys, byteBuffer);
-        std::span<const u8> pipelineKeySpan = { pipelineKey.key.data(), pipelineKey.keySize };
-        auto storeResult = m_pipelineKeysToBinaryKeyObjects.store(pipelineKeySpan, byteBuffer);
+        Vec<u8> byteBuffer;
+        PipelineKeysToBinaryKeyObjectsSerde::serialize(binaryKeys.asSlice(), byteBuffer);
+        auto pipelineKeySpan = Slice<const u8>(pipelineKey.key.data(), pipelineKey.keySize);
+        auto storeResult = m_pipelineKeysToBinaryKeyObjects.store(pipelineKeySpan, byteBuffer.asSlice());
 
         if (storeResult.isErr()) {
             log::error("Failed to store pipeline binary keys object!");

@@ -7,7 +7,7 @@ namespace projnekomata {
 VulkanDescriptorPool::VulkanDescriptorPool(std::nullptr_t) {  }
 VulkanDescriptorPool::VulkanDescriptorPool(vk::raii::DescriptorPool&& vkDescriptorPool) : m_vkDescriptorPool(std::move(vkDescriptorPool)) {}
 
-auto VulkanDescriptorPool::create(u32 maxSets, std::span<const vk::DescriptorPoolSize> sizes, bool updateAfterBindPool, bool freeDescriptorSetPool) -> VulkanDescriptorPool {
+auto VulkanDescriptorPool::create(u32 maxSets, Slice<const vk::DescriptorPoolSize> sizes, bool updateAfterBindPool, bool freeDescriptorSetPool) -> VulkanDescriptorPool {
     auto flags = vk::DescriptorPoolCreateFlags{};
     if (updateAfterBindPool) flags |= vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind;
     if (freeDescriptorSetPool) flags |= vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;

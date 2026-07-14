@@ -428,7 +428,7 @@ void onGameInit(std::unique_ptr<projnekomata::ecs::World>& world) {
 
     auto lightEnt = world->createEntity();
 
-    world->emplace<projnekomata::ecs::components::PointLight>(lightEnt, Vector3f{100.0f, 100.0f, 100.0f});
+    world->emplace<projnekomata::ecs::components::PointLight>(lightEnt, Vector3f{1000.0f, 1000.0f, 1000.0f});
     world->emplace<projnekomata::ecs::components::Transform>(lightEnt, std::move(transform));
 
     auto cameraEnt = world->createEntity();

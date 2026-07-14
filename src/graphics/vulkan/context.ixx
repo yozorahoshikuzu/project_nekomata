@@ -34,6 +34,8 @@ constexpr std::string_view antiLagMethodToString(AntiLagMethod method) {
     }
 }
 
+constexpr bool kVulkanDebugEnable = true;
+
 class VulkanContext {
 public:
     VulkanContext(std::nullptr_t);
@@ -73,7 +75,8 @@ private:
     // TODO: Document
     static auto initVkRaiiContext() -> vk::raii::Context;
     // TODO: Document
-    static auto createVkInstance(vk::raii::Context& vkRaiiContext, bool debugEnable) -> vk::raii::Instance;
+    static auto createVkInstance(vk::raii::Context& vkRaiiContext, bool& debuggingEnabled) -> vk::raii::Instance;
+    static auto createVkDebugMessenger(const vk::raii::Instance& vkInstance) -> vk::raii::DebugUtilsMessengerEXT;
     // TODO: Document
     static auto createVkSurface(const vk::raii::Instance& vkInstance, projnekomata::SdlWindow& sdlWindow) -> vk::raii::SurfaceKHR;
     // TODO: Document
@@ -87,6 +90,8 @@ private:
     vk::raii::Context m_vkRaiiContext;
 
     vk::raii::Instance m_vkInstance = nullptr;
+    Option<vk::raii::DebugUtilsMessengerEXT> m_vkDebugMessenger = None;
+
     vk::raii::SurfaceKHR m_vkSurface = nullptr;
     vk::raii::PhysicalDevice m_vkPhysicalDevice = nullptr;
     VulkanPhysicalDeviceProperties m_vkPhysicalDeviceProperties;

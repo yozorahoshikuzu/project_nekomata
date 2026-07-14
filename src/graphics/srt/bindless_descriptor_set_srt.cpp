@@ -44,7 +44,7 @@ auto BindlessDescriptorSetShaderResourceTable::allocateImageIndex() -> SRTResour
     return SRTResourceIndex(index.unwrap());
 }
 
-auto BindlessDescriptorSetShaderResourceTable::allocateImageIndices(u32 count, std::span<SRTResourceIndex> dstIndices) -> void {
+auto BindlessDescriptorSetShaderResourceTable::allocateImageIndices(u32 count, Slice<SRTResourceIndex> dstIndices) -> void {
     for (u32 i = 0; i < count; i++) {
         dstIndices[i] = allocateImageIndex();
     }
@@ -54,7 +54,7 @@ auto BindlessDescriptorSetShaderResourceTable::freeImageIndex(SRTResourceIndex i
     m_imageIndexAllocator.release(index.imageIndex);
 }
 
-auto BindlessDescriptorSetShaderResourceTable::freeImageIndices(std::span<SRTResourceIndex> indices) -> void {
+auto BindlessDescriptorSetShaderResourceTable::freeImageIndices(Slice<const SRTResourceIndex> indices) -> void {
     for (auto index : indices) {
         freeImageIndex(index);
     }
@@ -68,7 +68,7 @@ auto BindlessDescriptorSetShaderResourceTable::allocateSamplerIndex() -> SRTReso
     return SRTResourceIndex(index);
 }
 
-auto BindlessDescriptorSetShaderResourceTable::allocateSamplerIndices(u32 count, std::span<SRTResourceIndex> dstIndices) -> void {
+auto BindlessDescriptorSetShaderResourceTable::allocateSamplerIndices(u32 count, Slice<SRTResourceIndex> dstIndices) -> void {
     for (u32 i = 0; i < count; i++) {
         dstIndices[i] = allocateSamplerIndex();
     }

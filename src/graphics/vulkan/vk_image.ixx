@@ -6,6 +6,7 @@ import :core.platform.int_def;
 import :graphics.vulkan.vk_image_view;
 import :graphics.vulkan.vk_gpu_obrm;
 import :graphics.vulkan.vk_image_trait;
+import :core.cs.slice;
 
 export namespace projnekomata {
 
@@ -33,8 +34,8 @@ public:
     VulkanImage& operator=(const VulkanImage&) = delete;
     VulkanImage& operator=(VulkanImage&&) = default;
 
-    static auto create(vk::ImageType type, vk::Extent3D extent, u32 layerCount, u32 mipLevelCount, bool isCubemap, vk::Format format, vk::ImageUsageFlags usage, vk::ImageTiling tiling, vma::MemoryUsage memoryUsage, vk::MemoryPropertyFlags memoryRequiredFlags, const std::span<const u32>& queueFamilyIndices, vk::ImageLayout initialLayout) -> VulkanImage;
-    static auto createMutableFormat(vk::ImageType type, vk::Extent3D extent, u32 layerCount, u32 mipLevelCount, bool isCubemap, vk::Format format, vk::ImageUsageFlags usage, vk::ImageTiling tiling, vma::MemoryUsage memoryUsage, vk::MemoryPropertyFlags memoryRequiredFlags, const std::span<const u32>& queueFamilyIndices, vk::ImageLayout initialLayout, const std::span<const vk::Format>& formats) -> VulkanImage;
+    static auto create(vk::ImageType type, vk::Extent3D extent, u32 layerCount, u32 mipLevelCount, bool isCubemap, vk::Format format, vk::ImageUsageFlags usage, vk::ImageTiling tiling, vma::MemoryUsage memoryUsage, vk::MemoryPropertyFlags memoryRequiredFlags, Slice<const u32> queueFamilyIndices, vk::ImageLayout initialLayout) -> VulkanImage;
+    static auto createMutableFormat(vk::ImageType type, vk::Extent3D extent, u32 layerCount, u32 mipLevelCount, bool isCubemap, vk::Format format, vk::ImageUsageFlags usage, vk::ImageTiling tiling, vma::MemoryUsage memoryUsage, vk::MemoryPropertyFlags memoryRequiredFlags, Slice<const u32> queueFamilyIndices, vk::ImageLayout initialLayout, Slice<const vk::Format> formats) -> VulkanImage;
 
     // clang-format off
     static std::unordered_map<vk::Format, ImageFormatMd> s_formatMetadata;

@@ -25,12 +25,12 @@ public:
     auto modelName() const -> std::string_view override { return "Bindless"; }
 
     auto allocateImageIndex() -> SRTResourceIndex override;
-    auto allocateImageIndices(u32 count, std::span<SRTResourceIndex> dstIndices) -> void override;
+    auto allocateImageIndices(u32 count, Slice<SRTResourceIndex> dstIndices) -> void override;
     auto freeImageIndex(SRTResourceIndex index) -> void override;
-    auto freeImageIndices(std::span<SRTResourceIndex> indices) -> void override;
+    auto freeImageIndices(Slice<const SRTResourceIndex> indices) -> void override;
 
     auto allocateSamplerIndex() -> SRTResourceIndex override;
-    auto allocateSamplerIndices(u32 count, std::span<SRTResourceIndex> dstIndices) -> void override;
+    auto allocateSamplerIndices(u32 count, Slice<SRTResourceIndex> dstIndices) -> void override;
 
     auto bindImage(const VulkanImage& image, SRTResourceIndex index) -> void override;
     auto bindImageView(const VulkanImageView& imageView, SRTResourceIndex index) -> void override;

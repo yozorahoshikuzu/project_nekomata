@@ -1,9 +1,28 @@
+module;
+#include <vulkan/vulkan.h>
 module projnekomata;
 import :core.log;
 import :graphics.vulkan.deletion_queue;
 import :graphics.vulkan.vk_queue;
 import :core.platform.assert;
 import :graphics.vulkan.shadercache;
+
+VKAPI_ATTR VkBool32 VKAPI_CALL debugUtilsMessengerCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT messageType,
+    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+    void* pUserData
+) {
+    if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+        projnekomata::log::crit("Vulkan Validation Error: {}", pCallbackData->pMessage);
+    } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+        projnekomata::log::warn("Vulkan Validation Warning: {}", pCallbackData->pMessage);
+    } else {
+        projnekomata::log::info("Vulkan Validation Info: {}", pCallbackData->pMessage);
+    }
+
+    return VK_FALSE;
+}
 
 namespace projnekomata {
 
@@ -33,7 +52,10 @@ auto VulkanContext::create(projnekomata::SdlWindow& sdlWindow) -> std::unique_pt
     vk::detail::defaultDispatchLoaderDynamic.init(vkGetInstanceProcAddr);
 
     vkContext->m_vkRaiiContext = initVkRaiiContext();
-    vkContext->m_vkInstance = createVkInstance(vkContext->m_vkRaiiContext, false);
+
+    bool debuggingEnabled;
+    vkContext->m_vkInstance = createVkInstance(vkContext->m_vkRaiiContext, debuggingEnabled);
+    if (debuggingEnabled) vkContext->m_vkDebugMessenger = Some(createVkDebugMessenger(vkContext->m_vkInstance));
 
     // To access vkInstance* functions, the vulkan.hpp dispatcher must be made aware of the instance.
     vk::detail::defaultDispatchLoaderDynamic.init(*vkContext->m_vkInstance);
@@ -53,7 +75,7 @@ auto VulkanContext::create(projnekomata::SdlWindow& sdlWindow) -> std::unique_pt
 
     auto queueFamilyIndexToQueueSlot = HashMap<u32, usize>::create();
 
-    for (auto [i, queue_index] : vkContext->m_vkPhysicalDeviceProperties.m_queueFamilies.allUniqueQueueIndices() | std::views::enumerate) {
+    for (auto [i, queue_index] : vkContext->m_vkPhysicalDeviceProperties.m_queueFamilies.allUniqueQueueIndices().iter().enumerate()) {
         auto vkQueue = VulkanContext::get().vkDevice().getQueue(queue_index, 0);
         u64 lastTimelineSubmissionValue = 0;
 
@@ -144,7 +166,7 @@ auto VulkanContext::initVkRaiiContext() -> vk::raii::Context {
     return {};
 }
 
-auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debugEnable) -> vk::raii::Instance {
+auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool& debuggingEnabled) -> vk::raii::Instance {
     auto appInfo = vk::ApplicationInfo{}
         .setPApplicationName("project_nekomata")
         .setPEngineName("project_nekomata")
@@ -152,20 +174,33 @@ auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debu
         .setEngineVersion(vk::makeApiVersion(0, 0, 1, 0))
         .setApiVersion(vk::ApiVersion14);
 
+    auto availableInstanceExtensionProps = Vec<vk::ExtensionProperties>::fromStdVector(vkCheckResult(vk::enumerateInstanceExtensionProperties(nullptr)));
+    auto availableInstanceExtensionNames = availableInstanceExtensionProps.iter()
+        .map([](auto&& ext) { return std::string(ext.extensionName); })
+        .collect<Vec>();
+
     auto availableInstanceLayerProps = Vec<vk::LayerProperties>::fromStdVector(vkCheckResult(vk::enumerateInstanceLayerProperties()));
     auto availableInstanceLayerNames = availableInstanceLayerProps.iter()
         .map([](auto&& layer) { return std::string(layer.layerName); })
         .collect<Vec>();
 
     auto instanceExtensions = projnekomata::SdlWindow::vulkanInstanceExtensions();
-    
+
+    bool supportsDebug = availableInstanceExtensionNames.contains(vk::EXTDebugUtilsExtensionName);
+    if (kVulkanDebugEnable && supportsDebug) instanceExtensions.emplace(vk::EXTDebugUtilsExtensionName);
+
+    if (kVulkanDebugEnable && !supportsDebug) {
+        log::warn("Vulkan debug extension is enabled but not supported by the instance");
+    }
+    debuggingEnabled = kVulkanDebugEnable && supportsDebug;
+
     auto instanceExtensionsC = instanceExtensions.iter()
         .map([](auto&& ext) { return ext.c_str(); })
         .collect<Vec>();
 
     auto instanceLayersC = Vec<const char*>::create();
 
-    if (debugEnable && availableInstanceLayerNames.contains("VK_LAYER_KHRONOS_validation"))
+    if (kVulkanDebugEnable && availableInstanceLayerNames.contains("VK_LAYER_KHRONOS_validation"))
         instanceLayersC.emplace("VK_LAYER_KHRONOS_validation");
 
     auto instanceInfo = vk::InstanceCreateInfo{}
@@ -176,6 +211,14 @@ auto VulkanContext::createVkInstance(vk::raii::Context& vkRaiiContext, bool debu
     auto instance = vkCheckResult(vkRaiiContext.createInstance(instanceInfo));
 
     return instance;
+}
+auto VulkanContext::createVkDebugMessenger(const vk::raii::Instance& vkInstance) -> vk::raii::DebugUtilsMessengerEXT {
+    auto debugUtilsMessengerCreateInfo = vk::DebugUtilsMessengerCreateInfoEXT{}
+        .setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError)
+        .setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance)
+        .setPfnUserCallback(debugUtilsMessengerCallback);
+
+    return vkCheckResult(vkInstance.createDebugUtilsMessengerEXT(debugUtilsMessengerCreateInfo));
 }
 
 auto VulkanContext::createVkSurface(const vk::raii::Instance& vkInstance, projnekomata::SdlWindow& sdlWindow) -> vk::raii::SurfaceKHR {

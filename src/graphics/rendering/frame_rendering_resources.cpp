@@ -26,7 +26,7 @@ FrameRenderingResources::FrameRenderingResources(u32 initialMaxObjects) {
     m_imageAcquiredSemaphore = VulkanBinarySemaphore::create();
 }
 
-auto FrameRenderingResources::prepareBuffers(MRThreadsSharedDataLeaf& renderingData, ecs::components::Camera camera, const ecs::components::Transform& cameraTransform, float renderAspectRatio) -> void {
+auto FrameRenderingResources::prepareBuffers(MRThreadsSharedDataLeaf& renderingData, ecs::components::Camera camera, const ecs::components::Transform& cameraTransform, float renderAspectRatio, u32 frameIndex) -> void {
     auto projectionMatrix = camera.computeProjectionMatrix(renderAspectRatio);
     auto cameraModelMatrix = cameraTransform.m_transform3d.computeModelMatrix();
     auto viewMatrix = cameraModelMatrix.inverse().unwrapOr(math::Matrix4x4f::identity());
@@ -80,7 +80,8 @@ auto FrameRenderingResources::prepareBuffers(MRThreadsSharedDataLeaf& renderingD
     auto globdata = RenderingGlobalData {
         .projview = projview,
         .projviewInverse = projview.inverse().unwrapOr(Matrix4x4f::identity()),
-        .cameraPos = cameraTransform.m_transform3d.m_position
+        .cameraPos = cameraTransform.m_transform3d.m_position,
+        .frameIndex = frameIndex
     };
 
     memcpy(m_globalDataBuffer.memoryHostPtr(), &globdata, sizeof(RenderingGlobalData));

@@ -32,11 +32,11 @@ auto TextureManager::create() -> std::unique_ptr<TextureManager> {
 
     auto textureManager = std::make_unique<TextureManager>(std::move(srt));
     g_textureManager = textureManager.get();
-    std::vector<u8> pxData = {0x39, 0x43, 0x52, 0xff};
+    auto pxData = Vec<u8>::create({0x39, 0x43, 0x52, 0xff});
     // loadTextureFromMemoryInternal depends on the sampler!!!
     u32 defaultSamplerIndex = g_textureManager->m_samplerCache.acquireSampler(SamplerParams::defaultValues());
     debug_assert(defaultSamplerIndex == 0, "the default sampler didn't have index 0");
-    g_textureManager->m_defaultTexture = g_textureManager->loadTextureFromMemoryInternal(1, 1, 1, 1, 1, vk::Format::eR8G8B8A8Srgb, pxData, SamplerParams::defaultValues());
+    g_textureManager->m_defaultTexture = g_textureManager->loadTextureFromMemoryInternal(1, 1, 1, 1, 1, vk::Format::eR8G8B8A8Srgb, pxData.asSlice(), SamplerParams::defaultValues());
     debug_assert(g_textureManager->m_defaultTexture.index == 0, "the default texture didn't have index 0");
     return textureManager;
 }
@@ -54,7 +54,7 @@ auto TextureManager::createTexture(u32 width, u32 height, u32 depth, u32 layers,
 }
 
 auto TextureManager::loadTextureFromMemoryInternal(u32 width, u32 height, u32 depth, u32 arrayLayers, u32 mipLevels, vk::Format format,
-                                           const std::span<const u8>& data, const SamplerParams& samplerParams) -> Texture {
+                                           Slice<const u8> data, const SamplerParams& samplerParams) -> Texture {
     auto image = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { width, height, depth }, arrayLayers, mipLevels, false, format, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics | QueueFamily::AsyncCompute], vk::ImageLayout::eUndefined);
 
     auto buffer = VulkanBuffer::create(data.size(), vk::BufferUsageFlagBits::eTransferSrc, VulkanBufferMemoryMapping::MapForSequentialWrite, vma::MemoryUsage::eAutoPreferDevice, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics | QueueFamily::AsyncCompute]);

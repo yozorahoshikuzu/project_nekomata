@@ -21,6 +21,7 @@ struct RenderingGlobalData {
     Matrix4x4f projview;
     Matrix4x4f projviewInverse;
     Vector3f cameraPos;
+    u32 frameIndex;
 };
 
 struct PointlightData {
@@ -51,7 +52,7 @@ public:
     auto frameDoneFence() -> VulkanFence& { return m_frameDoneFence; }
     auto imageAcquiredSemaphore() -> VulkanBinarySemaphore& { return m_imageAcquiredSemaphore; }
 
-    auto prepareBuffers(MRThreadsSharedDataLeaf& renderingData, ecs::components::Camera camera, const ecs::components::Transform& cameraTransform, float renderAspectRatio) -> void;
+    auto prepareBuffers(MRThreadsSharedDataLeaf& renderingData, ecs::components::Camera camera, const ecs::components::Transform& cameraTransform, float renderAspectRatio, u32 frameIndex) -> void;
 
 private:
     // --------------------------------------------------------------------------------------------------------------------------------------------------------

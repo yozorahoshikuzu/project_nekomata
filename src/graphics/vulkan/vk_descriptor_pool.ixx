@@ -14,7 +14,7 @@ public:
     VulkanDescriptorPool(std::nullptr_t);
     VulkanDescriptorPool(vk::raii::DescriptorPool&& vkDescriptorPool);
 
-    static auto create(u32 maxSets, std::span<const vk::DescriptorPoolSize> sizes, bool updateAfterBindPool, bool freeDescriptorSetPool) -> VulkanDescriptorPool;
+    static auto create(u32 maxSets, Slice<const vk::DescriptorPoolSize> sizes, bool updateAfterBindPool, bool freeDescriptorSetPool) -> VulkanDescriptorPool;
     static auto builder() -> VulkanDescriptorPoolBuilder;
 
     VulkanDescriptorPool(const VulkanDescriptorPool&) = delete;
@@ -44,7 +44,7 @@ public:
         auto poolSize = vk::DescriptorPoolSize{}
             .setType(type)
             .setDescriptorCount(count);
-        m_poolSizes.emplace_back(poolSize);
+        m_poolSizes.emplace(poolSize);
         return *this;
     }
 
@@ -64,11 +64,11 @@ public:
     }
 
     [[nodiscard]] constexpr auto build() const -> VulkanDescriptorPool {
-        return VulkanDescriptorPool::create(m_maxSets, m_poolSizes, m_updateAfterBindPool, m_freeDescriptorSetPool);
+        return VulkanDescriptorPool::create(m_maxSets, m_poolSizes.asSlice(), m_updateAfterBindPool, m_freeDescriptorSetPool);
     }
 
 private:
-    std::vector<vk::DescriptorPoolSize> m_poolSizes;
+    Vec<vk::DescriptorPoolSize> m_poolSizes;
     u32 m_maxSets = 0;
     bool m_updateAfterBindPool = false;
     bool m_freeDescriptorSetPool = false;
