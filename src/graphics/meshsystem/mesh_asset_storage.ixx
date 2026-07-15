@@ -60,7 +60,7 @@ class MeshAssetStorage {
 public:
     static auto get() -> MeshAssetStorage& { return *g_meshAssetStorage; }
     static auto makeMeshPoolConfig() -> MeshPoolConfig;
-    static auto create() -> std::unique_ptr<MeshAssetStorage>;
+    static auto create() -> Unique<MeshAssetStorage>;
 
     MeshAssetStorage(std::nullptr_t) {}
     MeshAssetStorage();

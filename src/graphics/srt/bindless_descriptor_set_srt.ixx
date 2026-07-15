@@ -20,7 +20,7 @@ public:
     BindlessDescriptorSetShaderResourceTable(VulkanDescriptorPool&& descriptorPool, VulkanDescriptorSetLayout&& descriptorSetLayout,
         VulkanDescriptorSet&& descriptorSet, u32 maxImageCount, u32 maxSamplerCount);
 
-    static auto create(u32 maxImageCount, u32 maxSamplerCount) -> std::unique_ptr<BindlessDescriptorSetShaderResourceTable>;
+    static auto create(u32 maxImageCount, u32 maxSamplerCount) -> Unique<BindlessDescriptorSetShaderResourceTable>;
 
     auto modelName() const -> std::string_view override { return "Bindless"; }
 

@@ -86,9 +86,9 @@ private:
     };
 
     struct DedicatedAllocation {
-        std::unique_ptr<VulkanBuffer> buffer = nullptr;
+        Unique<VulkanBuffer> buffer = nullptr;
 
-        DedicatedAllocation(std::unique_ptr<VulkanBuffer>&& buf) : buffer(std::move(buf)) {}
+        DedicatedAllocation(Unique<VulkanBuffer>&& buf) : buffer(std::move(buf)) {}
 
         static auto create(u64 byteSize, const BufferPoolConfig& cfg) -> DedicatedAllocation;
     };

@@ -10,7 +10,7 @@ BindlessDescriptorSetShaderResourceTable::BindlessDescriptorSetShaderResourceTab
         : m_descriptorPool(std::move(descriptorPool)), m_descriptorSetLayout(std::move(descriptorSetLayout)), m_descriptorSet(std::move(descriptorSet)),
             m_imageIndexAllocator(maxImageCount), m_maxSamplerCount(maxSamplerCount) {}
 
-auto BindlessDescriptorSetShaderResourceTable::create(u32 maxImageCount, u32 maxSamplerCount) -> std::unique_ptr<BindlessDescriptorSetShaderResourceTable> {
+auto BindlessDescriptorSetShaderResourceTable::create(u32 maxImageCount, u32 maxSamplerCount) -> Unique<BindlessDescriptorSetShaderResourceTable> {
     auto descriptorSetLayout = VulkanDescriptorSetLayout::builder()
         .addBindingWithFlags(0, maxImageCount, vk::DescriptorType::eSampledImage,
             vk::ShaderStageFlagBits::eFragment,
@@ -32,7 +32,7 @@ auto BindlessDescriptorSetShaderResourceTable::create(u32 maxImageCount, u32 max
 
     auto descriptorSet = descriptorPool.allocateDescriptorSet(descriptorSetLayout);
 
-    return std::make_unique<BindlessDescriptorSetShaderResourceTable>(std::move(descriptorPool), std::move(descriptorSetLayout), std::move(descriptorSet),
+    return Unique<BindlessDescriptorSetShaderResourceTable>::create(std::move(descriptorPool), std::move(descriptorSetLayout), std::move(descriptorSet),
         maxImageCount, maxSamplerCount);
 }
 

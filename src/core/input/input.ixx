@@ -16,7 +16,7 @@ struct InputKeyEvent {
 
 class Input {
 public:
-    static auto create() -> std::unique_ptr<Input>;
+    static auto create() -> Unique<Input>;
     static auto get() -> Input& { return *g_input; }
 
     auto handleNewFrame(SdlWindow& window) -> void;

@@ -16,25 +16,25 @@ export namespace projnekomata {
 
 class MainThread {
 public:
-    MainThread(std::shared_ptr<MRThreadsSharedData> mrSharedData, std::unique_ptr<VulkanContext>&& vkContext, SdlWindow&& sdlWindow);
+    MainThread(std::shared_ptr<MRThreadsSharedData> mrSharedData, Unique<VulkanContext>&& vkContext, SdlWindow&& sdlWindow);
 
-    auto runMainLoop(const std::function<void(std::unique_ptr<ecs::World>&)>&) -> void;
+    auto runMainLoop(const std::function<void(Unique<ecs::World>&)>&) -> void;
     auto getCurrentWorld() -> ecs::World*;
 
 private:
     auto loop(float dt) -> void;
     SdlWindow m_sdlWindow = nullptr;
 
-    std::unique_ptr<ecs::World> m_currentWorld = nullptr;
+    Unique<ecs::World> m_currentWorld = nullptr;
 
     std::shared_ptr<MRThreadsSharedData> m_mrSharedData = nullptr;
-    std::unique_ptr<core::input::Input> m_inputManager = nullptr;
-    std::unique_ptr<VulkanContext> m_vkContext = nullptr;
-    std::unique_ptr<meshsystem::MeshAssetStorage> m_meshAssetStorage = nullptr;
-    std::unique_ptr<graphics::texturesystem::TextureManager> m_textureManager = nullptr;
-    std::unique_ptr<graphics::fonts::FontManager> m_fontManager = nullptr;
+    Unique<core::input::Input> m_inputManager = nullptr;
+    Unique<VulkanContext> m_vkContext = nullptr;
+    Unique<meshsystem::MeshAssetStorage> m_meshAssetStorage = nullptr;
+    Unique<graphics::texturesystem::TextureManager> m_textureManager = nullptr;
+    Unique<graphics::fonts::FontManager> m_fontManager = nullptr;
 
-    std::unique_ptr<ui::UiSystem> m_uiSystem = nullptr;
+    Unique<ui::UiSystem> m_uiSystem = nullptr;
 
     u64 m_frameIndex = 0;
     bool injectOverlay = false;

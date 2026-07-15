@@ -6,10 +6,10 @@ import :core.input.inputmanager;
 
 namespace projnekomata::core::input {
 
-auto Input::create() -> std::unique_ptr<Input> {
+auto Input::create() -> Unique<Input> {
     debug_assert(g_input == nullptr, "only one Input may live at any given time");
-    auto input = std::make_unique<Input>();
-    g_input = input.get();
+    auto input = Unique<Input>::create();
+    g_input = input.ptr();
     return input;
 }
 auto Input::handleNewFrame(SdlWindow& window) -> void {

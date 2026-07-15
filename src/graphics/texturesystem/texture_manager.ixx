@@ -33,9 +33,9 @@ class TextureManager {
 public:
     static auto get() -> TextureManager& { return *g_textureManager; }
     TextureManager(std::nullptr_t);
-    TextureManager(std::unique_ptr<srt::IShaderResourceTable>&& srt);
+    TextureManager(Unique<srt::IShaderResourceTable>&& srt);
 
-    static auto create() -> std::unique_ptr<TextureManager>;
+    static auto create() -> Unique<TextureManager>;
 
     // auto loadTextureFromMemory(u32 width, u32 height, u32 depth, u32 arrayLayers, u32 mipLevels, vk::Format format, Slice<const u8>& data) -> Texture;
 
@@ -68,7 +68,7 @@ private:
 
     TextureToShaderIndexTable m_textureToShaderIndexTable = nullptr;
 
-    std::unique_ptr<srt::IShaderResourceTable> m_srt = nullptr;
+    Unique<srt::IShaderResourceTable> m_srt = nullptr;
 };
 
 }

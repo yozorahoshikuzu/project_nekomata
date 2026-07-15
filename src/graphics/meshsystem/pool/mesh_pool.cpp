@@ -26,7 +26,7 @@ auto BufferPool::Slab::create(const BufferPoolConfig& cfg) -> Slab {
 
 auto BufferPool::DedicatedAllocation::create(u64 byteSize, const BufferPoolConfig& cfg) -> DedicatedAllocation {
     auto buffer = VulkanBuffer::create(byteSize, cfg.bufferUsageFlags, cfg.hostMemoryMapping, cfg.memoryUsage, cfg.memoryRequiredFlags, cfg.queueFamilyIndices);
-    auto bufferptr = std::make_unique<VulkanBuffer>(std::move(buffer));
+    auto bufferptr = Unique<VulkanBuffer>::create(std::move(buffer));
     return DedicatedAllocation(std::move(bufferptr));
 }
 
@@ -87,7 +87,7 @@ auto BufferPool::allocate(u64 byteSize, u64 alignment) -> BufferPoolSuballocatio
 
         u32 idx = static_cast<u32>(m_dedicatedAllocations.size());
         for (u32 i = 0; i < static_cast<u32>(m_dedicatedAllocations.size()); i++) {
-            if (m_dedicatedAllocations[i].buffer) { idx = i; break; }
+            if (!m_dedicatedAllocations[i].buffer.isNull()) { idx = i; break; }
         }
         if (idx == static_cast<u32>(m_dedicatedAllocations.size()))
             m_dedicatedAllocations.emplace(std::move(dedicatedAlloc));
@@ -141,7 +141,7 @@ auto BufferPool::processFree(const SlabAllocationRef& pendingFree) -> void {
 
     if (pendingFree.isDedicated) {
         u32 index = pendingFree.slabIndex & ~kDedicatedAllocationFlagBit;
-        m_dedicatedAllocations[index].buffer.reset();
+        m_dedicatedAllocations[index].buffer.release();
         return;
     }
 
@@ -170,7 +170,7 @@ auto BufferPool::stats() const -> BufferPoolStats {
             s.usedBytes          += slab.usedBytes;
         }
         for (const auto& ded : m_dedicatedAllocations) {
-            if (ded.buffer) {
+            if (!ded.buffer.isNull()) {
                 s.dedicatedAllocations++;
                 s.totalCapacityBytes += ded.buffer->size();
                 s.usedBytes          += ded.buffer->size();

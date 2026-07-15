@@ -22,16 +22,16 @@ TextureResources::TextureResources(VulkanImage&& image)
     : m_image(std::move(image)) {}
 
 TextureManager::TextureManager(std::nullptr_t) {}
-TextureManager::TextureManager(std::unique_ptr<srt::IShaderResourceTable>&& srt)
+TextureManager::TextureManager(Unique<srt::IShaderResourceTable>&& srt)
     : m_textureToShaderIndexTable(2048), m_srt(std::move(srt)) {}
 
-auto TextureManager::create() -> std::unique_ptr<TextureManager> {
+auto TextureManager::create() -> Unique<TextureManager> {
     debug_assert(g_textureManager == nullptr, "only one TextureManager may live at any given time");
 
     auto srt = srt::BindlessDescriptorSetShaderResourceTable::create(2048, 2048);
 
-    auto textureManager = std::make_unique<TextureManager>(std::move(srt));
-    g_textureManager = textureManager.get();
+    auto textureManager = Unique<TextureManager>::create(Unique<srt::IShaderResourceTable>::upcast(std::move(srt)));
+    g_textureManager = textureManager.ptr();
     auto pxData = Vec<u8>::create({0x39, 0x43, 0x52, 0xff});
     // loadTextureFromMemoryInternal depends on the sampler!!!
     u32 defaultSamplerIndex = g_textureManager->m_samplerCache.acquireSampler(SamplerParams::defaultValues());

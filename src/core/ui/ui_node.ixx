@@ -53,8 +53,8 @@ struct UiMouseHitRegion {
 
 struct UiNode {
     constexpr static auto builder() -> UiNodeBuilder;
-    static auto create() -> std::unique_ptr<UiNode> {
-        return std::make_unique<UiNode>();
+    static auto create() -> Unique<UiNode> {
+        return Unique<UiNode>::create(UiNode{});
     }
 
     // ---- Positioning ----------------------------------------------------------------------------------------------------------------------------------------
@@ -65,7 +65,7 @@ struct UiNode {
     Extent extentY = ExtentPercent{100.f};
 
     Layout                       childrenLayout = AbsoluteLayout();
-    Vec<std::unique_ptr<UiNode>> children;
+    Vec<Unique<UiNode>> children;
     UiNode* parent = nullptr;
 
     // ---- Style ----------------------------------------------------------------------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ struct UiNode {
     std::function<auto(math::Vector2f) -> void> hoverCallback = nullptr;
 
 
-    UiNode& addChild(std::unique_ptr<UiNode>&& child) {
+    UiNode& addChild(Unique<UiNode>&& child) {
         child->parent = this;
         children.emplace(std::move(child));
         return *children.last();
@@ -208,7 +208,7 @@ public:
     template <typename... Args> constexpr auto text(Args&&... args) -> UiNodeBuilder& { m_element = UiText{std::forward<Args>(args)...}; return *this; }
     template <typename... Args> constexpr auto texture(Args&&... args) -> UiNodeBuilder& { m_element = UiTexture{std::forward<Args>(args)...}; return *this; }
     constexpr auto childrenLayout(Layout layout) -> UiNodeBuilder& { m_childrenLayout = layout; return *this; }
-    template <typename... Ts> requires ((std::same_as<std::remove_cvref_t<Ts>, std::unique_ptr<UiNode>> && ...))
+    template <typename... Ts> requires ((std::same_as<std::remove_cvref_t<Ts>, Unique<UiNode>> && ...))
     constexpr auto children(Ts&&... children) -> UiNodeBuilder& {
         (m_children.emplace(std::forward<Ts>(children)), ...);
         return *this;
@@ -221,7 +221,7 @@ public:
     constexpr auto onClick(std::function<auto(math::Vector2f) -> void>&& callback) -> UiNodeBuilder& { m_clickCallback = std::move(callback); return *this; }
     constexpr auto onHover(std::function<auto(math::Vector2f) -> void>&& callback) -> UiNodeBuilder& { m_hoverCallback = std::move(callback); return *this; }
 
-    constexpr auto build() -> std::unique_ptr<UiNode> {
+    constexpr auto build() -> Unique<UiNode> {
         auto node = UiNode::create();
         node->posX = m_posX;
         node->posY = m_posY;
@@ -255,7 +255,7 @@ private:
     Layout m_childrenLayout = AbsoluteLayout();
     UiElement m_element = std::monostate{};
 
-    Vec<std::unique_ptr<UiNode>> m_children = Vec<std::unique_ptr<UiNode>>::create();
+    Vec<Unique<UiNode>> m_children = Vec<Unique<UiNode>>::create();
 };
 constexpr auto UiNode::builder() -> UiNodeBuilder { return UiNodeBuilder(); }
 

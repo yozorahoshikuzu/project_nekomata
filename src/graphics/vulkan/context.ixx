@@ -47,7 +47,7 @@ public:
     VulkanContext(VulkanContext&&) = delete;
     VulkanContext& operator=(VulkanContext&&) = delete;
     
-    static auto create(SdlWindow& sdlWindow) -> std::unique_ptr<VulkanContext>;
+    static auto create(SdlWindow& sdlWindow) -> Unique<VulkanContext>;
 
     [[nodiscard]] auto vkPhysicalDevice() const -> const vk::raii::PhysicalDevice& { return m_vkPhysicalDevice; }
     [[nodiscard]] auto vkPhysicalDeviceProps() const -> const VulkanPhysicalDeviceProperties& { return m_vkPhysicalDeviceProperties; }
@@ -59,8 +59,8 @@ public:
     [[nodiscard]] auto vkQueueAsyncCompute() const -> VulkanQueue& { return *m_vkAsyncComputeQueue; }
     [[nodiscard]] auto vkQueuePresent() const -> VulkanQueue& { return *m_vkPresentQueue; }
 
-    [[nodiscard]] auto vkDeletionQueue() -> std::unique_ptr<VulkanResourceDeletionQueue>& { return m_vkResourceDeletionQueue; }
-    [[nodiscard]] auto shaderCache() -> std::unique_ptr<class ShaderCache>& { return m_shaderCache; }
+    [[nodiscard]] auto vkDeletionQueue() -> Unique<VulkanResourceDeletionQueue>& { return m_vkResourceDeletionQueue; }
+    [[nodiscard]] auto shaderCache() -> Unique<class ShaderCache>& { return m_shaderCache; }
 
     auto antiLagMethod() const -> AntiLagMethod { return m_antiLagMethod.load(std::memory_order_relaxed); }
     auto antiLagPaceInput(u64 frameIndex, u32 targetFps) -> void;
@@ -96,15 +96,15 @@ private:
     VulkanPhysicalDeviceProperties m_vkPhysicalDeviceProperties;
     vk::raii::Device m_vkDevice = nullptr;
 
-    Vec<std::unique_ptr<VulkanQueue>> m_vkQueues;
+    Vec<Unique<VulkanQueue>> m_vkQueues;
     VulkanQueue* m_vkGraphicsQueue{};
     VulkanQueue* m_vkPresentQueue{};
     VulkanQueue* m_vkAsyncComputeQueue{};
 
     vma::raii::Allocator m_vmaAllocator = nullptr;
 
-    std::unique_ptr<VulkanResourceDeletionQueue> m_vkResourceDeletionQueue;
-    std::unique_ptr<ShaderCache> m_shaderCache;
+    Unique<VulkanResourceDeletionQueue> m_vkResourceDeletionQueue = nullptr;
+    Unique<ShaderCache> m_shaderCache                             = nullptr;
 
     std::atomic<AntiLagMethod> m_antiLagMethod = AntiLagMethod::None;
 };

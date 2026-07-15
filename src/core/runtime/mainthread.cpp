@@ -13,8 +13,8 @@ import :core.runtime.mainthread;
 
 namespace projnekomata {
 
-MainThread::MainThread(std::shared_ptr<MRThreadsSharedData> mrSharedData, std::unique_ptr<VulkanContext>&& vkContext, SdlWindow&& sdlWindow)
-    : m_sdlWindow(std::move(sdlWindow)), m_mrSharedData(std::move(std::move(mrSharedData))), m_vkContext(std::move(vkContext)) {
+MainThread::MainThread(std::shared_ptr<MRThreadsSharedData> mrSharedData, Unique<VulkanContext>&& vkContext, SdlWindow&& sdlWindow)
+    : m_sdlWindow(std::move(sdlWindow)), m_mrSharedData(std::move(mrSharedData)), m_vkContext(std::move(vkContext)) {
 
     cmdalloc::VulkanCommandPoolsList::initThreadLocalCommandPools();
 
@@ -24,7 +24,7 @@ MainThread::MainThread(std::shared_ptr<MRThreadsSharedData> mrSharedData, std::u
     log::info("Window logical size: {}x{}", windowLogicalSize.x(), windowLogicalSize.y());
     log::info("Window display scale: {}", windowDisplayScale);
 
-    m_currentWorld = std::make_unique<ecs::World>();
+    m_currentWorld = Unique<ecs::World>::create();
     m_inputManager = core::input::Input::create();
     m_meshAssetStorage = meshsystem::MeshAssetStorage::create();
     m_textureManager = graphics::texturesystem::TextureManager::create();
@@ -32,7 +32,7 @@ MainThread::MainThread(std::shared_ptr<MRThreadsSharedData> mrSharedData, std::u
     m_uiSystem = ui::UiSystem::create();
 }
 
-auto MainThread::runMainLoop(const std::function<void(std::unique_ptr<ecs::World>&)>& initFn) -> void {
+auto MainThread::runMainLoop(const std::function<void(Unique<ecs::World>&)>& initFn) -> void {
     initFn(m_currentWorld);
 
     using clock = std::chrono::steady_clock;
@@ -138,13 +138,13 @@ auto MainThread::loop(float dt) -> void {
 
     m_mrSharedData->m_leafs.getPrimary().m_currentWindowExtent = m_sdlWindow.vulkanGetDrawableSize();
     m_mrSharedData->m_leafs.getPrimary().m_frameIndex = m_frameIndex;
-    if (m_currentWorld) {
+    if (!m_currentWorld.isNull()) {
         m_currentWorld->components<ecs::components::Renderable>().copyTo(m_mrSharedData->m_leafs.getPrimary().m_renderables);
         m_currentWorld->components<ecs::components::PointLight>().copyTo(m_mrSharedData->m_leafs.getPrimary().m_pointlights);
         m_currentWorld->components<ecs::components::Transform>().copyTo(m_mrSharedData->m_leafs.getPrimary().m_transforms);
         m_currentWorld->components<ecs::components::Camera>().copyTo(m_mrSharedData->m_leafs.getPrimary().m_cameras);
     }
-    m_textureManager.get()->textureToShaderIndexTable().snapshotTables(
+    m_textureManager->textureToShaderIndexTable().snapshotTables(
         m_mrSharedData->m_leafs.getPrimary().m_textureToImageShaderIndexSnapshot,
         m_mrSharedData->m_leafs.getPrimary().m_textureToSamplerShaderIndexSnapshot
     );

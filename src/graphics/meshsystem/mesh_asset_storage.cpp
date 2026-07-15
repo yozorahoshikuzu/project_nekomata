@@ -18,10 +18,10 @@ auto MeshAssetStorage::makeMeshPoolConfig() -> MeshPoolConfig {
 
 MeshAssetStorage::MeshAssetStorage() : m_meshPool(makeMeshPoolConfig()) {}
 
-auto MeshAssetStorage::create() -> std::unique_ptr<MeshAssetStorage> {
+auto MeshAssetStorage::create() -> Unique<MeshAssetStorage> {
     debug_assert(g_meshAssetStorage == nullptr, "only one MeshAssetStorage may live at any given time");
-    auto meshAssetStorage = std::make_unique<MeshAssetStorage>();
-    g_meshAssetStorage = meshAssetStorage.get();
+    auto meshAssetStorage = Unique<MeshAssetStorage>::create();
+    g_meshAssetStorage = meshAssetStorage.ptr();
     return meshAssetStorage;
 }
 

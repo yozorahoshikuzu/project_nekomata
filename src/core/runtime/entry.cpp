@@ -11,7 +11,7 @@ import :core.runtime.graphicsthread;
 
 namespace projnekomata {
 
-auto entryAfterSdlInit(const std::function<void(std::unique_ptr<ecs::World>&)>& initFn) -> void {
+auto entryAfterSdlInit(const std::function<void(Unique<ecs::World>&)>& initFn) -> void {
     Thread::setThreadName("MainThread");
     // TODO: A system to remember player preferences to use here instead.
 
@@ -19,7 +19,7 @@ auto entryAfterSdlInit(const std::function<void(std::unique_ptr<ecs::World>&)>& 
 
     // NOTE: This creates the vk::SurfaceKHR so this MUST be called here to respect SDL thread safety rules. Creating the renderer on the graphics thread is
     // NOTE: fine though.
-    std::unique_ptr<VulkanContext> vulkanContext = VulkanContext::create(window);
+    Unique<VulkanContext> vulkanContext = VulkanContext::create(window);
     auto windowCurrentRes = window.vulkanGetDrawableSize();
 
     auto threadSharedData = std::make_shared<MRThreadsSharedData>(windowCurrentRes);
@@ -39,7 +39,7 @@ auto entryAfterSdlInit(const std::function<void(std::unique_ptr<ecs::World>&)>& 
     renderThreadHandle.join();
 }
 
-auto entry(const std::function<void(std::unique_ptr<ecs::World>&)>& initFn) -> void {
+auto entry(const std::function<void(Unique<ecs::World>&)>& initFn) -> void {
     setupBacktrace();
     sdlPlatformInit();
     entryAfterSdlInit(initFn);

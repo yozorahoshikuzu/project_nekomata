@@ -40,10 +40,10 @@ auto VulkanContext::get() -> VulkanContext& {
     return *g_vkContext;
 }
 
-auto VulkanContext::create(projnekomata::SdlWindow& sdlWindow) -> std::unique_ptr<VulkanContext> {
+auto VulkanContext::create(projnekomata::SdlWindow& sdlWindow) -> Unique<VulkanContext> {
     debug_assert(g_vkContext == nullptr, "only one VulkanContext may live at any given time");
-    auto vkContext = std::make_unique<VulkanContext>(nullptr);
-    g_vkContext = vkContext.get();
+    auto vkContext = Unique<VulkanContext>::create(nullptr);
+    g_vkContext = vkContext.ptr();
 
     // We're dynamically loading Vulkan, and this requires extra work with the vk::detail::DynamicLoader and to initialize the vulkan.hpp dispatcher.
     vkContext->m_vkDynamicLoader = vk::detail::DynamicLoader{};
@@ -88,22 +88,22 @@ auto VulkanContext::create(projnekomata::SdlWindow& sdlWindow) -> std::unique_pt
         };
 
         auto handle = vkCheckResult(VulkanContext::get().vkDevice().createSemaphore(chain.get<vk::SemaphoreCreateInfo>()));
-        auto queue = std::make_unique<VulkanQueue>(std::move(vkQueue), std::move(handle), lastTimelineSubmissionValue);
+        auto queue = Unique<VulkanQueue>::create(std::move(vkQueue), std::move(handle), lastTimelineSubmissionValue);
 
         vkContext->m_vkQueues.emplace(std::move(queue));
         queueFamilyIndexToQueueSlot.insert(queue_index, i);
     }
 
-    vkContext->m_vkGraphicsQueue = vkContext->m_vkQueues[queueFamilyIndexToQueueSlot[vkContext->m_vkPhysicalDeviceProperties.m_graphicsQueueIndex]].get();
-    vkContext->m_vkPresentQueue = vkContext->m_vkQueues[queueFamilyIndexToQueueSlot[vkContext->m_vkPhysicalDeviceProperties.m_presentQueueIndex]].get();
-    vkContext->m_vkAsyncComputeQueue = vkContext->m_vkQueues[queueFamilyIndexToQueueSlot[vkContext->m_vkPhysicalDeviceProperties.m_asyncComputeQueueIndex]].get();
+    vkContext->m_vkGraphicsQueue = vkContext->m_vkQueues[queueFamilyIndexToQueueSlot[vkContext->m_vkPhysicalDeviceProperties.m_graphicsQueueIndex]].ptr();
+    vkContext->m_vkPresentQueue = vkContext->m_vkQueues[queueFamilyIndexToQueueSlot[vkContext->m_vkPhysicalDeviceProperties.m_presentQueueIndex]].ptr();
+    vkContext->m_vkAsyncComputeQueue = vkContext->m_vkQueues[queueFamilyIndexToQueueSlot[vkContext->m_vkPhysicalDeviceProperties.m_asyncComputeQueueIndex]].ptr();
 
     vkContext->m_vmaAllocator = createVmaAllocator(vkContext->m_vkInstance, vkContext->m_vkPhysicalDevice, vkContext->m_vkPhysicalDeviceProperties, vkContext->m_vkDevice);
 
-    vkContext->m_vkResourceDeletionQueue = std::make_unique<VulkanResourceDeletionQueue>();
+    vkContext->m_vkResourceDeletionQueue = Unique<VulkanResourceDeletionQueue>::create();
     vkContext->m_vkResourceDeletionQueue->run();
-    g_vkResourceDeletionQueue = vkContext->m_vkResourceDeletionQueue.get();
-    vkContext->m_shaderCache = std::make_unique<ShaderCache>(vkContext->m_vkPhysicalDeviceProperties.m_hasKhrPipelineBinary);
+    g_vkResourceDeletionQueue = vkContext->m_vkResourceDeletionQueue.ptr();
+    vkContext->m_shaderCache = Unique<ShaderCache>::create(vkContext->m_vkPhysicalDeviceProperties.m_hasKhrPipelineBinary);
 
     if (vkContext->m_vkPhysicalDeviceProperties.m_hasAMDAntiLag2) {
         vkContext->m_antiLagMethod.store(AntiLagMethod::AMDAntiLag2);

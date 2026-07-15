@@ -11,7 +11,7 @@ public:
     UiSystem(std::nullptr_t);
 
     static auto get() -> UiSystem& { return *g_uiSystem; }
-    static auto create() -> std::unique_ptr<UiSystem>;
+    static auto create() -> Unique<UiSystem>;
 
     auto getRoot() const -> ui::UiNode& { return *m_uiRoot; }
     auto buildUi(Vec<ui::UiDrawCmd>& drawcmds, math::Vector2f screenLogicalSize) -> void;
@@ -26,7 +26,7 @@ private:
     ui::UiNode* m_pressedElement = nullptr;
     ui::UiNode* m_hoveredElement = nullptr;
 
-    std::unique_ptr<ui::UiNode> m_uiRoot = nullptr;
+    Unique<ui::UiNode> m_uiRoot = nullptr;
 };
 
 

@@ -70,7 +70,7 @@ public:
             .text("hai :3", 18.0f, std::move(m_fontFace))
             .build();
 
-        m_text = posText.get();
+        m_text = posText.ptr();
         projnekomata::ui::UiSystem::get().getRoot().addChild(std::move(posText));
 
         // ---- Escape Overlay Memes ---------------------------------------------------------------------------------------------------------------------------
@@ -223,7 +223,7 @@ public:
             )
             .build();
 
-        m_escOverlay = escapeOverlay.get();
+        m_escOverlay = escapeOverlay.ptr();
         projnekomata::ui::UiSystem::get().getRoot().addChild(std::move(escapeOverlay));
     }
 
@@ -338,7 +338,7 @@ std::pair<Vec<Vertex>, Vec<u32>> generateSphere(u32 latSegments, u32 lonSegments
 }
 
 
-void onGameInit(std::unique_ptr<projnekomata::ecs::World>& world) {
+void onGameInit(Unique<projnekomata::ecs::World>& world) {
     auto& ts = projnekomata::graphics::texturesystem::TextureManager::get();
 
     auto samplerSettings = projnekomata::graphics::texturesystem::SamplerParams::defaultValues()

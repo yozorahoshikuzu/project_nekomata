@@ -5,10 +5,10 @@ namespace projnekomata::ui {
 
 UiSystem::UiSystem(std::nullptr_t) {  }
 
-auto UiSystem::create() -> std::unique_ptr<UiSystem> {
+auto UiSystem::create() -> Unique<UiSystem> {
     debug_assert(g_uiSystem == nullptr, "UiSystem already exists");
-    auto inst = std::make_unique<UiSystem>(nullptr);
-    g_uiSystem = inst.get();
+    auto inst = Unique<UiSystem>::create(nullptr);
+    g_uiSystem = inst.ptr();
 
     auto viewportElem = UiNode::builder()
         .position({0.0f, 0.0f})

@@ -58,7 +58,7 @@ public:
     FontManager();
     ~FontManager();
 
-    static auto create() -> std::unique_ptr<FontManager>;
+    static auto create() -> Unique<FontManager>;
 
     auto loadFont(const std::filesystem::path& path) -> FontFace;
     auto freeFont(FontFace font) -> void;
@@ -71,7 +71,7 @@ private:
     FT_Library m_ftLibrary;
     std::mutex m_ftLibraryMutex;
 
-    Vec<std::unique_ptr<FontEntry>> m_fontEntries = Vec<std::unique_ptr<FontEntry>>::create();
+    Vec<Unique<FontEntry>> m_fontEntries = Vec<Unique<FontEntry>>::create();
     std::shared_mutex m_registryMutex;
 
     u32 getFreeFontIndex();

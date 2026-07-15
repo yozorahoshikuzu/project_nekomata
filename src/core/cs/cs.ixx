@@ -15,4 +15,5 @@ export import :primitives;
 export import :result;
 export import :slice;
 export import :thread;
+export import :unique;
 export import :vec;

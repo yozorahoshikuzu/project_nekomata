@@ -19,10 +19,10 @@ FontManager::~FontManager() {
     FT_Done_FreeType(m_ftLibrary);
 }
 
-auto FontManager::create() -> std::unique_ptr<FontManager> {
+auto FontManager::create() -> Unique<FontManager> {
     debug_assert(g_fontManager == nullptr, "only one FontManager may live at any given time");
-    auto fontManager = std::make_unique<FontManager>();
-    g_fontManager = fontManager.get();
+    auto fontManager = Unique<FontManager>::create();
+    g_fontManager = fontManager.ptr();
     return fontManager;
 }
 
@@ -266,9 +266,9 @@ auto FontManager::findAndBatchMissingGlyphs(FontFace font, rendering::DynamicBit
 u32 FontManager::getFreeFontIndex() {
     // The caller must hold the registry unique lock for this to be safe.
     for (u32 i = 0; i < m_fontEntries.size(); i++) {
-        if (!m_fontEntries[i] || !m_fontEntries[i]->isLoaded) return i;
+        if (m_fontEntries[i].isNull() || !m_fontEntries[i]->isLoaded) return i;
     }
-    m_fontEntries.emplace(std::make_unique<FontEntry>());
+    m_fontEntries.emplace(Unique<FontEntry>::create());
     return m_fontEntries.size() - 1;
 }
 
