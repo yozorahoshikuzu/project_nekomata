@@ -1,9 +1,9 @@
 module;
 #include <cstdlib>
 #include <malloc.h>
-export module projnekomata:core.cs.mem;
-import :core.platform.int_def;
-import :core.cs.panic;
+export module projnekomata.cs:mem;
+import :panic;
+import :primitives;
 
 export class Mem {
 public:

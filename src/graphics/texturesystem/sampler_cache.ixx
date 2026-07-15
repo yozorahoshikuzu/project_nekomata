@@ -3,10 +3,9 @@ module;
 #include <string.h>
 export module projnekomata:graphics.texturesystem.sampler_cache;
 import std;
+import projnekomata.cs;
 import vulkan;
-import :core.platform.int_def;
 import :graphics.vulkan.vk_sampler;
-import :core.cs.hashmap;
 
 export namespace projnekomata::graphics::texturesystem {
 

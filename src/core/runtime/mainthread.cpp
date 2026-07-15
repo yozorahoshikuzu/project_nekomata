@@ -2,7 +2,7 @@ module;
 #include <SDL3/SDL_events.h>
 module projnekomata;
 import vulkan;
-import :core.log;
+import projnekomata.cs;
 import :graphics.cmd_alloc;
 import :core.ui.components.ui_rect;
 import :core.ui.components.ui_texture;

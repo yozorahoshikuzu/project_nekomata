@@ -1,7 +1,6 @@
 module projnekomata;
-import :core.log;
+import projnekomata.cs;
 import :graphics.vulkan.spv_shader_code;
-import :core.platform.int_def;
 
 namespace projnekomata {
 

@@ -1,6 +1,6 @@
 module projnekomata;
+import projnekomata.cs;
 import :graphics.vulkan.context;
-import :core.platform.thread;
 
 namespace projnekomata {
 
@@ -47,7 +47,7 @@ auto VulkanResourceDeletionQueue::pushObject(const GpuResourceRetireTimelineValu
 auto drop(AnyVulkanObject&& _) -> void {}
 
 auto VulkanResourceDeletionQueue::workerRoutine() -> void {
-    setThreadName("VulkanOBRM");
+    Thread::setThreadName("VulkanOBRM");
 
     u64 currentGraphicsQueueRetireValue = 0;
     u64 currentAsyncComputeQueueRetireValue = 0;

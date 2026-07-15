@@ -3,7 +3,7 @@ module;
 export module projnekomata:graphics.fontsystem.font_manager;
 import std;
 import vulkan;
-import :core.platform.int_def;
+import projnekomata.cs;
 import :core.math;
 import :graphics.fontsystem.font_face;
 import :graphics.fontsystem.dynamic_font_atlas;

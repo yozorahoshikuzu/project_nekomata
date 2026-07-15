@@ -1,5 +1,6 @@
 export module projnekomata:graphics.vulkan.vk_commands_barriers;
 import std;
+import projnekomata.cs;
 import vulkan;
 import :graphics.vulkan.vk_image_trait;
 import :graphics.vulkan.vk_commands;
@@ -41,7 +42,7 @@ public:
             .setDstQueueFamilyIndex(vk::QueueFamilyIgnored)
             .setImage(image.vkImage())
             .setSubresourceRange(image.subresourceRangeFull());
-        m_imageMemoryBarriers.push_back(barrier);
+        m_imageMemoryBarriers.emplace(barrier);
         return *this;
     }
 
@@ -55,9 +56,9 @@ public:
 
 private:
 
-    std::vector<vk::BufferMemoryBarrier2> m_bufferMemoryBarriers;
-    std::vector<vk::ImageMemoryBarrier2> m_imageMemoryBarriers;
-    std::vector<vk::MemoryBarrier2> m_memoryBarriers;
+    Vec<vk::BufferMemoryBarrier2> m_bufferMemoryBarriers;
+    Vec<vk::ImageMemoryBarrier2> m_imageMemoryBarriers;
+    Vec<vk::MemoryBarrier2> m_memoryBarriers;
 };
 
 }

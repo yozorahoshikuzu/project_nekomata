@@ -2,16 +2,15 @@ module;
 #include <xxhash.h>
 export module projnekomata:graphics.fontsystem.dynamic_font_atlas;
 import std;
+import projnekomata.cs;
 import vulkan;
 import vk_mem_alloc;
-import :core.platform.int_def;
 import :core.math;
 import :graphics.fontsystem.font_face;
 import :graphics.vulkan.vk_image;
 import :graphics.texturesystem.texture_manager;
 import :graphics.vulkan.vk_queue_family_swizzling;
 import :graphics.vulkan.context;
-import :core.cs.hashmap;
 
 export namespace projnekomata::graphics::rendering {
 

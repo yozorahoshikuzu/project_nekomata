@@ -1,7 +1,7 @@
 export module projnekomata:core.runtime.shared_data;
 import std;
+import projnekomata.cs;
 import vulkan;
-import :core.platform.int_def;
 import :core.ecs.component_pool;
 import :core.ecs.world.camera;
 import :core.ecs.world.transform;

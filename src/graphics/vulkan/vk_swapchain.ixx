@@ -1,11 +1,11 @@
 export module projnekomata:graphics.vulkan.vk_swapchain;
 import std;
+import projnekomata.cs;
 import vulkan;
-import :core.platform.int_def;
 import :graphics.vulkan.vk_gpu_obrm;
 import :graphics.vulkan.sync_primitives.binary_semaphore;
 import :graphics.vulkan.vk_image_trait;
-import :core.cs.vec;
+
 
 export namespace projnekomata {
 

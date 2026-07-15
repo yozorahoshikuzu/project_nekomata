@@ -1,6 +1,6 @@
 module;
 #include <ctime>
-export module projnekomata:core.log;
+export module projnekomata.cs:log;
 import std;
 import fmt;
 
@@ -117,4 +117,4 @@ template <typename... Args> void crit(fmt::format_string<Args...> fmtstr, Args&&
     impl::write(LogLevel::Crit, fmtstr, std::forward<Args>(args)...);
 }
 
-} // namespace projnekomata::log
+}

@@ -1,15 +1,15 @@
-export module projnekomata:core.cs.option;
+export module projnekomata.cs:option;
 import std;
 import fmt;
-import :core.platform.int_def;
-import :core.cs.niche;
-import :core.cs.panic;
-import :core.cs.invoke_traits;
+import :invoke_traits;
+import :niche;
+import :panic;
+import :primitives;
 
 struct NoneT_Meta {};
 
 template <typename T> struct SomeT { T value; };
-template <typename T> constexpr auto Some(T&& value) -> SomeT<std::decay_t<T>> { return SomeT<std::decay_t<T>>{ std::forward<T>(value) }; }
+export template <typename T> constexpr auto Some(T&& value) -> SomeT<std::decay_t<T>> { return SomeT<std::decay_t<T>>{ std::forward<T>(value) }; }
 
 export template <typename T> class Option {
 public:
@@ -189,4 +189,4 @@ struct NoneT {
     }
 };
 
-inline constexpr auto None = NoneT{};
+export inline constexpr auto None = NoneT{};

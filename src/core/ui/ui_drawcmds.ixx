@@ -29,6 +29,6 @@ struct UiTextDrawCmd {
     Color color;
 };
 
-using UiDrawCmd = std::variant<UiRectDrawCmd, UiTextureDrawCmd, UiTextDrawCmd>;
+using UiDrawCmd = FlatVariant<UiRectDrawCmd, UiTextureDrawCmd, UiTextDrawCmd>;
 
 }

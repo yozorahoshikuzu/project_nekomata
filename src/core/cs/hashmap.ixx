@@ -4,11 +4,12 @@ module;
 #include <emmintrin.h>
 #include <mmintrin.h>
 #include <string.h>
-export module projnekomata:core.cs.hashmap;
-import :core.platform.int_def;
-import :core.platform.assert;
-import :core.cs.iterators;
-import :core.cs.mem;
+export module projnekomata.cs:hashmap;
+import :assertions;
+import :mem;
+import :iterators;
+import :option;
+import :primitives;
 
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------
 

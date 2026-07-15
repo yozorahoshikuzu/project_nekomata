@@ -277,7 +277,7 @@ public:
         }
 
         auto camPos = m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position;
-        std::get<projnekomata::ui::UiText>(m_text->element).text = "";
+        acquireInto<projnekomata::ui::UiText>(m_text->element).text = "";
     }
 
     bool m_handleMouseMovement = true;
@@ -297,9 +297,9 @@ struct Vertex {
     float uvY;
     Vector4f color;
 };
-std::pair<std::vector<Vertex>, std::vector<u32>> generateSphere(u32 latSegments, u32 lonSegments, float radius) {
-    std::vector<Vertex> vertices;
-    std::vector<u32> indices;
+std::pair<Vec<Vertex>, Vec<u32>> generateSphere(u32 latSegments, u32 lonSegments, float radius) {
+    Vec<Vertex> vertices;
+    Vec<u32> indices;
 
     for (u32 lat = 0; lat <= latSegments; lat++) {
         float theta = static_cast<float>(lat) / static_cast<float>(latSegments) * consts::PI;
@@ -315,8 +315,8 @@ std::pair<std::vector<Vertex>, std::vector<u32>> generateSphere(u32 latSegments,
             float y = cosTheta;
             float z = sinPhi * sinTheta;
 
-            vertices.push_back({Vector3f(x * radius, y * radius, z * radius), static_cast<float>(lon) / static_cast<float>(lonSegments),
-                                Vector3f(x, y, z), static_cast<float>(lat) / static_cast<float>(latSegments), Vector4f(1.0f, 0.0f, 0.0f, 1.0f)});
+            vertices.emplace(Vector3f(x * radius, y * radius, z * radius), static_cast<float>(lon) / static_cast<float>(lonSegments),
+                                Vector3f(x, y, z), static_cast<float>(lat) / static_cast<float>(latSegments), Vector4f(1.0f, 0.0f, 0.0f, 1.0f));
         }
     }
 
@@ -324,13 +324,13 @@ std::pair<std::vector<Vertex>, std::vector<u32>> generateSphere(u32 latSegments,
         for (u32 lon = 0; lon < lonSegments; lon++) {
             u32 first = (lat * (lonSegments + 1)) + lon;
             u32 second = first + lonSegments + 1;
-            indices.push_back(first);
-            indices.push_back(second);
-            indices.push_back(first + 1);
+            indices.emplace(first);
+            indices.emplace(second);
+            indices.emplace(first + 1);
 
-            indices.push_back(first + 1);
-            indices.push_back(second);
-            indices.push_back(second + 1);
+            indices.emplace(first + 1);
+            indices.emplace(second);
+            indices.emplace(second + 1);
         }
     }
 

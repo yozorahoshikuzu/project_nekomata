@@ -1,7 +1,7 @@
 export module projnekomata:graphics.vulkan.vk_pipeline_graphics;
 import std;
 import vulkan;
-import :core.platform.int_def;
+import projnekomata.cs;
 import :graphics.vulkan.vk_gpu_obrm;
 import :graphics.vulkan.spv_shader_code;
 import :graphics.vulkan.vk_pipeline_layout;
@@ -74,8 +74,8 @@ public:
         return *this;
     }
     [[nodiscard]] constexpr auto pushRenderingAttachment(vk::PipelineColorBlendAttachmentState blending, vk::Format attachmentFormat) noexcept -> VulkanGraphicsPipelineBuilder& {
-        m_renderingColorAttachmentBlendStates.emplace_back(blending);
-        m_renderingColorAttachmentFormats.emplace_back(attachmentFormat);
+        m_renderingColorAttachmentBlendStates.emplace(blending);
+        m_renderingColorAttachmentFormats.emplace(attachmentFormat);
         return *this;
     }
     [[nodiscard]] constexpr auto disableDepthTest() noexcept -> VulkanGraphicsPipelineBuilder& {
@@ -172,8 +172,8 @@ private:
     vk::PipelineDepthStencilStateCreateInfo m_depthStencilState = {};
     vk::PipelineRenderingCreateInfo m_renderingCreateInfo = {};
     Option<vk::PipelineTessellationStateCreateInfo> m_tessellationState = None;
-    std::vector<vk::PipelineColorBlendAttachmentState> m_renderingColorAttachmentBlendStates;
-    std::vector<vk::Format> m_renderingColorAttachmentFormats;
+    Vec<vk::PipelineColorBlendAttachmentState> m_renderingColorAttachmentBlendStates;
+    Vec<vk::Format> m_renderingColorAttachmentFormats;
 
     Vec<vk::StructureChain<vk::PipelineShaderStageCreateInfo, vk::ShaderModuleCreateInfo>> m_shaderStages = Vec<vk::StructureChain<vk::PipelineShaderStageCreateInfo, vk::ShaderModuleCreateInfo>>::create();
 };

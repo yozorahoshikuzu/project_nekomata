@@ -1,6 +1,6 @@
 export module projnekomata:core.ecs.entity;
 import std;
-import :core.platform.int_def;
+import projnekomata.cs;
 
 export namespace projnekomata::ecs {
 

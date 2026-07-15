@@ -1,5 +1,5 @@
 module projnekomata;
-import :core.log;
+import projnekomata.cs;
 import :graphics.vulkan.vk_physical_device_props;
 import :graphics.vulkan.context;
 import :graphics.vulkan.vk_queue_family_swizzling;

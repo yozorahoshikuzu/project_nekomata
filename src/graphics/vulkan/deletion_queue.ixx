@@ -1,17 +1,16 @@
 export module projnekomata:graphics.vulkan.deletion_queue;
 import std;
+import projnekomata.cs;
 import vulkan;
 import vk_mem_alloc;
-import :core.platform.int_def;
 import :core.containers.mpsc_queue;
 import :graphics.vulkan.vk_gpu_obrm_structs;
 
 export namespace projnekomata {
 
-using AnyVulkanObject = std::variant<vk::raii::CommandPool, vk::raii::CommandBuffer, vk::raii::Image, vk::raii::ImageView, vk::raii::SwapchainKHR,
-                                     vk::raii::Semaphore, vk::raii::Fence, vma::raii::Allocation, vk::raii::PipelineLayout, vk::raii::Pipeline,
-                                     vk::raii::Buffer, vma::raii::VirtualBlock, vk::raii::DescriptorSetLayout, vk::raii::DescriptorSet,
-                                     vk::raii::DescriptorPool, vk::raii::Sampler, vk::raii::QueryPool>;
+using AnyVulkanObject = FlatVariant<vk::raii::CommandPool, vk::raii::CommandBuffer, vk::raii::Image, vk::raii::ImageView, vk::raii::SwapchainKHR, vk::raii::Semaphore,
+                vk::raii::Fence, vma::raii::Allocation, vk::raii::PipelineLayout, vk::raii::Pipeline, vk::raii::Buffer, vma::raii::VirtualBlock,
+                vk::raii::DescriptorSetLayout, vk::raii::DescriptorSet, vk::raii::DescriptorPool, vk::raii::Sampler, vk::raii::QueryPool>;
 
 struct ResourceDeletionQueueEntry {
     u64 m_graphicsQueueRetireValue;

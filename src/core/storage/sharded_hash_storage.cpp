@@ -1,6 +1,6 @@
 module projnekomata;
 import std;
-import :core.log;
+import projnekomata.cs;
 import :core.storage.sharded_hash_storage;
 
 namespace projnekomata::storage {
@@ -35,7 +35,7 @@ auto ShardedHashStorage::load(Slice<const u8> hash, Vec<u8>& dst) -> Result<std:
 
     auto file = std::ifstream(fullpath, std::ios::binary | std::ios::ate);
     if (!file) return Err(HashStorageLoadError::FileOpenError);
-    dst.resize(file.tellg());
+    dst.resize(file.tellg(), 0);
     file.seekg(0);
 
     file.read(reinterpret_cast<char*>(dst.data()), dst.len());

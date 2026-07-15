@@ -2,11 +2,10 @@ export module projnekomata:graphics.vulkan.context;
 import std;
 import vulkan;
 import vk_mem_alloc;
-import :core.platform.int_def;
+import projnekomata.cs;
 import :core.platform.sdl;
 import :graphics.vulkan.vk_physical_device_props;
 import :graphics.vulkan.vk_queue;
-import :core.cs.panic;
 
 export namespace projnekomata {
 
@@ -34,7 +33,7 @@ constexpr std::string_view antiLagMethodToString(AntiLagMethod method) {
     }
 }
 
-constexpr bool kVulkanDebugEnable = true;
+constexpr bool kVulkanDebugEnable = false;
 
 class VulkanContext {
 public:
@@ -97,15 +96,15 @@ private:
     VulkanPhysicalDeviceProperties m_vkPhysicalDeviceProperties;
     vk::raii::Device m_vkDevice = nullptr;
 
-    std::vector<std::unique_ptr<VulkanQueue>> m_vkQueues;
+    Vec<std::unique_ptr<VulkanQueue>> m_vkQueues;
     VulkanQueue* m_vkGraphicsQueue{};
     VulkanQueue* m_vkPresentQueue{};
     VulkanQueue* m_vkAsyncComputeQueue{};
 
     vma::raii::Allocator m_vmaAllocator = nullptr;
 
-    std::unique_ptr<class VulkanResourceDeletionQueue> m_vkResourceDeletionQueue;
-    std::unique_ptr<class ShaderCache> m_shaderCache;
+    std::unique_ptr<VulkanResourceDeletionQueue> m_vkResourceDeletionQueue;
+    std::unique_ptr<ShaderCache> m_shaderCache;
 
     std::atomic<AntiLagMethod> m_antiLagMethod = AntiLagMethod::None;
 };
@@ -115,3 +114,4 @@ inline VulkanContext* g_vkContext = nullptr;
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 } // namespace projnekomata
+

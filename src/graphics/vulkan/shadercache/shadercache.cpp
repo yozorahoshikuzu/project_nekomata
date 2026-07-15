@@ -6,8 +6,6 @@ namespace projnekomata {
 ShaderCache::ShaderCache(bool usePipelineBinaries) {
     if (usePipelineBinaries) {
         m_shaderCacheFrontend = ShaderCachePipelineBinaryFrontend(makeShaderCacheDirectoryPath(), 2, 1);
-    } else {
-        m_shaderCacheFrontend = std::monostate{};
     }
 
     match(m_shaderCacheFrontend,

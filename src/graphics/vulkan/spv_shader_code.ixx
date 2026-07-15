@@ -1,9 +1,7 @@
 export module projnekomata:graphics.vulkan.spv_shader_code;
 import std;
+import projnekomata.cs;
 import vulkan;
-import :core.platform.int_def;
-import :core.cs.result;
-import :core.cs.vec;
 
 export namespace projnekomata {
 

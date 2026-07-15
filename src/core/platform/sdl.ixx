@@ -2,10 +2,9 @@ module;
 #include <SDL3/SDL.h>
 export module projnekomata:core.platform.sdl;
 import std;
+import projnekomata.cs;
 import vulkan;
 import :core.math;
-import :core.platform.int_def;
-import :core.cs.vec;
 
 export namespace projnekomata {
 

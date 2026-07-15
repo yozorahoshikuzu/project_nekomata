@@ -1,9 +1,6 @@
 export module projnekomata:core.storage.sharded_hash_storage;
 import std;
-import :core.platform.int_def;
-import :core.cs.result;
-import :core.cs.slice;
-import :core.cs.vec;
+import projnekomata.cs;
 
 export namespace projnekomata::storage {
 

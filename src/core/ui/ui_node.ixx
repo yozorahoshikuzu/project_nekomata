@@ -1,6 +1,6 @@
 export module projnekomata:core.ui.ui_node;
+import projnekomata.cs;
 import :core.math;
-import :core.log;
 import :core.ui.components.ui_rect;
 import :core.ui.components.ui_text;
 import :core.ui.components.ui_texture;
@@ -22,7 +22,7 @@ inline math::Vector2f unormToNdc(math::Vector2f x) {
 
 struct ExtentPx { float pixels; };
 struct ExtentPercent { float percent; };
-using Extent = std::variant<ExtentPx, ExtentPercent>;
+using Extent = FlatVariant<ExtentPx, ExtentPercent>;
 
 constexpr auto resolveExtent(Extent e, float extentBounds) -> float {
     return match(e,
@@ -35,7 +35,7 @@ constexpr auto resolveExtent2D(Extent x, Extent y, math::Vector2f extentBounds) 
     return math::Vector2f(resolveExtent(x, extentBounds.x()), resolveExtent(y, extentBounds.y()));
 }
 
-using UiElement = std::variant<std::monostate, UiRect, UiText, UiTexture>;
+using UiElement = FlatVariant<std::monostate, UiRect, UiText, UiTexture>;
 
 class UiNodeBuilder;
 
@@ -59,10 +59,10 @@ struct UiNode {
 
     // ---- Positioning ----------------------------------------------------------------------------------------------------------------------------------------
 
-    Extent posX;
-    Extent posY;
-    Extent extentX;
-    Extent extentY;
+    Extent posX    = ExtentPx{0.f};
+    Extent posY    = ExtentPx{0.f};
+    Extent extentX = ExtentPercent{100.f};
+    Extent extentY = ExtentPercent{100.f};
 
     Layout                       childrenLayout = AbsoluteLayout();
     Vec<std::unique_ptr<UiNode>> children;

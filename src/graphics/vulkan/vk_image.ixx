@@ -1,12 +1,11 @@
 export module projnekomata:graphics.vulkan.vk_image;
 import std;
+import projnekomata.cs;
 import vulkan;
 import vk_mem_alloc;
-import :core.platform.int_def;
 import :graphics.vulkan.vk_image_view;
 import :graphics.vulkan.vk_gpu_obrm;
 import :graphics.vulkan.vk_image_trait;
-import :core.cs.slice;
 
 export namespace projnekomata {
 

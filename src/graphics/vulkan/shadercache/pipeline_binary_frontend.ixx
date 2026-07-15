@@ -3,8 +3,7 @@ module;
 export module projnekomata:graphics.vulkan.shadercache.pipeline_binary_frontend;
 import std;
 import vulkan;
-import :core.log;
-import :core.platform.int_def;
+import projnekomata.cs;
 import :core.storage.sharded_hash_storage;
 import :graphics.vulkan.context;
 import :graphics.vulkan.shadercache.pipeline_sc_concept;
@@ -205,7 +204,7 @@ private:
             log::error("Failed to open global pipeline key file!");
             return false;
         }
-        buffer.resize(keyFile.tellg());
+        buffer.resize(keyFile.tellg(), 0);
         keyFile.seekg(0);
         keyFile.read(reinterpret_cast<std::istream::char_type*>(buffer.data()), buffer.size());
         if (!keyFile) {

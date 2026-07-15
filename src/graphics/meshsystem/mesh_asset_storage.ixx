@@ -1,6 +1,6 @@
 export module projnekomata:graphics.meshsystem.mesh_asset_storage;
 import std;
-import :core.platform.int_def;
+import projnekomata.cs;
 import :graphics.meshsystem.pool.mesh_pool;
 import :core.containers.freelist_pool;
 import :core.math;

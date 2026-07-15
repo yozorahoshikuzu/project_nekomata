@@ -1,7 +1,7 @@
 export module projnekomata:graphics.vulkan.vk_descriptor_pool;
 import std;
 import vulkan;
-import :core.platform.int_def;
+import projnekomata.cs;
 import :graphics.vulkan.vk_gpu_obrm;
 import :graphics.vulkan.vk_descriptor_set_layout;
 import :graphics.vulkan.vk_descriptor_set;

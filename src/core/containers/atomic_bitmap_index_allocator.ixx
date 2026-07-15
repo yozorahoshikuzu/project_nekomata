@@ -1,7 +1,6 @@
 export module projnekomata:core.containers.abia;
 import std;
-import :core.platform.int_def;
-import :core.cs.option;
+import projnekomata.cs;
 
 export namespace projnekomata {
 
@@ -9,7 +8,7 @@ class AtomicBitmapIndexAllocator {
 public:
     AtomicBitmapIndexAllocator(std::nullptr_t) : m_bitmapSize(0), m_qwordCount(0) {}
     explicit AtomicBitmapIndexAllocator(usize bitmapSize)
-        : m_bitmapSize(bitmapSize), m_qwordCount((bitmapSize + 63) / 64), m_bitmap(m_qwordCount) {
+        : m_bitmapSize(bitmapSize), m_qwordCount((bitmapSize + 63) / 64), m_bitmap(Vec<std::atomic<u64>>::fromValue(m_qwordCount, 0)) {
         for (auto& qword : m_bitmap) {
             qword.store(0, std::memory_order_relaxed);
         }
@@ -59,7 +58,7 @@ public:
 private:
     const usize m_bitmapSize;
     const usize m_qwordCount;
-    std::vector<std::atomic<u64>> m_bitmap;
+    Vec<std::atomic<u64>> m_bitmap;
 
     constexpr static u64 kBitmapFullIndex = ~0ull;
 };

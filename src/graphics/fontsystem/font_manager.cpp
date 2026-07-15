@@ -2,8 +2,7 @@ module;
 #include <freetype/freetype.h>
 #include <utf8cpp/utf8.h>
 module projnekomata;
-import :core.log;
-import :core.platform.assert;
+import projnekomata.cs;
 import :graphics.fontsystem.dynamic_font_atlas;
 import :graphics.fontsystem.font_manager;
 
@@ -88,7 +87,7 @@ auto FontManager::rasterizeGlyphs(FontRasterInfo rasterInfo) -> void {
 
             if (imageSize + bufferCursor > rasterInfo.resultBuffer.size()) {
                 // Add some overprovisioning to avoid hot realloc
-                rasterInfo.resultBuffer.resize((bufferCursor + imageSize) * 2);
+                rasterInfo.resultBuffer.resize((bufferCursor + imageSize) * 2, 0);
             }
 
             if (imageSize == 0) {
@@ -158,7 +157,7 @@ auto FontManager::rasterizeGlyphs(FontRasterInfo rasterInfo) -> void {
                 { (float)slot->bitmap_left,  (float)slot->bitmap_top }, { (float)imageWidth, (float)imageHeight }, slot->advance.x / 64.0f);
         }
     }
-    rasterInfo.resultBuffer.resize(bufferCursor);
+    rasterInfo.resultBuffer.resize(bufferCursor, 0);
 }
 
 math::Vector2f pixelsToNDC(math::Vector2f px, math::Vector2f screenSize) {

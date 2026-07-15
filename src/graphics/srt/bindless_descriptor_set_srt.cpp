@@ -1,5 +1,5 @@
 module projnekomata;
-import :core.log;
+import projnekomata.cs;
 import :graphics.srt.bindless_descriptor_set_srt;
 
 namespace projnekomata::graphics::srt {

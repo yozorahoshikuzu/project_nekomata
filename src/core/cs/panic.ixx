@@ -10,10 +10,11 @@ module;
 #endif
 
 #endif
-export module projnekomata:core.cs.panic;
+export module projnekomata.cs:panic;
 import std;
-import :core.log;
-import :core.platform.thread;
+import :log;
+import :primitives;
+import :thread;
 
 constexpr bool kPanicPrintsStackTrace = true;
 
@@ -58,7 +59,7 @@ void backtraceErrorCallback(void* data, const char* errorMsg, int errnum) {
 template<typename... Args>
 [[noreturn]]
 void panic_impl(std::source_location loc, std::string_view fmt, Args&&... args) {
-    projnekomata::log::crit("thread {} (id {}) panicked at {}:{}: {}", projnekomata::getThreadName(), projnekomata::getThreadId(), loc.file_name(), loc.line(), std::vformat(fmt, std::make_format_args(args...)));
+    projnekomata::log::crit("thread {} (id {}) panicked at {}:{}: {}", Thread::getThreadName(), Thread::getThreadId(), loc.file_name(), loc.line(), std::vformat(fmt, std::make_format_args(args...)));
 
 #if defined(__linux__) && defined(PROJNEKOMATA_USE_LIBBACKTRACE)
     if constexpr (kPanicPrintsStackTrace) {
@@ -79,7 +80,7 @@ void panic_impl(std::source_location loc, std::string_view fmt, Args&&... args) 
         projnekomata::log::crit("stack trace printing was disabled by kPanicPrintsStackTrace");
     }
 #else
-    projnekomata::log::crit("stack trace printing is not supported");
+    log::crit("stack trace printing is not supported");
 #endif
 
     abort();

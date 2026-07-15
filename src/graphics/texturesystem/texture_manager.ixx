@@ -1,7 +1,7 @@
 export module projnekomata:graphics.texturesystem.texture_manager;
 import std;
 import vulkan;
-import :core.platform.int_def;
+import projnekomata.cs;
 import :graphics.vulkan.vk_image;
 import :graphics.srt.shader_resource_table;
 import :core.containers.freelist_pool;

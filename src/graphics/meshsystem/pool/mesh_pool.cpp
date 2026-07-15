@@ -90,7 +90,7 @@ auto BufferPool::allocate(u64 byteSize, u64 alignment) -> BufferPoolSuballocatio
             if (m_dedicatedAllocations[i].buffer) { idx = i; break; }
         }
         if (idx == static_cast<u32>(m_dedicatedAllocations.size()))
-            m_dedicatedAllocations.push_back(std::move(dedicatedAlloc));
+            m_dedicatedAllocations.emplace(std::move(dedicatedAlloc));
         else
             m_dedicatedAllocations[idx] = std::move(dedicatedAlloc);
 
@@ -114,7 +114,7 @@ auto BufferPool::allocate(u64 byteSize, u64 alignment) -> BufferPoolSuballocatio
         panic("ran out of slabs space");
     }
 
-    m_slabs.push_back(Slab::create(m_cfg));
+    m_slabs.emplace(Slab::create(m_cfg));
 
     if (auto suballocation = trySuballocate(m_slabs.size() - 1, byteSize, alignment)) return std::move(suballocation.unwrap());
 

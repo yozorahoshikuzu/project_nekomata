@@ -1,7 +1,7 @@
 export module projnekomata:graphics.vulkan.vk_pipeline_layout;
 import std;
 import vulkan;
-import :core.platform.int_def;
+import projnekomata.cs;
 import :graphics.vulkan.context;
 import :graphics.vulkan.vk_gpu_obrm;
 import :graphics.vulkan.vk_descriptor_set_layout;
@@ -41,13 +41,13 @@ public:
     VulkanPipelineLayoutBuilder& operator=(VulkanPipelineLayoutBuilder&&) = default;
 
     [[nodiscard]] constexpr auto addDescriptorSetLayout(const VulkanDescriptorSetLayout& layout) noexcept -> VulkanPipelineLayoutBuilder& {
-        m_descriptorSetLayouts.emplace_back(layout.vkDescriptorSetLayout());
+        m_descriptorSetLayouts.emplace(layout.vkDescriptorSetLayout());
         return *this;
     }
     [[nodiscard]] constexpr auto addPushConstantRange(u32 offset, u32 size, vk::ShaderStageFlags stageFlags) noexcept -> VulkanPipelineLayoutBuilder& {
         auto range = vk::PushConstantRange{}.setStageFlags(stageFlags).setOffset(offset).setSize(size);
 
-        m_pushConstantRanges.emplace_back(range);
+        m_pushConstantRanges.emplace(range);
         return *this;
     }
     [[nodiscard]] constexpr auto buildCreateInfo() const noexcept -> vk::PipelineLayoutCreateInfo {
@@ -60,8 +60,8 @@ public:
     }
 
 private:
-    std::vector<vk::PushConstantRange> m_pushConstantRanges;
-    std::vector<vk::DescriptorSetLayout> m_descriptorSetLayouts;
+    Vec<vk::PushConstantRange> m_pushConstantRanges;
+    Vec<vk::DescriptorSetLayout> m_descriptorSetLayouts;
 };
 
 } // namespace projnekomata

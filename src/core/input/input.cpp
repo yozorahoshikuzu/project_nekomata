@@ -1,8 +1,8 @@
 module;
 #include <SDL3/SDL.h>
+#include <string.h>
 module projnekomata;
 import :core.input.inputmanager;
-#include <string.h>
 
 namespace projnekomata::core::input {
 

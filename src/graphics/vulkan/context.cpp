@@ -1,10 +1,9 @@
 module;
 #include <vulkan/vulkan.h>
 module projnekomata;
-import :core.log;
+import projnekomata.cs;
 import :graphics.vulkan.deletion_queue;
 import :graphics.vulkan.vk_queue;
-import :core.platform.assert;
 import :graphics.vulkan.shadercache;
 
 VKAPI_ATTR VkBool32 VKAPI_CALL debugUtilsMessengerCallback(
@@ -91,7 +90,7 @@ auto VulkanContext::create(projnekomata::SdlWindow& sdlWindow) -> std::unique_pt
         auto handle = vkCheckResult(VulkanContext::get().vkDevice().createSemaphore(chain.get<vk::SemaphoreCreateInfo>()));
         auto queue = std::make_unique<VulkanQueue>(std::move(vkQueue), std::move(handle), lastTimelineSubmissionValue);
 
-        vkContext->m_vkQueues.emplace_back(std::move(queue));
+        vkContext->m_vkQueues.emplace(std::move(queue));
         queueFamilyIndexToQueueSlot.insert(queue_index, i);
     }
 

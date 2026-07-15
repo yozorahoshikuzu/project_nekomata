@@ -3,11 +3,10 @@ module;
 #include <SDL3/SDL_vulkan.h>
 module projnekomata;
 import std;
-import :core.log;
-import :core.math;
+import projnekomata.cs;
 import vulkan;
+import :core.math;
 import :core.platform.sdl;
-import :core.cs.panic;
 
 namespace projnekomata {
 

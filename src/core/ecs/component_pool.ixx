@@ -1,10 +1,7 @@
 export module projnekomata:core.ecs.component_pool;
 import std;
+import projnekomata.cs;
 import :core.ecs.entity;
-import :core.platform.int_def;
-import :core.platform.assert;
-import :core.cs.vec;
-import :core.cs.panic;
 import :core.ecs.world.camera;
 
 export namespace projnekomata::ecs {
@@ -104,18 +101,9 @@ public:
     }
 
     void copyTo(ComponentSetSnapshot<T>& buf) const {
-        if (buf.m_storage.len() < m_storage.len())
-            buf.m_storage.resize(m_storage.len());
-
-        if (buf.m_sparseToStorage.len() < m_sparseToStorage.len())
-            buf.m_sparseToStorage.resize(m_sparseToStorage.len());
-
-        if (buf.m_storageToEntity.len() < m_storageToEntity.len())
-            buf.m_storageToEntity.resize(m_storageToEntity.len());
-
-        std::memcpy(buf.m_storage.data(),         m_storage.data(),         sizeof(T) * m_storage.len());
-        std::memcpy(buf.m_sparseToStorage.data(), m_sparseToStorage.data(), sizeof(u32) * m_sparseToStorage.len());
-        std::memcpy(buf.m_storageToEntity.data(), m_storageToEntity.data(), sizeof(Entity) * m_storageToEntity.len());
+        buf.m_storage.copyFrom(m_storage.asSlice());
+        buf.m_sparseToStorage.copyFrom(m_sparseToStorage.asSlice());
+        buf.m_storageToEntity.copyFrom(m_storageToEntity.asSlice());
     }
 
 private:

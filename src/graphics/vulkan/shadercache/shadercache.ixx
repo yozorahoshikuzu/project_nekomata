@@ -1,13 +1,13 @@
 export module projnekomata:graphics.vulkan.shadercache;
 import std;
+import projnekomata.cs;
 import vulkan;
-import :core.platform.int_def;
 import :core.overloaded;
 import :graphics.vulkan.shadercache.pipeline_binary_frontend;
 
 export namespace projnekomata {
 
-using ShaderCacheFrontend = std::variant<std::monostate, ShaderCachePipelineBinaryFrontend>;
+using ShaderCacheFrontend = FlatVariant<std::monostate, ShaderCachePipelineBinaryFrontend>;
 
 class ShaderCache {
 public:
@@ -29,7 +29,7 @@ public:
         );
     }
 private:
-    ShaderCacheFrontend m_shaderCacheFrontend;
+    ShaderCacheFrontend m_shaderCacheFrontend = std::monostate{};
 
     auto makeShaderCacheDirectoryPath() -> std::filesystem::path;
 };

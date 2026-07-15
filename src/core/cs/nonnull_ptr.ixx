@@ -1,6 +1,6 @@
-export module projnekomata:core.cs.nonzero_ptr;
-import :core.cs.niche;
-import :core.cs.option;
+export module projnekomata.cs:nonnull_ptr;
+import :niche;
+import :option;
 
 export template <typename T> class NonNullPtr {
 public:

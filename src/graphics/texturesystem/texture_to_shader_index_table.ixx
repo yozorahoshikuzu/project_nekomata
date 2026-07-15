@@ -1,7 +1,6 @@
 export module projnekomata:graphics.texturesystem.texture_to_shader_index_table;
 import std;
-import :core.platform.int_def;
-import :core.cs.vec;
+import projnekomata.cs;
 
 export namespace projnekomata::graphics::texturesystem {
 

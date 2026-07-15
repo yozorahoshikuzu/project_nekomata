@@ -1,11 +1,9 @@
 export module projnekomata:core.ecs;
 import std;
+import projnekomata.cs;
 export import :core.ecs.component_pool;
 export import :core.ecs.entity;
 export import :core.ecs.script_base;
-import :core.platform.int_def;
-import :core.platform.assert;
-import :core.cs.hashmap;
 
 export namespace projnekomata::ecs {
 

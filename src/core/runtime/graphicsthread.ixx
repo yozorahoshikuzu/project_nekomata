@@ -1,7 +1,7 @@
 export module projnekomata:core.runtime.graphicsthread;
 import std;
+import projnekomata.cs;
 import vulkan;
-import :core.platform.int_def;
 import :core.runtime.shared_data;
 import :graphics.vulkan.vk_swapchain;
 import :graphics.rendering.transient_rendering_resources;

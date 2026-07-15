@@ -1,5 +1,5 @@
 export module projnekomata:graphics.vulkan.vk_gpu_obrm_structs;
-import :core.platform.int_def;
+import projnekomata.cs;
 
 export namespace projnekomata {
 

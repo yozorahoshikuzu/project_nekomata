@@ -1,5 +1,5 @@
 module projnekomata;
-import :core.platform.assert;
+import projnekomata.cs;
 import :graphics.texturesystem.texture_to_shader_index_table;
 
 namespace projnekomata::graphics::texturesystem {

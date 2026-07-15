@@ -1,6 +1,6 @@
-export module projnekomata:core.cs.niche;
+export module projnekomata.cs:niche;
 import std;
-import :core.platform.int_def;
+import :primitives;
 
 /// Niche values are used to optimize the representation of objects potentially containing an object that has a niche value, to avoid having to store a
 /// discriminator to identify whether the object is present or not.

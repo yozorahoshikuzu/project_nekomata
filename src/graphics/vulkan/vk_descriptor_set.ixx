@@ -1,8 +1,7 @@
 export module projnekomata:graphics.vulkan.vk_descriptor_set;
 import std;
 import vulkan;
-import :core.platform.int_def;
-import :core.log;
+import projnekomata.cs;
 import :graphics.vulkan.vk_gpu_obrm;
 import :graphics.vulkan.vk_image;
 import :graphics.vulkan.context;
@@ -43,7 +42,7 @@ public:
             .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
             .setSampler(nullptr)
             .setImageView(image.vkImageViewWholeSize());
-        m_descriptorImageInfos.emplace_back(binding, dstDescriptorIndex, vk::DescriptorType::eSampledImage, imageInfo);
+        m_descriptorImageInfos.emplace(binding, dstDescriptorIndex, vk::DescriptorType::eSampledImage, imageInfo);
         return *this;
     }
     [[nodiscard]] constexpr auto bindImage(u32 binding, u32 dstDescriptorIndex, const VulkanImageView& imageView) -> VulkanDescriptorSetWriter& {
@@ -51,7 +50,7 @@ public:
             .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
             .setSampler(nullptr)
             .setImageView(imageView.vkImageView());
-        m_descriptorImageInfos.emplace_back(binding, dstDescriptorIndex, vk::DescriptorType::eSampledImage, imageInfo);
+        m_descriptorImageInfos.emplace(binding, dstDescriptorIndex, vk::DescriptorType::eSampledImage, imageInfo);
         return *this;
     }
 
@@ -60,12 +59,12 @@ public:
             .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
             .setSampler(sampler.vkSampler())
             .setImageView(nullptr);
-        m_descriptorImageInfos.emplace_back(binding, dstDescriptorIndex, vk::DescriptorType::eSampler, imageInfo);
+        m_descriptorImageInfos.emplace(binding, dstDescriptorIndex, vk::DescriptorType::eSampler, imageInfo);
         return *this;
     }
 
     constexpr auto commit() -> void {
-        std::vector<vk::WriteDescriptorSet> writeDescriptorSets;
+        Vec<vk::WriteDescriptorSet> writeDescriptorSets;
 
         for (auto& [binding, dstDescriptorIndex, dtype, imageInfo] : m_descriptorImageInfos) {
 
@@ -76,7 +75,7 @@ public:
                 .setDescriptorType(dtype)
                 .setDescriptorCount(1)
                 .setPImageInfo(&imageInfo);
-            writeDescriptorSets.emplace_back(writeDescriptorSet);
+            writeDescriptorSets.emplace(writeDescriptorSet);
         }
 
         VulkanContext::get().vkDevice().updateDescriptorSets(writeDescriptorSets, nullptr);
@@ -85,7 +84,7 @@ public:
 private:
     std::reference_wrapper<VulkanDescriptorSet> m_vkDescriptorSet;
 
-    std::vector<std::tuple<u32, u32, vk::DescriptorType, vk::DescriptorImageInfo>> m_descriptorImageInfos;
+    Vec<std::tuple<u32, u32, vk::DescriptorType, vk::DescriptorImageInfo>> m_descriptorImageInfos;
 };
 
 }

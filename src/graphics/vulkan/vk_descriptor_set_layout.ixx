@@ -1,7 +1,7 @@
 export module projnekomata:graphics.vulkan.vk_descriptor_set_layout;
 import std;
+import projnekomata.cs;
 import vulkan;
-import :core.platform.int_def;
 import :graphics.vulkan.context;
 import :graphics.vulkan.vk_gpu_obrm;
 
@@ -47,8 +47,8 @@ public:
             .setDescriptorCount(descriptorCount)
             .setStageFlags(shaderStages);
 
-        m_bindings.emplace_back(binding);
-        m_bindingFlags.emplace_back(flags);
+        m_bindings.emplace(binding);
+        m_bindingFlags.emplace(flags);
         return *this;
     }
 
@@ -74,8 +74,8 @@ public:
     }
 
 private:
-    std::vector<vk::DescriptorSetLayoutBinding> m_bindings;
-    std::vector<vk::DescriptorBindingFlags> m_bindingFlags;
+    Vec<vk::DescriptorSetLayoutBinding> m_bindings;
+    Vec<vk::DescriptorBindingFlags> m_bindingFlags;
     vk::DescriptorSetLayoutCreateFlags m_flags = {};
 };
 

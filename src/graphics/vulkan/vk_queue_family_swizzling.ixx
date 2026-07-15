@@ -1,7 +1,6 @@
 export module projnekomata:graphics.vulkan.vk_queue_family_swizzling;
 import std;
-import :core.platform.int_def;
-import :core.cs.slice;
+import projnekomata.cs;
 
 export namespace projnekomata {
 

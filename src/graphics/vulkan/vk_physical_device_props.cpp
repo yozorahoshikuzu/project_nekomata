@@ -9,7 +9,7 @@ using namespace std::literals;
 
 namespace projnekomata {
 
-using VulkanFeaturePtr = std::variant<
+using VulkanFeaturePtr = FlatVariant<
     vk::Bool32 vk::PhysicalDeviceFeatures::*,
     vk::Bool32 vk::PhysicalDeviceVulkan11Features::*,
     vk::Bool32 vk::PhysicalDeviceVulkan12Features::*,
@@ -80,39 +80,39 @@ static constexpr auto kRequiredPhysicalDeviceFeatures = std::to_array<RequiredFe
 // ---- Optional Features --------------------------------------------------------------------------------------------------------------------------------------
 
 // for Fp16
-static constexpr auto kOptExtensionsFp16 = emptyArray<std::string_view>();
-static constexpr auto kOptFeaturesFp16 = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceVulkan12Features::shaderFloat16 });
+static auto kOptExtensionsFp16 = emptyArray<std::string_view>();
+static auto kOptFeaturesFp16 = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceVulkan12Features::shaderFloat16 });
 
 // for ExtMemoryBudget
-static constexpr auto kOptExtensionsExtMemoryBudget = std::to_array<std::string_view>({ vk::EXTMemoryBudgetExtensionName });
-static constexpr auto kOptFeaturesExtMemoryBudget = emptyArray<VulkanFeaturePtr>();
+static auto kOptExtensionsExtMemoryBudget = std::to_array<std::string_view>({ vk::EXTMemoryBudgetExtensionName });
+static auto kOptFeaturesExtMemoryBudget = emptyArray<VulkanFeaturePtr>();
 
 // for ExtMemoryPriority
-static constexpr auto kOptExtensionsExtMemoryPriority = std::to_array<std::string_view>({ vk::EXTMemoryPriorityExtensionName });
-static constexpr auto kOptFeaturesExtMemoryPriority = emptyArray<VulkanFeaturePtr>();
+static auto kOptExtensionsExtMemoryPriority = std::to_array<std::string_view>({ vk::EXTMemoryPriorityExtensionName });
+static auto kOptFeaturesExtMemoryPriority = emptyArray<VulkanFeaturePtr>();
 
 // for RayTracing
-static constexpr auto kOptExtensionsRayTracing = std::to_array<std::string_view>({ vk::KHRAccelerationStructureExtensionName, vk::KHRRayTracingPipelineExtensionName, vk::KHRDeferredHostOperationsExtensionName });
-static constexpr auto kOptFeaturesRayTracing = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceAccelerationStructureFeaturesKHR::accelerationStructure, &vk::PhysicalDeviceRayTracingPipelineFeaturesKHR::rayTracingPipeline });
+static auto kOptExtensionsRayTracing = std::to_array<std::string_view>({ vk::KHRAccelerationStructureExtensionName, vk::KHRRayTracingPipelineExtensionName, vk::KHRDeferredHostOperationsExtensionName });
+static auto kOptFeaturesRayTracing = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceAccelerationStructureFeaturesKHR::accelerationStructure, &vk::PhysicalDeviceRayTracingPipelineFeaturesKHR::rayTracingPipeline });
 
 // for KhrMaintenance4
-static constexpr auto kOptExtensionsKhrMaintenance4 = emptyArray<std::string_view>();
-static constexpr auto kOptFeaturesKhrMaintenance4 = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceVulkan13Features::maintenance4 });
+static auto kOptExtensionsKhrMaintenance4 = emptyArray<std::string_view>();
+static auto kOptFeaturesKhrMaintenance4 = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceVulkan13Features::maintenance4 });
 
 // for ExtDescriptorHeap
-static constexpr auto kOptExtensionsExtDescriptorHeap = std::to_array<std::string_view>({ vk::EXTDescriptorHeapExtensionName });
-static constexpr auto kOptFeaturesExtDescriptorHeap = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceDescriptorHeapFeaturesEXT::descriptorHeap });
+static auto kOptExtensionsExtDescriptorHeap = std::to_array<std::string_view>({ vk::EXTDescriptorHeapExtensionName });
+static auto kOptFeaturesExtDescriptorHeap = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceDescriptorHeapFeaturesEXT::descriptorHeap });
 
 // for KhrPipelineBinary
-static constexpr auto kOptExtensionsKhrPipelineBinary = std::to_array<std::string_view>({ vk::KHRPipelineBinaryExtensionName });
-static constexpr auto kOptFeaturesKhrPipelineBinary = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDevicePipelineBinaryFeaturesKHR::pipelineBinaries });
+static auto kOptExtensionsKhrPipelineBinary = std::to_array<std::string_view>({ vk::KHRPipelineBinaryExtensionName });
+static auto kOptFeaturesKhrPipelineBinary = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDevicePipelineBinaryFeaturesKHR::pipelineBinaries });
 
 // for AMDAntiLag2
-static constexpr auto kOptExtensionsAMDAntiLag2 = std::to_array<std::string_view>({ vk::AMDAntiLagExtensionName });
-static constexpr auto kOptFeaturesAMDAntiLag2 = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceAntiLagFeaturesAMD::antiLag });
+static auto kOptExtensionsAMDAntiLag2 = std::to_array<std::string_view>({ vk::AMDAntiLagExtensionName });
+static auto kOptFeaturesAMDAntiLag2 = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceAntiLagFeaturesAMD::antiLag });
 
 // Table
-static constexpr auto kOptionalPhysicalDeviceFeatures = std::to_array<OptFeatureRule>({
+static auto kOptionalPhysicalDeviceFeatures = std::to_array<OptFeatureRule>({
     { "FP16 Arithmetic"sv,                                   kOptExtensionsFp16, kOptFeaturesFp16, &VulkanPhysicalDeviceProperties::m_hasFp16 },
     { "Memory Budget Tracking"sv,                            kOptExtensionsExtMemoryBudget, kOptFeaturesExtMemoryBudget, &VulkanPhysicalDeviceProperties::m_hasExtMemoryBudget },
     { "Memory Priority Tagging"sv,                           kOptExtensionsExtMemoryPriority, kOptFeaturesExtMemoryPriority, &VulkanPhysicalDeviceProperties::m_hasExtMemoryPriority },

@@ -1,7 +1,7 @@
-export module projnekomata:core.cs.slice;
-import :core.platform.int_def;
-import :core.cs.iterators;
-import :core.cs.cmp_traits;
+export module projnekomata.cs:slice;
+import :cmp_traits;
+import :iterators;
+import :primitives;
 
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -73,6 +73,18 @@ public:
     }
 };
 
-template <typename A, typename B> requires Eq<A, B> auto operator==(const Slice<A>& rhs, const Slice<B>& lhs) noexcept -> bool {
+export template <typename A, typename B> requires Eq<A, B> auto operator==(const Slice<A>& rhs, const Slice<B>& lhs) noexcept -> bool {
     return lhs.len() == rhs.len() && std::equal(lhs.begin(), lhs.end(), rhs.begin());
 }
+
+export extern template class Slice<u8>;
+export extern template class Slice<u16>;
+export extern template class Slice<u32>;
+export extern template class Slice<u64>;
+export extern template class Slice<i8>;
+export extern template class Slice<i16>;
+export extern template class Slice<i32>;
+export extern template class Slice<i64>;
+export extern template class Slice<f32>;
+export extern template class Slice<f64>;
+export extern template class Slice<bool>;

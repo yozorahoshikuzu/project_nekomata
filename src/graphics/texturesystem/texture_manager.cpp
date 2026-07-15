@@ -4,9 +4,9 @@ module;
 #include <ktxvulkan.h>
 #include <cstring>
 module projnekomata;
+import fmt;
 import vk_mem_alloc;
-import :core.platform.assert;
-import :core.log;
+import projnekomata.cs;
 import :graphics.cmd_alloc;
 import :graphics.vulkan.vk_queue_family_swizzling;
 import :graphics.vulkan.vk_buffer;
@@ -195,7 +195,7 @@ auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesy
     auto cbBeginInfo = vk::CommandBufferBeginInfo{}
         .setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 
-    cb.begin(cbBeginInfo);
+    vkCheckResult(cb.begin(cbBeginInfo));
     VulkanPipelineBarriers::builder()
         .insertImageMemoryBarrier(
             image,
@@ -204,7 +204,7 @@ auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesy
         )
         .flush(cmd);
 
-    std::vector<vk::BufferImageCopy2> copyRegions;
+    Vec<vk::BufferImageCopy2> copyRegions;
 
     u32 faceCount = imageIsCubemap ? 6 : 1;
 
@@ -235,7 +235,7 @@ auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesy
                     .setBufferOffset(offset)
                     .setBufferImageHeight(0)
                     .setBufferRowLength(0);
-                copyRegions.push_back(copyRegion);
+                copyRegions.emplace(copyRegion);
             }
         }
     }
@@ -255,7 +255,7 @@ auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesy
             vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eNone, vk::AccessFlagBits2::eNone
         )
         .flush(cmd);
-    cb.end();
+    vkCheckResult(cb.end());
 
     auto future = VulkanContext::get().vkQueueAsyncCompute().submitOneCommandBuffer(cb, {}, {}, None);
     ktxTexture2_Destroy(ktxData);

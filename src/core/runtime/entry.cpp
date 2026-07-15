@@ -2,19 +2,17 @@ module;
 #include <SDL3/SDL_messagebox.h>
 module projnekomata;
 import std;
-import :core.log;
+import projnekomata.cs;
 import :core.platform.sdl;
-import :core.platform.thread;
 import :graphics.vulkan.context;
 import :core.runtime.shared_data;
 import :core.runtime.mainthread;
 import :core.runtime.graphicsthread;
-import :core.cs.panic;
 
 namespace projnekomata {
 
 auto entryAfterSdlInit(const std::function<void(std::unique_ptr<ecs::World>&)>& initFn) -> void {
-    setThreadName("MainThread");
+    Thread::setThreadName("MainThread");
     // TODO: A system to remember player preferences to use here instead.
 
     auto window = projnekomata::SdlWindow("Project Nekomata", 1920, 1080);
@@ -31,7 +29,7 @@ auto entryAfterSdlInit(const std::function<void(std::unique_ptr<ecs::World>&)>& 
 
     auto renderThreadHandle = std::thread([&]() {
         RenderThread renderThread(threadSharedData);
-        setThreadName("RenderThread");
+        Thread::setThreadName("RenderThread");
         renderThread.runMainLoop();
     });
 

@@ -1,10 +1,9 @@
 module;
 #include <string.h>
 module projnekomata;
+import projnekomata.cs;
 import vulkan;
 import vk_mem_alloc;
-import :core.log;
-import :core.platform.int_def;
 import :graphics.rendering.frame_rendering_resources;
 import :core.ecs.world.camera;
 import :core.ecs.world.transform;
@@ -18,7 +17,6 @@ import :graphics.vulkan.vk_commands_barriers;
 import :core.ecs.entity;
 import :core.overloaded;
 import :graphics.rendering.frame_context;
-import :core.cs.panic;
 
 namespace projnekomata::graphics {
 
@@ -151,8 +149,8 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     // see if there are new glyphs to rasterize in the system text..
     auto all_texts_iter = renderingData.m_uiDrawCmds.iter()
         .filterMap([&](const auto& x) -> Option<fonts::FontRasterBatch> {
-            if (!std::holds_alternative<ui::UiTextDrawCmd>(x)) return None;
-            auto cmd = std::get<ui::UiTextDrawCmd>(x);
+            if (!matches<ui::UiTextDrawCmd>(x)) return None;
+            auto cmd = acquireInto<ui::UiTextDrawCmd>(x);
             auto batch = fonts::FontManager::get().findAndBatchMissingGlyphs(cmd.face, sharedRenderingResources.m_fontAtlas, cmd.text, cmd.size);
             return batch;
         })

@@ -1,11 +1,9 @@
 export module projnekomata:graphics.vulkan.vk_physical_device_props;
 import std;
+import projnekomata.cs;
 import vulkan;
 import vk_mem_alloc;
 import :graphics.vulkan.vk_queue_family_swizzling;
-import :core.platform.int_def;
-import :core.cs.vec;
-import :core.cs.result;
 
 export namespace projnekomata {
 

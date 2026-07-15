@@ -1,12 +1,12 @@
 module;
 #include <cstddef>
-export module projnekomata:core.cs.iterators;
+export module projnekomata.cs:iterators;
 import std;
-import :core.platform.int_def;
-import :core.cs.nonzero_ptr;
-import :core.cs.option;
-import :core.log;
-import :core.cs.invoke_traits;
+import :invoke_traits;
+import :niche;
+import :nonnull_ptr;
+import :option;
+import :primitives;
 
 // ---- Helper Concepts ----------------------------------------------------------------------------------------------------------------------------------------
 

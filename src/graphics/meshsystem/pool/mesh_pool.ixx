@@ -1,11 +1,9 @@
 export module projnekomata:graphics.meshsystem.pool.mesh_pool;
 import std;
+import projnekomata.cs;
 import vulkan;
 import vk_mem_alloc;
-import :core.platform.int_def;
 import :graphics.vulkan.vk_buffer;
-import :core.cs.option;
-import :core.cs.slice;
 
 export namespace projnekomata {
 
@@ -108,8 +106,8 @@ private:
 
     BufferPoolConfig m_cfg;
 
-    std::vector<Slab> m_slabs;
-    std::vector<DedicatedAllocation> m_dedicatedAllocations;
+    Vec<Slab> m_slabs;
+    Vec<DedicatedAllocation> m_dedicatedAllocations;
     std::deque<PendingFree> m_pendingFrees;
 
     mutable std::mutex m_allocatorMutex;

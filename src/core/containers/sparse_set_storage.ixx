@@ -1,7 +1,6 @@
 export module projnekomata:core.containers.sparse_set_storage;
 import std;
-import :core.platform.int_def;
-import :core.cs.vec;
+import projnekomata.cs;
 
 export namespace projnekomata {
 

@@ -1,7 +1,6 @@
 export module projnekomata:core.containers.freelist_pool;
 import std;
-import :core.platform.int_def;
-import :core.platform.assert;
+import projnekomata.cs;
 
 export namespace projnekomata {
 

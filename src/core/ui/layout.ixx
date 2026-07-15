@@ -1,5 +1,6 @@
 export module projnekomata:core.ui.layout;
 import std;
+import projnekomata.cs;
 
 export namespace projnekomata::ui {
 
@@ -32,6 +33,6 @@ public:
     float spacing = 0.0f;
 };
 
-using Layout = std::variant<AbsoluteLayout, StackLayout>;
+using Layout = FlatVariant<AbsoluteLayout, StackLayout>;
 
 }

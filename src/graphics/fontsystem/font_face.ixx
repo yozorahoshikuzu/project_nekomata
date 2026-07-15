@@ -1,5 +1,5 @@
 export module projnekomata:graphics.fontsystem.font_face;
-import :core.platform.int_def;
+import projnekomata.cs;
 
 export namespace projnekomata::graphics::fonts {
 

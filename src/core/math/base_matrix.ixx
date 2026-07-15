@@ -1,9 +1,7 @@
 export module projnekomata:core.math.base_matrix;
 import std;
-import :core.platform.assert;
+import projnekomata.cs;
 import :core.math.consts;
-import :core.platform.int_def;
-import :core.cs.option;
 
 export namespace projnekomata::math {
 

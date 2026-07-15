@@ -1,6 +1,6 @@
 export module projnekomata:core.containers.mpsc_queue;
 import std;
-import :core.cs.option;
+import projnekomata.cs;
 
 export template <typename T> class AtomicMpscQueue {
 public:

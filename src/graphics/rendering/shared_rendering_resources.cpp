@@ -334,7 +334,7 @@ SharedRenderingResources::SharedRenderingResources() {
 }
 auto SharedRenderingResources::refitHysteresisStates(usize renderableSparseCount) -> void {
     if (m_meshHysteresisStates.size() < renderableSparseCount) {
-        m_meshHysteresisStates.resize(renderableSparseCount);
+        m_meshHysteresisStates.resize(renderableSparseCount, MeshHysteresisState());
     }
 }
 auto SharedRenderingResources::buildIblSecondaryCubemaps() -> void {
