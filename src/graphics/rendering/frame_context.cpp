@@ -78,7 +78,8 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     MRThreadsSharedDataLeaf& renderingData, bool recordStatistics) -> FrameResult {
     auto imageAcquire = swapchain.acquireNextImage(std::numeric_limits<u64>::max(), m_frameRenderingResources.imageAcquiredSemaphore());
 
-    if (imageAcquire.first.isNone() || imageAcquire.second) {
+    bool shouldRecreateSwapchainAfter = imageAcquire.second;
+    if (imageAcquire.first.isNone()) {
         return { .shouldRecreateSwapchain = true, .stepPerFrameResources = false };
     }
 
@@ -816,7 +817,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         return { .shouldRecreateSwapchain = true, .stepPerFrameResources = true };
     }
 
-    return { .shouldRecreateSwapchain = false, .stepPerFrameResources = true };
+    return { .shouldRecreateSwapchain = shouldRecreateSwapchainAfter, .stepPerFrameResources = true };
 }
 
 } // namespace projnekomata::graphics
