@@ -12,3 +12,15 @@ template class Slice<i64>;
 template class Slice<f32>;
 template class Slice<f64>;
 template class Slice<bool>;
+
+template class Slice<const u8>;
+template class Slice<const u16>;
+template class Slice<const u32>;
+template class Slice<const u64>;
+template class Slice<const i8>;
+template class Slice<const i16>;
+template class Slice<const i32>;
+template class Slice<const i64>;
+template class Slice<const f32>;
+template class Slice<const f64>;
+template class Slice<const bool>;

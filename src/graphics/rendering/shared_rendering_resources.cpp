@@ -145,6 +145,12 @@ SharedRenderingResources::SharedRenderingResources() {
                  .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
             vk::Format::eR8G8Unorm
         )
+        .pushRenderingAttachment(
+            vk::PipelineColorBlendAttachmentState{}
+                .setBlendEnable(false)
+                .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
+            vk::Format::eR16G16Sfloat
+        )
         .build();
 
     m_mainLightingPassLayout = VulkanPipelineLayout::builder()
@@ -286,7 +292,7 @@ SharedRenderingResources::SharedRenderingResources() {
 
     m_smaaBlendWeightLayout = VulkanPipelineLayout::builder()
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
-        .addPushConstantRange(0, 36, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+        .addPushConstantRange(0, 40, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
         .build();
     auto smaaBlendWeightShader = SpirvShaderCode::loadFromFile("../spirv/smaa_blendweight.spv").unwrap();
     m_smaaBlendWeightPipeline = VulkanGraphicsPipeline::builder()
@@ -309,7 +315,7 @@ SharedRenderingResources::SharedRenderingResources() {
 
     m_smaaNeighborhoodBlendLayout = VulkanPipelineLayout::builder()
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
-        .addPushConstantRange(0, 32, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+        .addPushConstantRange(0, 36, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
         .build();
     auto smaaNeighborhoodBlendShader = SpirvShaderCode::loadFromFile("../spirv/smaa_neighborhoodblend.spv").unwrap();
     m_smaaNeighborhoodBlendPipeline = VulkanGraphicsPipeline::builder()
@@ -326,15 +332,70 @@ SharedRenderingResources::SharedRenderingResources() {
         vk::PipelineColorBlendAttachmentState{}
              .setBlendEnable(false)
              .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
+            vk::Format::eR8G8B8A8Srgb
+        )
+        .build();
+
+    m_smaaTemporalResolveLayout = VulkanPipelineLayout::builder()
+        .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
+        .addPushConstantRange(0, 36, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+        .build();
+    auto smaaTemporalResolveShader = SpirvShaderCode::loadFromFile("../spirv/smaa_temporalresolve.spv").unwrap();
+    m_smaaTemporalResolvePipeline = VulkanGraphicsPipeline::builder()
+        .setPipelineLayout(m_smaaTemporalResolveLayout)
+        .addShader(smaaTemporalResolveShader, vk::ShaderStageFlagBits::eVertex)
+        .addShader(smaaTemporalResolveShader, vk::ShaderStageFlagBits::eFragment)
+        .setInputTopology(vk::PrimitiveTopology::eTriangleList)
+        .setRastPolygonMode(vk::PolygonMode::eFill)
+        .setRastCulling(vk::CullModeFlagBits::eNone, vk::FrontFace::eCounterClockwise)
+        .setRastLineWidth(1.0f)
+        .disableMultisampling()
+        .disableDepthTest()
+        .pushRenderingAttachment(
+        vk::PipelineColorBlendAttachmentState{}
+             .setBlendEnable(false)
+             .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
             vk::Format::eR8G8B8A8Unorm
+        )
+        .pushRenderingAttachment(
+        vk::PipelineColorBlendAttachmentState{}
+             .setBlendEnable(false)
+             .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
+            vk::Format::eR8G8B8A8Unorm
+        )
+        .build();
+
+    m_velbufferBgLayout = VulkanPipelineLayout::builder()
+        .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
+        .addPushConstantRange(0, 8, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+        .build();
+    auto velbufferBgShader = SpirvShaderCode::loadFromFile("../spirv/velbuffer_bg.spv").unwrap();
+    m_velbufferBgPipeline = VulkanGraphicsPipeline::builder()
+        .setPipelineLayout(m_velbufferBgLayout)
+        .addShader(velbufferBgShader, vk::ShaderStageFlagBits::eVertex)
+        .addShader(velbufferBgShader, vk::ShaderStageFlagBits::eFragment)
+        .setInputTopology(vk::PrimitiveTopology::eTriangleList)
+        .setRastPolygonMode(vk::PolygonMode::eFill)
+        .setRastCulling(vk::CullModeFlagBits::eNone, vk::FrontFace::eCounterClockwise)
+        .setRastLineWidth(1.0f)
+        .disableMultisampling()
+        .disableDepthTest()
+        .pushRenderingAttachment(
+        vk::PipelineColorBlendAttachmentState{}
+             .setBlendEnable(false)
+             .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
+            vk::Format::eR16G16Sfloat
         )
         .build();
 
     buildIblSecondaryCubemaps();
 }
 auto SharedRenderingResources::refitHysteresisStates(usize renderableSparseCount) -> void {
-    if (m_meshHysteresisStates.size() < renderableSparseCount) {
+    if (m_meshHysteresisStates.len() < renderableSparseCount) {
         m_meshHysteresisStates.resize(renderableSparseCount, MeshHysteresisState());
+    }
+    if (m_lastRenderableModelMatrices.len() < renderableSparseCount) {
+        m_lastRenderableModelMatrices.resize(renderableSparseCount, Matrix4x4f::identity());
     }
 }
 auto SharedRenderingResources::buildIblSecondaryCubemaps() -> void {

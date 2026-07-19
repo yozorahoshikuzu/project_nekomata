@@ -122,12 +122,12 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         firstCameraTransform.m_transform3d.m_position = math::Vector3f(0.0f, 0.0f, 1.2f);
     }
 
-    math::Vector2f renderingArea = Vector2f(static_cast<f32>(transientRenderingResources.finalDrawBuffer().extent().width), static_cast<f32>(transientRenderingResources.finalDrawBuffer().extent().height));
+    math::Vector2f renderingArea = Vector2f(static_cast<f32>(transientRenderingResources.postSmaaImage().extent().width), static_cast<f32>(transientRenderingResources.postSmaaImage().extent().height));
 
-    float aspectRatio = static_cast<float>(transientRenderingResources.finalDrawBuffer().extent().width) / static_cast<float>(transientRenderingResources.finalDrawBuffer().extent().height);
+    float aspectRatio = static_cast<float>(transientRenderingResources.postSmaaImage().extent().width) / static_cast<float>(transientRenderingResources.postSmaaImage().extent().height);
     float perspFocalLength = renderingArea.y() / (2.0f * std::tan(0.5f * degreesToRadians(firstCamera.fov)));
 
-    m_frameRenderingResources.prepareBuffers(renderingData, firstCamera, firstCameraTransform, aspectRatio, renderingData.m_frameIndex);
+    m_frameRenderingResources.prepareBuffers(renderingData, sharedRenderingResources, firstCamera, firstCameraTransform, aspectRatio, renderingData.m_frameIndex);
     auto& swapchainImage = swapchain.imageAtIndex(imageAcquire.first.unwrap());
 
     m_frameRenderingResources.commandPool().reset();
@@ -212,13 +212,44 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         }
     }
 
-    auto vkRenderingArea = vk::Extent2D{transientRenderingResources.finalDrawBuffer().extent().width, transientRenderingResources.finalDrawBuffer().extent().height};
+    auto vkRenderingArea = vk::Extent2D{transientRenderingResources.postSmaaImage().extent().width, transientRenderingResources.postSmaaImage().extent().height};
     auto viewport = vk::Viewport{}
         .setWidth(static_cast<f32>(vkRenderingArea.width))
         .setHeight(static_cast<f32>(vkRenderingArea.height))
         .setMinDepth(0.0)
         .setMaxDepth(1.0);
     auto scissor = vk::Rect2D{}.setExtent(vkRenderingArea);
+    auto globaldataAddr = m_frameRenderingResources.globalDataBuffer().memoryDevicePtr();
+
+    // ---- Velocity Buffer Clear ------------------------------------------------------------------------------------------------------------------------------
+
+    VulkanPipelineBarriers::builder()
+        .insertImageMemoryBarrier(transientRenderingResources.velocityBuffer(),
+            vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eFragmentShader, {},
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite
+        )
+        .flush(m_frameRenderingResources.commandBuffer());
+
+    auto velocityBufferClAttachmentInfo = vk::RenderingAttachmentInfo{}
+        .setImageView(transientRenderingResources.velocityBuffer().vkImageViewWholeSize())
+        .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStoreOp(vk::AttachmentStoreOp::eStore);
+
+    auto velocityBufferClRenderingInfo = vk::RenderingInfo{}
+        .setColorAttachments(velocityBufferClAttachmentInfo)
+        .setLayerCount(1)
+        .setRenderArea(vk::Rect2D{}.setExtent(vkRenderingArea));
+
+    cb.beginRendering(velocityBufferClRenderingInfo);
+    cb.setViewport(0, viewport);
+    cb.setScissor(0, scissor);
+
+    cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.m_velbufferBgPipeline.vkPipeline());
+    texturesystem::TextureManager::get().shaderResourceTable().bindToCommandBuffer(m_frameRenderingResources.commandBuffer(), sharedRenderingResources.m_velbufferBgLayout, vk::PipelineBindPoint::eGraphics);
+    cb.pushConstants<vk::DeviceAddress>(sharedRenderingResources.m_velbufferBgLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, globaldataAddr);
+    cb.draw(3, 1, 0, 0);
+    cb.endRendering();
 
     // ---- Deferred Geometry Stage ----------------------------------------------------------------------------------------------------------------------------
 
@@ -234,6 +265,10 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         .insertImageMemoryBarrier(transientRenderingResources.metallicAndAoBuffer(),
             vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eFragmentShader, {},
             vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite
+        )
+        .insertImageMemoryBarrier(transientRenderingResources.velocityBuffer(),
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentRead | vk::AccessFlagBits2::eColorAttachmentWrite
         )
         .insertImageMemoryBarrier(transientRenderingResources.depthBuffer(),
             vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eFragmentShader, {},
@@ -261,6 +296,11 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
         .setLoadOp(vk::AttachmentLoadOp::eDontCare)
         .setStoreOp(vk::AttachmentStoreOp::eStore);
+    auto velocityBufferAttachmentInfo = vk::RenderingAttachmentInfo{}
+        .setImageView(transientRenderingResources.velocityBuffer().vkImageViewWholeSize())
+        .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setLoadOp(vk::AttachmentLoadOp::eLoad)
+        .setStoreOp(vk::AttachmentStoreOp::eStore);
     auto depthAttachmentInfo = vk::RenderingAttachmentInfo{}
         .setImageView(transientRenderingResources.depthBuffer().vkImageViewWholeSize())
         .setImageLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
@@ -268,7 +308,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         .setStoreOp(vk::AttachmentStoreOp::eStore)
         .setClearValue(vk::ClearDepthStencilValue{}.setDepth(0.0f));
 
-    auto colorAttachments = std::array<vk::RenderingAttachmentInfo, 3>{albedoAndRoughnessAttachmentInfo, normalAttachmentInfo, metallicAndAoAttachmentInfo};
+    auto colorAttachments = std::array<vk::RenderingAttachmentInfo, 4>{albedoAndRoughnessAttachmentInfo, normalAttachmentInfo, metallicAndAoAttachmentInfo, velocityBufferAttachmentInfo};
     auto deferredGeomRenderingInfo = vk::RenderingInfo{}
         .setColorAttachments(colorAttachments)
         .setPDepthAttachment(&depthAttachmentInfo)
@@ -282,7 +322,6 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.m_mainGeometryRenderPipeline.vkPipeline());
     texturesystem::TextureManager::get().shaderResourceTable().bindToCommandBuffer(m_frameRenderingResources.commandBuffer(), sharedRenderingResources.m_mainGeometryRenderLayout, vk::PipelineBindPoint::eGraphics);
     auto uboDeviceAddr = m_frameRenderingResources.transformsBuffer().memoryDevicePtr();
-    auto globaldataAddr = m_frameRenderingResources.globalDataBuffer().memoryDevicePtr();
 
     struct RenderPushConstantData {
         vk::DeviceAddress objectUniformAddr;
@@ -395,6 +434,10 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
             vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderSampledRead
         )
         .insertImageMemoryBarrier(transientRenderingResources.metallicAndAoBuffer(),
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
+            vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderSampledRead
+        )
+        .insertImageMemoryBarrier(transientRenderingResources.velocityBuffer(),
             vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
             vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderSampledRead
         )
@@ -600,6 +643,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         u32 searchTextureSrtID;
         u32 linearSamplerSrtID;
         u32 nearestSamplerSrtID;
+        u32 frameIndex;
     };
 
     auto smaaBlendWeightPushconstData = SmaaBlendWeightPushConstantData {
@@ -608,7 +652,8 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         .areaTextureSrtID = smaaAreaTextureSrtID,
         .searchTextureSrtID = smaaSearchTextureSrtID,
         .linearSamplerSrtID = smaaLinearSamplerSrtID,
-        .nearestSamplerSrtID = smaaNearestSamplerSrtID
+        .nearestSamplerSrtID = smaaNearestSamplerSrtID,
+        .frameIndex = static_cast<u32>(renderingData.m_frameIndex)
     };
 
     cb.pushConstants<SmaaBlendWeightPushConstantData>(sharedRenderingResources.m_smaaBlendWeightLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, smaaBlendWeightPushconstData);
@@ -623,14 +668,14 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
             vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
             vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderSampledRead
         )
-        .insertImageMemoryBarrier(transientRenderingResources.finalDrawBuffer(),
+        .insertImageMemoryBarrier(transientRenderingResources.postSmaaImage(),
             vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eBlit, {},
             vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite
         )
         .flush(m_frameRenderingResources.commandBuffer());
 
     auto finalDrawBufferUnormAttachmentInfo = vk::RenderingAttachmentInfo{}
-        .setImageView(transientRenderingResources.finalDrawBufferUnormView().vkImageView())
+        .setImageView(transientRenderingResources.postSmaaImage().vkImageViewWholeSize())
         .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
         .setLoadOp(vk::AttachmentLoadOp::eClear)
         .setStoreOp(vk::AttachmentStoreOp::eStore)
@@ -652,14 +697,16 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         Vector4f rtMetrics;
         u32 colorBufferSrtID;
         u32 weightsImageSrtID;
+        u32 velocityBufferSrtID;
         u32 linearSamplerSrtID;
         u32 nearestSamplerSrtID;
     };
 
     auto smaaNeighborhoodBlendPushconstData = SmaaNeighborhoodBlendPushConstantData {
         .rtMetrics = smaaRtMetrics,
-        .colorBufferSrtID = transientRenderingResources.colorBufferUnormViewIndex().imageIndex,
+        .colorBufferSrtID = transientRenderingResources.colorBufferIndex().imageIndex,
         .weightsImageSrtID = transientRenderingResources.smaaWeightsImageIndex().imageIndex,
+        .velocityBufferSrtID = transientRenderingResources.velocityBufferIndex().imageIndex,
         .linearSamplerSrtID = smaaLinearSamplerSrtID,
         .nearestSamplerSrtID = smaaNearestSamplerSrtID
     };
@@ -669,6 +716,77 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
     cb.endRendering();
 
+    // -------- [Stage 4] Temporal resolve
+
+    auto frameParity = (renderingData.m_frameIndex & 1) == 0;
+    auto& currentColorBuffer = frameParity ? transientRenderingResources.smaaColorResolvedBuffer0() : transientRenderingResources.smaaColorResolvedBuffer1();
+    auto& currentColorBufferUnorm = frameParity ? transientRenderingResources.smaaColorResolvedBuffer0UnormView() : transientRenderingResources.smaaColorResolvedBuffer1UnormView();
+
+    auto smaaNeighborhoodResolvedBufferIndex = transientRenderingResources.postSmaaImageUnormViewIndex();
+    auto lastColorBufferIndex = frameParity ? transientRenderingResources.smaaColorResolvedBuffer1UnormViewIndex() : transientRenderingResources.smaaColorResolvedBuffer0UnormViewIndex();
+
+    VulkanPipelineBarriers::builder()
+        .insertImageMemoryBarrier(transientRenderingResources.postSmaaImage(),
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
+            vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderSampledRead
+        )
+        .insertImageMemoryBarrier(transientRenderingResources.finalImage(),
+            vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eBlit, {},
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite
+        )
+        .insertImageMemoryBarrier(currentColorBuffer,
+            vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eFragmentShader, {},
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite
+        )
+        .flush(m_frameRenderingResources.commandBuffer());
+
+    auto currentColorUnormAttachment = vk::RenderingAttachmentInfo{}
+        .setImageView(currentColorBufferUnorm.vkImageView())
+        .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStoreOp(vk::AttachmentStoreOp::eStore);
+    auto finalImageUnormAttachment = vk::RenderingAttachmentInfo{}
+        .setImageView(transientRenderingResources.finalImageUnormView().vkImageView())
+        .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStoreOp(vk::AttachmentStoreOp::eStore);
+
+    auto attachments = std::array<vk::RenderingAttachmentInfo, 2>{currentColorUnormAttachment, finalImageUnormAttachment};
+
+    auto smaaTemporalResolveRenderingInfo = vk::RenderingInfo{}
+        .setColorAttachments(attachments)
+        .setLayerCount(1)
+        .setRenderArea(vk::Rect2D{}.setExtent(vkRenderingArea));
+
+    cb.beginRendering(smaaTemporalResolveRenderingInfo);
+    cb.setViewport(0, viewport);
+    cb.setScissor(0, scissor);
+
+    cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.m_smaaTemporalResolvePipeline.vkPipeline());
+    texturesystem::TextureManager::get().shaderResourceTable().bindToCommandBuffer(m_frameRenderingResources.commandBuffer(), sharedRenderingResources.m_smaaTemporalResolveLayout, vk::PipelineBindPoint::eGraphics);
+
+    struct SmaaTemporalResolvePushConstants {
+        Vector4f rtMetrics;
+        u32 colorTextureSrtID;
+        u32 lastResolvedColorTextureSrtID;
+        u32 velocityBufferSrtID;
+        u32 smaaLinearSamplerSrtID;
+        u32 smaaNearestSamplerSrtID;
+    };
+
+    auto smaaTemporalResolvePushConstants = SmaaTemporalResolvePushConstants {
+        .rtMetrics = smaaRtMetrics,
+        .colorTextureSrtID = transientRenderingResources.postSmaaImageUnormViewIndex().imageIndex,
+        .lastResolvedColorTextureSrtID = lastColorBufferIndex.imageIndex,
+        .velocityBufferSrtID = transientRenderingResources.velocityBufferIndex().imageIndex,
+        .smaaLinearSamplerSrtID = smaaLinearSamplerSrtID,
+        .smaaNearestSamplerSrtID = smaaNearestSamplerSrtID
+    };
+
+    cb.pushConstants<SmaaTemporalResolvePushConstants>(sharedRenderingResources.m_smaaTemporalResolveLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, smaaTemporalResolvePushConstants);
+    cb.draw(3, 1, 0, 0);
+    cb.endRendering();
+
     if (recordStatistics) {
         cb.writeTimestamp2(vk::PipelineStageFlagBits2::eBottomOfPipe, m_timestampsQueryPool.vkQueryPool(), 5);
     }
@@ -676,14 +794,14 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     // ---- UI -------------------------------------------------------------------------------------------------------------------------------------------------
 
     VulkanPipelineBarriers::builder()
-        .insertImageMemoryBarrier(transientRenderingResources.finalDrawBuffer(),
+        .insertImageMemoryBarrier(transientRenderingResources.finalImage(),
             vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
             vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentRead | vk::AccessFlagBits2::eColorAttachmentWrite
         )
         .flush(m_frameRenderingResources.commandBuffer());
 
     auto finalDrawBufferAttachmentInfo = vk::RenderingAttachmentInfo{}
-        .setImageView(transientRenderingResources.finalDrawBuffer().vkImageViewWholeSize())
+        .setImageView(transientRenderingResources.finalImage().vkImageViewWholeSize())
         .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
         .setLoadOp(vk::AttachmentLoadOp::eLoad)
         .setStoreOp(vk::AttachmentStoreOp::eStore);
@@ -759,7 +877,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     cb.endRendering();
 
     VulkanPipelineBarriers::builder()
-        .insertImageMemoryBarrier(transientRenderingResources.finalDrawBuffer(),
+        .insertImageMemoryBarrier(transientRenderingResources.finalImage(),
             vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
             vk::ImageLayout::eTransferSrcOptimal, vk::PipelineStageFlagBits2::eBlit, vk::AccessFlagBits2::eTransferRead
         )
@@ -775,7 +893,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         .setLayerCount(1)
         .setMipLevel(0);
 
-    auto srcOffsets = std::array<vk::Offset3D, 2>{{{0, 0, 0}, {toOffset3D(transientRenderingResources.finalDrawBuffer().extent())}}};
+    auto srcOffsets = std::array<vk::Offset3D, 2>{{{0, 0, 0}, {toOffset3D(transientRenderingResources.postSmaaImage().extent())}}};
 
     auto blit = vk::ImageBlit2{}
         .setSrcSubresource(blitSubres)
@@ -784,7 +902,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         .setDstOffsets(srcOffsets);
 
     auto blitInfo = vk::BlitImageInfo2{}
-        .setSrcImage(transientRenderingResources.finalDrawBuffer().vkImage())
+        .setSrcImage(transientRenderingResources.finalImage().vkImage())
         .setSrcImageLayout(vk::ImageLayout::eTransferSrcOptimal)
         .setDstImage(swapchainImage.vkImage())
         .setDstImageLayout(vk::ImageLayout::eTransferDstOptimal)
@@ -794,6 +912,10 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     cb.blitImage2(blitInfo);
 
     VulkanPipelineBarriers::builder()
+        .insertImageMemoryBarrier(currentColorBuffer,
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
+            vk::ImageLayout::eShaderReadOnlyOptimal, vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderSampledRead
+        )
         .insertImageMemoryBarrier(swapchainImage,
             vk::ImageLayout::eTransferDstOptimal, vk::PipelineStageFlagBits2::eBlit, vk::AccessFlagBits2::eTransferWrite,
             vk::ImageLayout::ePresentSrcKHR, vk::PipelineStageFlagBits2::eAllCommands, vk::AccessFlagBits2::eNone

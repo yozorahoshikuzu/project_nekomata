@@ -9,19 +9,14 @@ import :core.runtime.shared_data;
 import :core.ecs.world.camera;
 import :core.ecs.world.transform;
 import :graphics.vulkan.vk_query_pool;
+import :graphics.rendering.shared_rendering_resources;
 
 export namespace projnekomata::graphics {
 
 struct Transforms {
     Matrix4x4f model;
+    Matrix4x4f prevModel;
     Matrix3x3f normalMatrix;
-};
-
-struct RenderingGlobalData {
-    Matrix4x4f projview;
-    Matrix4x4f projviewInverse;
-    Vector3f cameraPos;
-    u32 frameIndex;
 };
 
 struct PointlightData {
@@ -52,7 +47,7 @@ public:
     auto frameDoneFence() -> VulkanFence& { return m_frameDoneFence; }
     auto imageAcquiredSemaphore() -> VulkanBinarySemaphore& { return m_imageAcquiredSemaphore; }
 
-    auto prepareBuffers(MRThreadsSharedDataLeaf& renderingData, ecs::components::Camera camera, const ecs::components::Transform& cameraTransform, float renderAspectRatio, u32 frameIndex) -> void;
+    auto prepareBuffers(MRThreadsSharedDataLeaf& renderingData, SharedRenderingResources& sharedRendResources, ecs::components::Camera camera, const ecs::components::Transform& cameraTransform, float renderAspectRatio, u64 frameIndex) -> void;
 
 private:
     // --------------------------------------------------------------------------------------------------------------------------------------------------------

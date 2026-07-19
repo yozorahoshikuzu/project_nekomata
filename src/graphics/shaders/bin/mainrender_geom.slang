@@ -4,13 +4,8 @@ import "../normalpack/normalpack";
 
 struct ObjectUniforms {
     float4x4 model;
+    float4x4 prevModel;
     float3x3 normalMatrix;
-};
-
-struct GlobalData {
-    float4x4 projview;
-    float4x4 projviewInverse;
-    float3 cameraPos;
 };
 
 struct Vertex {
@@ -24,7 +19,7 @@ struct Vertex {
 struct PushConstants {
     ObjectUniforms* data;
     Vertex* vertexbuffer;
-    GlobalData* globalData;
+    projnekomata::ShGlobalData* globalData;
     uint textureSrtID;
     uint samplerSrtID;
     float roughness;
@@ -38,6 +33,7 @@ struct VSOut {
     float3 color : TEXCOORD0;
     float2 uv : TEXCOORD1;
     float3 normal : TEXCOORD2;
+    float3 prevPosition : TEXCOORD3;
 }
 
 [shader("vertex")]
@@ -46,13 +42,15 @@ VSOut main(uint vertexID: SV_VulkanVertexID) {
     float3 normal = s_pushConstants.vertexbuffer[vertexID].normal;
     float2 uv = float2(s_pushConstants.vertexbuffer[vertexID].uvX, s_pushConstants.vertexbuffer[vertexID].uvY);
 
-    float4 hposition = mul(s_pushConstants.data.model, float4(position, 1.0));
+    float3 hposition = mul(s_pushConstants.data.model, float4(position, 1.0)).xyz;
+    float3 hpositionPrev = mul(s_pushConstants.data.prevModel, float4(position, 1.0)).xyz;
 
     VSOut output;
-    output.position = hposition.xyz / hposition.w;
+    output.position = hposition;
     output.color = float3(1.0);
     output.uv = uv;
     output.normal = mul(s_pushConstants.data.normalMatrix, normal);
+    output.prevPosition = hpositionPrev;
 
     return output;
 }
@@ -76,6 +74,7 @@ struct TCSOut {
     float3 color : TEXCOORD0;
     float2 uv : TEXCOORD1;
     float3 normal : TEXCOORD2;
+    float3 prevPosition : TEXCOORD3;
 };
 
 [shader("tesscontrol")]
@@ -90,15 +89,17 @@ TCSOut main(InputPatch<VSOut, 3> patch, uint i : SV_OutputControlPointID) {
     output.color = patch[i].color;
     output.uv = patch[i].uv;
     output.normal = patch[i].normal;
+    output.prevPosition = patch[i].prevPosition;
     return output;
 }
 
 struct TESOut {
-    float4 positionCS : SV_Position;
-    float3 positionWS : POSITION_WS;
-    float3 color : TEXCOORD0;
-    float2 uv : TEXCOORD1;
-    float3 normal : TEXCOORD2;
+    float4 position : SV_Position;
+    float4 positionCS : POSITION_CS;
+    float4 prevPositionCS : TEXCOORD0;
+    float3 color : TEXCOORD1;
+    float2 uv : TEXCOORD2;
+    float3 normal : TEXCOORD3;
 };
 
 float3 hsv_to_rgb(float3 c)
@@ -111,10 +112,11 @@ float3 hsv_to_rgb(float3 c)
 [shader("tesseval")]
 [domain("tri")]
 TESOut main(TCSPatchConst patchConst, float3 barycoord : SV_DomainLocation, OutputPatch<TCSOut, 3> patch, uint h : SV_PrimitiveID) {
-    float3 position = barycoord.x * patch[0].position + barycoord.y * patch[1].position + barycoord.z * patch[2].position;
-    float3 color    = barycoord.x * patch[0].color    + barycoord.y * patch[1].color    + barycoord.z * patch[2].color;
-    float2 uv       = barycoord.x * patch[0].uv       + barycoord.y * patch[1].uv       + barycoord.z * patch[2].uv;
-    float3 normal   = barycoord.x * patch[0].normal   + barycoord.y * patch[1].normal   + barycoord.z * patch[2].normal;
+    float3 position      = barycoord.x * patch[0].position     + barycoord.y * patch[1].position     + barycoord.z * patch[2].position;
+    float3 color         = barycoord.x * patch[0].color        + barycoord.y * patch[1].color        + barycoord.z * patch[2].color;
+    float2 uv            = barycoord.x * patch[0].uv           + barycoord.y * patch[1].uv           + barycoord.z * patch[2].uv;
+    float3 normal        = barycoord.x * patch[0].normal       + barycoord.y * patch[1].normal       + barycoord.z * patch[2].normal;
+    float3 prevPosition  = barycoord.x * patch[0].prevPosition + barycoord.y * patch[1].prevPosition + barycoord.z * patch[2].prevPosition;
 
 
     h = (h ^ 61u) ^ (h >> 16u);
@@ -134,11 +136,12 @@ TESOut main(TCSPatchConst patchConst, float3 barycoord : SV_DomainLocation, Outp
     float hsv_v = 0.85;
 
     TESOut output;
-    output.positionCS = mul(s_pushConstants.globalData.projview, float4(position, 1.0));
-    output.positionWS = position;
-    output.color = hsv_to_rgb(float3(hsv_h, hsv_s, hsv_v));
-    output.uv = uv;
-    output.normal = normal;
+    output.position       = mul(s_pushConstants.globalData.jitteredProjview, float4(position, 1.0));
+    output.positionCS     = mul(s_pushConstants.globalData.projview, float4(position, 1.0));
+    output.prevPositionCS = mul(s_pushConstants.globalData.prevProjview, float4(prevPosition, 1.0));
+    output.color          = hsv_to_rgb(float3(hsv_h, hsv_s, hsv_v));
+    output.uv             = uv;
+    output.normal         = normal;
     return output;
 }
 
@@ -148,6 +151,7 @@ struct FSOut {
     float4 albedoAndRoughness : SV_Target0;
     float2 normal : SV_Target1;
     float2 metallicAndAo : SV_Target2;
+    float2 velocity : SV_Target3;
 }
 
 [shader("fragment")]
@@ -161,10 +165,15 @@ FSOut main(TESOut input) {
     float3 n = normalize(input.normal);
     float2 pn = octahedronNormalPack(n);
 
+    float2 ndcCurrent = input.positionCS.xy / input.positionCS.w;
+    float2 ndcPrev    = input.prevPositionCS.xy / input.prevPositionCS.w;
+    float2 velocity = (ndcCurrent - ndcPrev) * 0.5f;
+
     FSOut output;
     output.albedoAndRoughness = float4(albedo, roughness);
     output.normal = pn;
     output.metallicAndAo = float2(metallic, ao);
+    output.velocity = velocity;
 
     return output;
 }

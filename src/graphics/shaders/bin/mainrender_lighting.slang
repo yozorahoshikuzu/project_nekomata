@@ -1,20 +1,13 @@
 import "../globallayout";
 import "../normalpack/normalpack";
 
-struct GlobalData {
-    float4x4 projview;
-    float4x4 projviewInverse;
-    float3 cameraPos;
-    uint frameIndex;
-};
-
 struct Pointlight {
     float3 position;
     float3 lightRadiance;
 };
 
 struct PushConstants {
-    GlobalData* globalData;
+    projnekomata::ShGlobalData* globalData;
     Pointlight* pointlights;
     uint pointlightCount;
     uint depthTextureSrtID;

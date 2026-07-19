@@ -14,6 +14,7 @@ public:
         for (auto& p : m_pages) p.store(nullptr, std::memory_order_relaxed);
     }
     ~FreelistPool() {
+        debug_assert(m_aliveCount == 0, "some of the allocated objects in a FreelistPool were not freed before its destruction");
         for (auto& ap : m_pages) {
             Page* p = ap.load(std::memory_order_relaxed);
             delete p;
@@ -45,6 +46,7 @@ public:
             m_allocatedNodesCount++;
         }
         new (&getNodeByIndex(index).resource) T(std::forward<Args>(args)...);
+        m_aliveCount++;
         return index;
     }
 
@@ -54,6 +56,7 @@ public:
         getNodeByIndex(index).resource.~T();
         getNodeByIndex(index).nextFree = m_freelistHead;
         m_freelistHead                 = index;
+        m_aliveCount--;
     }
 
     T& operator[](Index index) {
@@ -102,6 +105,7 @@ private:
     std::array<std::atomic<Page*>, MaxChunks> m_pages;
     Index m_freelistHead = kInvalidIndex;
     usize m_allocatedNodesCount = 0;
+    usize m_aliveCount = 0;
     std::mutex m_allocationMutex;
 };
 

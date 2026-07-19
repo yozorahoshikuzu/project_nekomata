@@ -3,8 +3,8 @@ import "../globallayout";
 struct PushConstants {
     float4 rtMetrics;
     uint colorTextureSrtID;
-    uint blendTextureSrtID;
-    uint velocityTextureSrtID;
+    uint lastResolvedColorTextureSrtID;
+    uint velocityBufferSrtID;
     uint smaaLinearSamplerSrtID;
     uint smaaNearestSamplerSrtID;
 };
@@ -19,7 +19,6 @@ struct PushConstants {
 struct VSOut {
     float4 pos    : SV_Position;
     float2 uv     : TEXCOORD0;
-    float4 offset : TEXCOORD1;
 }
 
 [shader("vertex")]
@@ -31,17 +30,24 @@ VSOut main(uint vertexID : SV_VulkanVertexID) {
     output.pos = float4(pos, 0.0f, 1.0f);
     output.uv = uv;
 
-    SMAANeighborhoodBlendingVS(uv, output.offset);
-
     return output;
 }
 
+struct FSOut {
+    float4 colorHistory : SV_Target0;
+    float4 colorTransient : SV_Target1;
+}
+
 [shader("fragment")]
-float4 main(VSOut input) : SV_Target {
-    return SMAANeighborhoodBlendingPS(
-        input.uv, input.offset,
+FSOut main(VSOut input) {
+    let result = SMAAResolvePS(input.uv,
         pipeline::getTexture2DBySrtId(s_pushConstants.colorTextureSrtID),
-        pipeline::getTexture2DBySrtId(s_pushConstants.blendTextureSrtID),
-        pipeline::getTexture2DBySrtId(s_pushConstants.velocityTextureSrtID)
+        pipeline::getTexture2DBySrtId(s_pushConstants.lastResolvedColorTextureSrtID),
+        pipeline::getTexture2DBySrtId(s_pushConstants.velocityBufferSrtID)
     );
+
+    FSOut output;
+    output.colorHistory = result;
+    output.colorTransient = result;
+    return output;
 }

@@ -26,6 +26,7 @@ public:
 
     auto refitHysteresisStates(usize renderableSparseCount) -> void;
     auto getHysteresisState(usize renderableSparseIndex) -> MeshHysteresisState& { return m_meshHysteresisStates[renderableSparseIndex]; }
+    auto getLastRenderableModelMatrix(usize renderableSparseIndex) -> math::Matrix4x4f& { return m_lastRenderableModelMatrices[renderableSparseIndex]; }
 
 
     rendering::DynamicBitmapFontAtlas m_fontAtlas;
@@ -70,11 +71,21 @@ public:
     VulkanPipelineLayout m_smaaNeighborhoodBlendLayout = nullptr;
     VulkanGraphicsPipeline m_smaaNeighborhoodBlendPipeline = nullptr;
 
+    VulkanPipelineLayout m_smaaTemporalResolveLayout = nullptr;
+    VulkanGraphicsPipeline m_smaaTemporalResolvePipeline = nullptr;
+
+    VulkanPipelineLayout m_velbufferBgLayout = nullptr;
+    VulkanGraphicsPipeline m_velbufferBgPipeline = nullptr;
+
+    math::Matrix4x4f m_lastProjview = math::Matrix4x4f::identity();
+    math::Matrix4x4f m_lastProjviewNoTranslation = math::Matrix4x4f::identity();
+
 private:
 
     // --------------------------------------------------------------------------------------------------------------------------------------------------------
     // Hysteresis State
     Vec<MeshHysteresisState> m_meshHysteresisStates = Vec<MeshHysteresisState>::create();
+    Vec<math::Matrix4x4f> m_lastRenderableModelMatrices = Vec<math::Matrix4x4f>::create();
 
     auto buildIblSecondaryCubemaps() -> void;
 };

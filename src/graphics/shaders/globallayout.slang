@@ -1,3 +1,5 @@
+#include "globallayout_structs.h"
+
 [vk::binding(0, 0)] Texture1D s_textures1D[];
 [vk::binding(0, 0)] Texture1DArray s_textures1DArray[];
 [vk::binding(0, 0)] Texture2D s_textures2D[];

@@ -88,3 +88,15 @@ export extern template class Slice<i64>;
 export extern template class Slice<f32>;
 export extern template class Slice<f64>;
 export extern template class Slice<bool>;
+
+export extern template class Slice<const u8>;
+export extern template class Slice<const u16>;
+export extern template class Slice<const u32>;
+export extern template class Slice<const u64>;
+export extern template class Slice<const i8>;
+export extern template class Slice<const i16>;
+export extern template class Slice<const i32>;
+export extern template class Slice<const i64>;
+export extern template class Slice<const f32>;
+export extern template class Slice<const f64>;
+export extern template class Slice<const bool>;

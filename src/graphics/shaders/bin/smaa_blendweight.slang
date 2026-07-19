@@ -7,6 +7,7 @@ struct PushConstants {
     uint searchTextureSrtID;
     uint smaaLinearSamplerSrtID;
     uint smaaNearestSamplerSrtID;
+    uint frameIndex;
 };
 
 [vk::push_constant] PushConstants s_pushConstants;
@@ -39,11 +40,12 @@ VSOut main(uint vertexID : SV_VulkanVertexID) {
 
 [shader("fragment")]
 float4 main(VSOut input) : SV_Target {
+    let subsampleIndices = ((s_pushConstants.frameIndex & 1) == 0) ? float4(1.0f, 1.0f, 1.0f, 0.0f) : float4(2.0f, 2.0f, 2.0f, 0.0f);
     return SMAABlendingWeightCalculationPS(
         input.uv, input.pixcoord, input.offsets,
         pipeline::getTexture2DBySrtId(s_pushConstants.edgesTextureSrtID),
         pipeline::getTexture2DBySrtId(s_pushConstants.areaTextureSrtID),
         pipeline::getTexture2DBySrtId(s_pushConstants.searchTextureSrtID),
-        float4(0.0f), // unused outside of SMAA T2x
+        subsampleIndices
     );
 }
