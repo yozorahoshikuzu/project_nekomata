@@ -27,12 +27,17 @@ FrameContext::FrameContext() {
     m_frameRenderingResources = FrameRenderingResources(2048);
 
     m_timestampsQueryPool = VulkanQueryPool::create(vk::QueryType::eTimestamp, 6, {});
-    m_pipelineStatisticsQueryPool = VulkanQueryPool::create(vk::QueryType::ePipelineStatistics, 1,
-        vk::QueryPipelineStatisticFlagBits::eVertexShaderInvocations
-            | vk::QueryPipelineStatisticFlagBits::eTessellationControlShaderPatches
-            | vk::QueryPipelineStatisticFlagBits::eTessellationEvaluationShaderInvocations
-            | vk::QueryPipelineStatisticFlagBits::eFragmentShaderInvocations
-    );
+
+    bool supportsPipelineStatisticsQuery = VulkanContext::get().vkPhysicalDeviceProps().m_hasPipelineStatisticsQuery;
+
+    if (supportsPipelineStatisticsQuery) {
+        m_pipelineStatisticsQueryPool = VulkanQueryPool::create(vk::QueryType::ePipelineStatistics, 1,
+            vk::QueryPipelineStatisticFlagBits::eVertexShaderInvocations
+                | vk::QueryPipelineStatisticFlagBits::eTessellationControlShaderPatches
+                | vk::QueryPipelineStatisticFlagBits::eTessellationEvaluationShaderInvocations
+                | vk::QueryPipelineStatisticFlagBits::eFragmentShaderInvocations
+        );
+    }
 
 }
 auto FrameContext::waitForLastFrame() -> void {
@@ -77,6 +82,7 @@ inline bool isObjectVisible(
 auto FrameContext::execute(TransientRenderingResources& transientRenderingResources, SharedRenderingResources& sharedRenderingResources, VulkanSwapchain& swapchain,
     MRThreadsSharedDataLeaf& renderingData, bool recordStatistics) -> FrameResult {
     auto imageAcquire = swapchain.acquireNextImage(std::numeric_limits<u64>::max(), m_frameRenderingResources.imageAcquiredSemaphore());
+    bool supportsPipelineStatisticsQuery = VulkanContext::get().vkPhysicalDeviceProps().m_hasPipelineStatisticsQuery;
 
     bool shouldRecreateSwapchainAfter = imageAcquire.second;
     if (imageAcquire.first.isNone()) {
@@ -140,7 +146,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
     if (recordStatistics) {
         cb.resetQueryPool(m_timestampsQueryPool.vkQueryPool(), 0, m_timestampsQueryPool.queryCount());
-        cb.resetQueryPool(m_pipelineStatisticsQueryPool.vkQueryPool(), 0, m_pipelineStatisticsQueryPool.queryCount());
+        if (supportsPipelineStatisticsQuery) cb.resetQueryPool(m_pipelineStatisticsQueryPool.vkQueryPool(), 0, m_pipelineStatisticsQueryPool.queryCount());
     }
 
     // ---- Font Rasterization ---------------------------------------------------------------------------------------------------------------------------------
@@ -278,7 +284,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
     if (recordStatistics) {
         cb.writeTimestamp2(vk::PipelineStageFlagBits2::eTopOfPipe, m_timestampsQueryPool.vkQueryPool(), 0);
-        cb.beginQuery(m_pipelineStatisticsQueryPool.vkQueryPool(), 0, {});
+        if (supportsPipelineStatisticsQuery) cb.beginQuery(m_pipelineStatisticsQueryPool.vkQueryPool(), 0, {});
     }
 
     auto albedoAndRoughnessAttachmentInfo = vk::RenderingAttachmentInfo{}
@@ -410,7 +416,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
         cb.bindIndexBuffer(lod.meshSuballocation.indexBuffer.buffer, lod.meshSuballocation.indexBuffer.offset, vk::IndexType::eUint32);
 
-        cb.pushConstants<RenderPushConstantData>(sharedRenderingResources.m_mainGeometryRenderLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation, 0, pushconstData);
+        cb.pushConstants<RenderPushConstantData>(sharedRenderingResources.m_mainGeometryRenderLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, pushconstData);
         cb.drawIndexed(lod.meshSuballocation.indexBuffer.size / sizeof(u32), 1, 0, 0, 0);
         m_numDrawcalls++;
     }
@@ -419,7 +425,7 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
     if (recordStatistics) {
         cb.writeTimestamp2(vk::PipelineStageFlagBits2::eBottomOfPipe, m_timestampsQueryPool.vkQueryPool(), 1);
-        cb.endQuery(m_pipelineStatisticsQueryPool.vkQueryPool(), 0);
+        if (supportsPipelineStatisticsQuery) cb.endQuery(m_pipelineStatisticsQueryPool.vkQueryPool(), 0);
     }
 
     // ---- Deferred Lighting Stage ----------------------------------------------------------------------------------------------------------------------------

@@ -33,8 +33,6 @@ public:
 
 private:
     FrameRenderingResources m_frameRenderingResources = nullptr;
-
-
 };
 
 }

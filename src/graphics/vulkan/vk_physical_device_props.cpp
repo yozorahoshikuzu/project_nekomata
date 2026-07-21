@@ -72,8 +72,6 @@ static constexpr auto kRequiredPhysicalDeviceFeatures = std::to_array<RequiredFe
     { "timelineSemaphore"sv,                                 {}, {}, &vk::PhysicalDeviceVulkan12Features::timelineSemaphore, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12TimelineSemaphore },
     { "multiview"sv,                                         {}, &vk::PhysicalDeviceVulkan11Features::multiview, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk11Multiview },
     { "samplerAnisotropy"sv,                                 &vk::PhysicalDeviceFeatures::samplerAnisotropy, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10SamplerAnisotropy },
-    { "pipelineStatisticsQuery"sv,                           &vk::PhysicalDeviceFeatures::pipelineStatisticsQuery, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10PipelineStatisticsQuery },
-    { "tessellationShader"sv,                                &vk::PhysicalDeviceFeatures::tessellationShader, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10TessellationShader },
     { "shaderImageGatherExtended"sv,                         &vk::PhysicalDeviceFeatures::shaderImageGatherExtended, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10ShaderImageGatherExtended },
 });
 
@@ -111,6 +109,10 @@ static auto kOptFeaturesKhrPipelineBinary = std::to_array<VulkanFeaturePtr>({ &v
 static auto kOptExtensionsAMDAntiLag2 = std::to_array<std::string_view>({ vk::AMDAntiLagExtensionName });
 static auto kOptFeaturesAMDAntiLag2 = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceAntiLagFeaturesAMD::antiLag });
 
+// for PipelineStatisticsQuery
+static auto kOptExtensionsPipelineStatisticsQuery = emptyArray<std::string_view>();
+static auto kOptFeaturesPipelineStatisticsQuery = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceFeatures::pipelineStatisticsQuery });
+
 // Table
 static auto kOptionalPhysicalDeviceFeatures = std::to_array<OptFeatureRule>({
     { "FP16 Arithmetic"sv,                                   kOptExtensionsFp16, kOptFeaturesFp16, &VulkanPhysicalDeviceProperties::m_hasFp16 },
@@ -121,6 +123,7 @@ static auto kOptionalPhysicalDeviceFeatures = std::to_array<OptFeatureRule>({
     { "Descriptor Heap"sv,                                   kOptExtensionsExtDescriptorHeap, kOptFeaturesExtDescriptorHeap, &VulkanPhysicalDeviceProperties::m_hasExtDescriptorHeap },
     { "Pipeline Binaries"sv,                                 kOptExtensionsKhrPipelineBinary, kOptFeaturesKhrPipelineBinary, &VulkanPhysicalDeviceProperties::m_hasKhrPipelineBinary },
     { "AMD Anti-Lag 2"sv,                                    kOptExtensionsAMDAntiLag2, kOptFeaturesAMDAntiLag2, &VulkanPhysicalDeviceProperties::m_hasAMDAntiLag2 },
+    { "Pipeline Statistics Query"sv,                         kOptExtensionsPipelineStatisticsQuery, kOptFeaturesPipelineStatisticsQuery, &VulkanPhysicalDeviceProperties::m_hasPipelineStatisticsQuery },
 });
 // clang-format on
 
@@ -265,6 +268,16 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
             for (auto& extName : rule.m_requiredExtensionNames) {
                 enabledExtensions.emplace(extName);
             }
+            for (auto& feature : rule.m_requiredFeatures) {
+                match(feature,
+                    [&](vk::Bool32 vk::PhysicalDeviceFeatures::* ptr) { enabledVk10Features.*(ptr) = true; },
+                    [&](vk::Bool32 vk::PhysicalDeviceVulkan11Features::* ptr) { enabledVk11Features.*(ptr) = true; },
+                    [&](vk::Bool32 vk::PhysicalDeviceVulkan12Features::* ptr) { enabledVk12Features.*(ptr) = true; },
+                    [&](vk::Bool32 vk::PhysicalDeviceVulkan13Features::* ptr) { enabledVk13Features.*(ptr) = true; },
+                    [&](vk::Bool32 vk::PhysicalDeviceVulkan14Features::* ptr) { enabledVk14Features.*(ptr) = true; },
+                    [&](auto&) {}
+                );
+            }
         }
     }
 
@@ -310,7 +323,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     std::unordered_set<u32> usedQueueIndices;
     u32 graphicsQueueIndex = findBestQueue(graphicsIndices.asSlice(), usedQueueIndices);
     u32 presentQueueIndex = findBestQueue(presentIndices.asSlice(), usedQueueIndices);
-    u32 asyncComputeQueueIndex = findBestQueue(asyncComputeIndices.asSlice(), usedQueueIndices);
+    u32 asyncComputeQueueIndex = asyncComputeIndices.isEmpty() ? graphicsQueueIndex : findBestQueue(asyncComputeIndices.asSlice(), usedQueueIndices);
 
     props.m_deviceName = deviceName;
     props.m_driverName = driverName;

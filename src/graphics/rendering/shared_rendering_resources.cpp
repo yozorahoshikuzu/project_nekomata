@@ -105,21 +105,14 @@ SharedRenderingResources::SharedRenderingResources() {
 
     m_mainGeometryRenderLayout = VulkanPipelineLayout::builder()
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
-        .addPushConstantRange(
-            0, 40,
-            vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eTessellationControl | vk::ShaderStageFlagBits::eTessellationEvaluation
-            | vk::ShaderStageFlagBits::eFragment
-        )
+        .addPushConstantRange(0, 40, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
         .build();
     auto geometryRenderShader = SpirvShaderCode::loadFromFile("../spirv/mainrender_geom.spv").unwrap();
     m_mainGeometryRenderPipeline = VulkanGraphicsPipeline::builder()
         .setPipelineLayout(m_mainGeometryRenderLayout)
         .addShader(geometryRenderShader, vk::ShaderStageFlagBits::eVertex)
-        .addShader(geometryRenderShader, vk::ShaderStageFlagBits::eTessellationControl)
-        .addShader(geometryRenderShader, vk::ShaderStageFlagBits::eTessellationEvaluation)
         .addShader(geometryRenderShader, vk::ShaderStageFlagBits::eFragment)
-        .setInputTopology(vk::PrimitiveTopology::ePatchList)
-        .setTessellationPatchControlPoints(3)
+        .setInputTopology(vk::PrimitiveTopology::eTriangleList)
         .setRastPolygonMode(vk::PolygonMode::eFill)
         .setRastCulling(vk::CullModeFlagBits::eBack, vk::FrontFace::eCounterClockwise)
         .setRastLineWidth(1.0)

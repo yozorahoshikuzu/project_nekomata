@@ -80,7 +80,7 @@ void panic_impl(std::source_location loc, std::string_view fmt, Args&&... args) 
         projnekomata::log::crit("stack trace printing was disabled by kPanicPrintsStackTrace");
     }
 #else
-    log::crit("stack trace printing is not supported");
+    projnekomata::log::crit("stack trace printing is not supported");
 #endif
 
     abort();

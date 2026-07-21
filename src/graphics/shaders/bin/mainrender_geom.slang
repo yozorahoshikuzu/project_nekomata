@@ -29,11 +29,11 @@ struct PushConstants {
 [vk::push_constant] PushConstants s_pushConstants;
 
 struct VSOut {
-    float3 position : SV_Position;
-    float3 color : TEXCOORD0;
-    float2 uv : TEXCOORD1;
-    float3 normal : TEXCOORD2;
-    float3 prevPosition : TEXCOORD3;
+    float4 position : SV_Position;
+    float4 positionCS : TEXCOORD0;
+    float4 prevPositionCS : TEXCOORD1;
+    float2 uv : TEXCOORD2;
+    float3 normal : TEXCOORD3;
 }
 
 [shader("vertex")]
@@ -42,106 +42,18 @@ VSOut main(uint vertexID: SV_VulkanVertexID) {
     float3 normal = s_pushConstants.vertexbuffer[vertexID].normal;
     float2 uv = float2(s_pushConstants.vertexbuffer[vertexID].uvX, s_pushConstants.vertexbuffer[vertexID].uvY);
 
-    float3 hposition = mul(s_pushConstants.data.model, float4(position, 1.0)).xyz;
-    float3 hpositionPrev = mul(s_pushConstants.data.prevModel, float4(position, 1.0)).xyz;
+    float4 positionh = float4(position, 1.0f);
+
+    float4 ndcPos = mul(s_pushConstants.globalData.projview, mul(s_pushConstants.data.model, positionh));
+    float4 ndcPosPrev = mul(s_pushConstants.globalData.prevProjview, mul(s_pushConstants.data.prevModel, positionh));
 
     VSOut output;
-    output.position = hposition;
-    output.color = float3(1.0);
+    output.position = ndcPos;
+    output.positionCS = ndcPos;
+    output.prevPositionCS = ndcPosPrev;
     output.uv = uv;
     output.normal = mul(s_pushConstants.data.normalMatrix, normal);
-    output.prevPosition = hpositionPrev;
 
-    return output;
-}
-
-struct TCSPatchConst {
-    float edges[3] : SV_TessFactor;
-    float inner : SV_InsideTessFactor;
-}
-
-TCSPatchConst PatchConstantFunc(InputPatch<VSOut, 3> patch) {
-    TCSPatchConst patchConst;
-    patchConst.edges[0] = 2;
-    patchConst.edges[1] = 2;
-    patchConst.edges[2] = 2;
-    patchConst.inner = 1;
-    return patchConst;
-}
-
-struct TCSOut {
-    float3 position : SV_Position;
-    float3 color : TEXCOORD0;
-    float2 uv : TEXCOORD1;
-    float3 normal : TEXCOORD2;
-    float3 prevPosition : TEXCOORD3;
-};
-
-[shader("tesscontrol")]
-[domain("tri")]
-[partitioning("integer")]
-[outputtopology("triangle_cw")]
-[outputcontrolpoints(3)]
-[patchconstantfunc("PatchConstantFunc")]
-TCSOut main(InputPatch<VSOut, 3> patch, uint i : SV_OutputControlPointID) {
-    TCSOut output;
-    output.position = patch[i].position;
-    output.color = patch[i].color;
-    output.uv = patch[i].uv;
-    output.normal = patch[i].normal;
-    output.prevPosition = patch[i].prevPosition;
-    return output;
-}
-
-struct TESOut {
-    float4 position : SV_Position;
-    float4 positionCS : POSITION_CS;
-    float4 prevPositionCS : TEXCOORD0;
-    float3 color : TEXCOORD1;
-    float2 uv : TEXCOORD2;
-    float3 normal : TEXCOORD3;
-};
-
-float3 hsv_to_rgb(float3 c)
-{
-    const float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-    float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
-    return c.z * lerp(K.xxx, saturate(p - K.xxx), c.y);
-}
-
-[shader("tesseval")]
-[domain("tri")]
-TESOut main(TCSPatchConst patchConst, float3 barycoord : SV_DomainLocation, OutputPatch<TCSOut, 3> patch, uint h : SV_PrimitiveID) {
-    float3 position      = barycoord.x * patch[0].position     + barycoord.y * patch[1].position     + barycoord.z * patch[2].position;
-    float3 color         = barycoord.x * patch[0].color        + barycoord.y * patch[1].color        + barycoord.z * patch[2].color;
-    float2 uv            = barycoord.x * patch[0].uv           + barycoord.y * patch[1].uv           + barycoord.z * patch[2].uv;
-    float3 normal        = barycoord.x * patch[0].normal       + barycoord.y * patch[1].normal       + barycoord.z * patch[2].normal;
-    float3 prevPosition  = barycoord.x * patch[0].prevPosition + barycoord.y * patch[1].prevPosition + barycoord.z * patch[2].prevPosition;
-
-
-    h = (h ^ 61u) ^ (h >> 16u);
-    h *= 9u;
-    h = h ^ (h >> 4u);
-    h *= 0x27d4eb2du;
-    h = h ^ (h >> 15u);
-
-    h ^= (h >> 13u);
-    h *= 0x85ebca6bu;
-    h ^= (h >> 16u);
-
-    float hash = float(h) / 4294967295.0;
-
-    float hsv_h = hash;
-    float hsv_s = 0.85;
-    float hsv_v = 0.85;
-
-    TESOut output;
-    output.position       = mul(s_pushConstants.globalData.jitteredProjview, float4(position, 1.0));
-    output.positionCS     = mul(s_pushConstants.globalData.projview, float4(position, 1.0));
-    output.prevPositionCS = mul(s_pushConstants.globalData.prevProjview, float4(prevPosition, 1.0));
-    output.color          = hsv_to_rgb(float3(hsv_h, hsv_s, hsv_v));
-    output.uv             = uv;
-    output.normal         = normal;
     return output;
 }
 
@@ -155,7 +67,7 @@ struct FSOut {
 }
 
 [shader("fragment")]
-FSOut main(TESOut input) {
+FSOut main(VSOut input) {
     //float3 albedo = s_textures2D[s_pushConstants.textureSrtID].Sample(s_samplers[s_pushConstants.samplerSrtID], input.uv).rgb;
     float3 albedo = float3(0.8);
     float metallic = s_pushConstants.metallic;

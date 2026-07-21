@@ -94,17 +94,22 @@ auto RenderThread::loop() -> void {
         u64 pipelineStats[4];
 
         bool hasStats = m_frames[m_currentFrameContextIndex].m_queryPoolsHaveResultsOnFinish;
+        bool supportsPipelineStatisticsQuery = VulkanContext::get().vkPhysicalDeviceProps().m_hasPipelineStatisticsQuery;
         std::string queryStats = "[stats not available]";
         if (hasStats) {
             vkCheckResult(m_frames[m_currentFrameContextIndex].m_timestampsQueryPool.vkQueryPool().getResults(0, 6, 48, &queryTimestamps, 8, vk::QueryResultFlagBits::e64 | vk::QueryResultFlagBits::eWait));
-            vkCheckResult(m_frames[m_currentFrameContextIndex].m_pipelineStatisticsQueryPool.vkQueryPool().getResults(0, 1, 32, &pipelineStats, 8, vk::QueryResultFlagBits::e64 | vk::QueryResultFlagBits::eWait));
+            if (supportsPipelineStatisticsQuery) vkCheckResult(m_frames[m_currentFrameContextIndex].m_pipelineStatisticsQueryPool.vkQueryPool().getResults(0, 1, 32, &pipelineStats, 8, vk::QueryResultFlagBits::e64 | vk::QueryResultFlagBits::eWait));
 
             f64 deviceTimestampPeriod = VulkanContext::get().vkPhysicalDeviceProps().m_timestampPeriod;
             auto geomPassTime = (queryTimestamps.geomPassBottomOfPipe - queryTimestamps.geomPassTopOfPipe) * deviceTimestampPeriod / 1000000.0_f64;
             auto lightingPassTime = (queryTimestamps.lightingPassAfterDoneBottomOfPipe - queryTimestamps.lightingPassTopOfPipe) * deviceTimestampPeriod / 1000000.0_f64;
             auto smaaTime = (queryTimestamps.smaaBottomOfPipe - queryTimestamps.smaaTopOfPipe) * deviceTimestampPeriod / 1000000.0_f64;
 
-            queryStats = fmt::format("\n GeomPass: {:.3f} ms #VS: {} #TCS: {} #TES: {} #FS: {}\n LightingPass: {:.3f} ms\n SMAA: {:.3f} ms", geomPassTime, pipelineStats[0], pipelineStats[2], pipelineStats[3], pipelineStats[1], lightingPassTime, smaaTime);
+            if (supportsPipelineStatisticsQuery) {
+                queryStats = fmt::format("\n GeomPass: {:.3f} ms #VS: {} #TCS: {} #TES: {} #FS: {}\n LightingPass: {:.3f} ms\n SMAA: {:.3f} ms", geomPassTime, pipelineStats[0], pipelineStats[2], pipelineStats[3], pipelineStats[1], lightingPassTime, smaaTime);
+            } else {
+                queryStats = fmt::format("\n GeomPass: {:.3f} ms\n LightingPass: {:.3f} ms\n SMAA: {:.3f} ms", geomPassTime, lightingPassTime, smaaTime);
+            }
         }
 
         auto& physicalDeviceProps = VulkanContext::get().vkPhysicalDeviceProps();

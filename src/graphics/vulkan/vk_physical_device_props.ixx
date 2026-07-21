@@ -24,9 +24,7 @@ enum class PhysicalDevicePropertyQueryErrorKind {
     MissingVk12TimelineSemaphore,
     MissingVk11Multiview,
     MissingVk10ShaderImageGatherExtended,
-    MissingVk10TessellationShader,
     MissingVk10SamplerAnisotropy,
-    MissingVk10PipelineStatisticsQuery,
     MissingExtImageViewMinLod,
 };
 
@@ -81,14 +79,8 @@ struct PhysicalDevicePropertyQueryError {
             case PhysicalDevicePropertyQueryErrorKind::MissingVk11Multiview:
                 cause = "Missing Vulkan 1.1 feature multiview";
                 break;
-            case PhysicalDevicePropertyQueryErrorKind::MissingVk10TessellationShader:
-                cause = "Missing Vulkan 1.0 feature tessellationShader";
-                break;
             case PhysicalDevicePropertyQueryErrorKind::MissingVk10SamplerAnisotropy:
                 cause = "Missing Vulkan 1.0 feature samplerAnisotropy";
-                break;
-            case PhysicalDevicePropertyQueryErrorKind::MissingVk10PipelineStatisticsQuery:
-                cause = "Missing Vulkan 1.0 feature pipelineStatisticsQuery";
                 break;
             case PhysicalDevicePropertyQueryErrorKind::MissingVk10ShaderImageGatherExtended:
                 cause = "Missing Vulkan 1.0 feature shaderImageGatherExtended";
@@ -136,6 +128,7 @@ public:
     bool m_hasExtDescriptorHeap = false;
     bool m_hasKhrPipelineBinary = false;
     bool m_hasAMDAntiLag2       = false;
+    bool m_hasPipelineStatisticsQuery = false;
 
     vk::PhysicalDeviceAccelerationStructurePropertiesKHR m_accelerationStructureProperties = {};
     vk::PhysicalDeviceRayTracingPipelinePropertiesKHR    m_rayTracingPipelineProperties    = {};
