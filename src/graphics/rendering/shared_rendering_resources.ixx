@@ -6,6 +6,7 @@ import :graphics.vulkan.vk_pipeline_graphics;
 import :graphics.fontsystem.font_face;
 import :graphics.fontsystem.dynamic_font_atlas;
 import :graphics.materialsystem.mat_manager;
+import :graphics.vulkan.vk_descriptor_pool;
 
 export namespace projnekomata::graphics {
 
@@ -41,6 +42,9 @@ public:
 
     texturesystem::Texture m_smaaAreaTexture = {};
     texturesystem::Texture m_smaaSearchTexture = {};
+
+    VulkanDescriptorSetLayout m_subpassInputAttachmentsDescriptorSetLayout = nullptr;
+    VulkanDescriptorPool m_subpassInputAttachmentsDescriptorPool = nullptr;
 
     VulkanPipelineLayout m_iblIrradianceCubeGeneratorLayout = nullptr;
     VulkanGraphicsPipeline m_iblIrradianceCubeGeneratorPipeline = nullptr;

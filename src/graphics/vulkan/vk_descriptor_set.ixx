@@ -71,6 +71,23 @@ public:
         return *this;
     }
 
+    [[nodiscard]] constexpr auto bindInputAttachment(u32 binding, u32 dstDescriptorIndex, const VulkanImage& imageView) -> VulkanDescriptorSetWriter& {
+        auto imageInfo = vk::DescriptorImageInfo{}
+        .setImageLayout(vk::ImageLayout::eRenderingLocalRead)
+        .setSampler(nullptr)
+        .setImageView(imageView.vkImageViewWholeSize());
+        m_descriptorImageInfos.emplace(binding, dstDescriptorIndex, vk::DescriptorType::eInputAttachment, imageInfo);
+        return *this;
+    }
+    [[nodiscard]] constexpr auto bindInputAttachment(u32 binding, u32 dstDescriptorIndex, const VulkanImageView& imageView) -> VulkanDescriptorSetWriter& {
+        auto imageInfo = vk::DescriptorImageInfo{}
+            .setImageLayout(vk::ImageLayout::eRenderingLocalRead)
+            .setSampler(nullptr)
+            .setImageView(imageView.vkImageView());
+        m_descriptorImageInfos.emplace(binding, dstDescriptorIndex, vk::DescriptorType::eInputAttachment, imageInfo);
+        return *this;
+    }
+
     [[nodiscard]] constexpr auto bindSampler(u32 binding, u32 dstDescriptorIndex, const VulkanSampler& sampler) -> VulkanDescriptorSetWriter& {
         auto imageInfo = vk::DescriptorImageInfo{}
             .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)

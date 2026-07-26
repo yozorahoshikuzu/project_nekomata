@@ -73,6 +73,7 @@ static constexpr auto kRequiredPhysicalDeviceFeatures = std::to_array<RequiredFe
     { "scalarBlockLayout"sv,                                 {}, {}, &vk::PhysicalDeviceVulkan12Features::scalarBlockLayout, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12ScalarBlockLayout },
     { "timelineSemaphore"sv,                                 {}, {}, &vk::PhysicalDeviceVulkan12Features::timelineSemaphore, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12TimelineSemaphore },
     { "multiview"sv,                                         {}, &vk::PhysicalDeviceVulkan11Features::multiview, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk11Multiview },
+    { "independentBlend"sv,                                  &vk::PhysicalDeviceFeatures::independentBlend, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10IndependentBlend },
     { "samplerAnisotropy"sv,                                 &vk::PhysicalDeviceFeatures::samplerAnisotropy, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10SamplerAnisotropy },
     { "shaderImageGatherExtended"sv,                         &vk::PhysicalDeviceFeatures::shaderImageGatherExtended, {}, {}, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk10ShaderImageGatherExtended },
 });
@@ -133,6 +134,22 @@ static auto kOptionalPhysicalDeviceFeatures = std::to_array<OptFeatureRule>({
     { "Tessellation"sv,                                      kOptExtensionsTessellation, kOptFeaturesTessellation, &VulkanPhysicalDeviceProperties::m_hasTessellation },
 });
 // clang-format on
+
+// ---- Texture Formats ----------------------------------------------------------------------------------------------------------------------------------------
+
+struct TextureFormatSupportRule {
+    vk::Format format;
+    bool VulkanPhysicalDeviceProperties::* m_setsIfSupported;
+};
+
+static auto kTextureFormatSupportRules = std::to_array<TextureFormatSupportRule>({
+    { vk::Format::eBc7SrgbBlock,                                        &VulkanPhysicalDeviceProperties::m_textureFormatSupportBC7 },
+    { vk::Format::eBc5UnormBlock,                                       &VulkanPhysicalDeviceProperties::m_textureFormatSupportBC5 },
+    { vk::Format::eBc4UnormBlock,                                       &VulkanPhysicalDeviceProperties::m_textureFormatSupportBC4 },
+    { vk::Format::eEacR11G11UnormBlock,                                 &VulkanPhysicalDeviceProperties::m_textureFormatSupportEAC },
+    { vk::Format::eEtc2R8G8B8A8SrgbBlock,                               &VulkanPhysicalDeviceProperties::m_textureFormatSupportETC2 },
+    { vk::Format::eAstc4x4SrgbBlock,                                    &VulkanPhysicalDeviceProperties::m_textureFormatSupportASTC },
+});
 
 consteval auto defaultEnabledVk10Features() -> vk::PhysicalDeviceFeatures {
     auto features = vk::PhysicalDeviceFeatures{};
@@ -288,6 +305,15 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
         }
     }
 
+    // ---- Texture Formats ------------------------------------------------------------------------------------------------------------------------------------
+
+    for (auto& rule : kTextureFormatSupportRules) {
+        constexpr vk::FormatFeatureFlags requiredFeatures = vk::FormatFeatureFlagBits::eSampledImage | vk::FormatFeatureFlagBits::eTransferDst;
+        auto formatProps = vkPhysicalDevice.getFormatProperties(rule.format);
+        bool supportedAsTexture = (formatProps.optimalTilingFeatures & requiredFeatures) == requiredFeatures;
+        props.*(rule.m_setsIfSupported) = supportedAsTexture;
+    }
+
     auto enableDebug = kVulkanDebugEnable && supportedExtensionNames.contains(vk::EXTDebugUtilsExtensionName);
     if (enableDebug) enabledExtensions.emplace(vk::EXTDebugUtilsExtensionName);
 
@@ -407,6 +433,11 @@ auto VulkanPhysicalDeviceProperties::printInfo() const -> void {
     log::info("  Device Features:");
     for (auto& rule : kOptionalPhysicalDeviceFeatures) {
         log::info("    {}: {}", rule.m_name, this->*rule.m_setsIfSupported ? "Yes" : "No");
+    }
+
+    log::info("  Device Supported Texture Formats:");
+    for (auto& rule : kTextureFormatSupportRules) {
+        log::info("    {}: {}", vk::to_string(rule.format), this->*rule.m_setsIfSupported ? "Yes" : "No");
     }
 
     auto asyncComputeQueueContingency = m_asyncComputeQueueIndex == m_graphicsQueueIndex ? "aliases graphics queue"sv : "dedicated"sv;

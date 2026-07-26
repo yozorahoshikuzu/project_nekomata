@@ -104,6 +104,9 @@ public:
     }
 
     [[nodiscard]] constexpr auto useInDeferredPass() noexcept -> MaterialShaderBuilder& {
+        static u32 inputLocationsAllUnused[5] = { vk::AttachmentUnused, vk::AttachmentUnused, vk::AttachmentUnused, vk::AttachmentUnused, vk::AttachmentUnused };
+        static u32 deferredGeomStageLocations[5] = { 0, 1, 2, 3, vk::AttachmentUnused };
+
         auto& _ = m_vkGraphicsPipelineBuilder
             // Albedo + Roughness
             .pushRenderingAttachment(
@@ -132,7 +135,10 @@ public:
                     .setBlendEnable(false)
                     .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
                 vk::Format::eR16G16Sfloat
-            );
+            )
+            .pushUnusedAttachment(vk::Format::eR8G8B8A8Srgb) // Color
+            .setRenderingAttachmentLocations(Slice<const u32>(deferredGeomStageLocations, 5))
+            .setRenderingInputAttachmentIndices(Slice<const u32>(inputLocationsAllUnused, 5), nullptr);
         return *this;
     }
 

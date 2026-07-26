@@ -20,7 +20,7 @@ auto RenderThread::runMainLoop() -> void {
     m_vkSwapchain = VulkanSwapchain::create(m_currentWindowExtent, None, false);
     // TODO : remove the abuse
     std::construct_at(&m_sharedRenderingResources);
-    m_transientRenderingResources = graphics::TransientRenderingResources(m_currentWindowExtent);
+    m_transientRenderingResources = graphics::TransientRenderingResources(m_currentWindowExtent, m_sharedRenderingResources);
     for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         m_frames[i] = graphics::FrameContext();
     }

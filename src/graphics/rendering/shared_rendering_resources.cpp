@@ -57,6 +57,29 @@ SharedRenderingResources::SharedRenderingResources() {
         samplerParams
     );
 
+    m_subpassInputAttachmentsDescriptorSetLayout = VulkanDescriptorSetLayout::builder()
+        .addBinding(0, 1, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment) // Albedo + AO
+        .addBinding(1, 1, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment) // Normal
+        .addBinding(2, 1, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment) // Roughness + Metallic
+        .addBinding(3, 1, vk::DescriptorType::eInputAttachment, vk::ShaderStageFlagBits::eFragment) // Depth
+        .build();
+
+    m_subpassInputAttachmentsDescriptorPool = VulkanDescriptorPool::builder()
+        .addPoolSize(vk::DescriptorType::eInputAttachment, 4)
+        .setMaxSets(1)
+        .setFreeDescriptorSetPool(true)
+        .build();
+
+
+    u32 clearVelbufferLocations[5] = { vk::AttachmentUnused, vk::AttachmentUnused, vk::AttachmentUnused, 0, vk::AttachmentUnused };
+    u32 inputLocationsAllUnused[5] = { vk::AttachmentUnused, vk::AttachmentUnused, vk::AttachmentUnused, vk::AttachmentUnused, vk::AttachmentUnused };
+
+    u32 deferredGeomStageLocations[5] = { 0, 1, 2, 3, vk::AttachmentUnused };
+    u32 deferredLightingStageLocations[5] = { vk::AttachmentUnused, vk::AttachmentUnused, vk::AttachmentUnused, vk::AttachmentUnused, 0 };
+    u32 deferredLightingStageInputLocs[5] = { 0, 1, 2, vk::AttachmentUnused, vk::AttachmentUnused };
+    u32 deferredLightingStageDepthInputLoc = 3;
+
+
     auto iblIrradianceGenShader = SpirvShaderCode::loadFromFile("../spirv/ibl_irradiance_cube_gen.spv").unwrap();
     auto iblPrefilterGenShader = SpirvShaderCode::loadFromFile("../spirv/ibl_prefiltered_spec_mip_gen.spv").unwrap();
 
@@ -108,8 +131,9 @@ SharedRenderingResources::SharedRenderingResources() {
 
     m_mainLightingPassLayout = VulkanPipelineLayout::builder()
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
+        .addDescriptorSetLayout(m_subpassInputAttachmentsDescriptorSetLayout)
         .addPushConstantRange(
-            0, 64,
+            0, 48,
             vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
         )
         .build();
@@ -124,12 +148,19 @@ SharedRenderingResources::SharedRenderingResources() {
         .setRastLineWidth(1.0f)
         .disableMultisampling()
         .disableDepthTest()
+        .setDepthAttachmentFormat(vk::Format::eD32Sfloat)
+        .pushInputAttachment(vk::Format::eR8G8B8A8Unorm) // Albedo + Roughness
+        .pushInputAttachment(vk::Format::eR16G16B16A16Snorm) // Normals
+        .pushInputAttachment(vk::Format::eR8G8Unorm) // Metallic + AO
+        .pushInputAttachment(vk::Format::eR16G16Sfloat) // Motion Vectors
         .pushRenderingAttachment(
         vk::PipelineColorBlendAttachmentState{}
              .setBlendEnable(false)
              .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
             vk::Format::eR8G8B8A8Srgb
-        )
+        ) // Color
+        .setRenderingAttachmentLocations(Slice<const u32>(deferredLightingStageLocations, 5))
+        .setRenderingInputAttachmentIndices(Slice<const u32>(deferredLightingStageInputLocs, 5), &deferredLightingStageDepthInputLoc)
         .build();
 
     m_bitmapFontRendererLayout = VulkanPipelineLayout::builder()
@@ -333,12 +364,19 @@ SharedRenderingResources::SharedRenderingResources() {
         .setRastLineWidth(1.0f)
         .disableMultisampling()
         .disableDepthTest()
+        .setDepthAttachmentFormat(vk::Format::eD32Sfloat)
+        .pushUnusedAttachment(vk::Format::eR8G8B8A8Unorm) // Albedo + Roughness
+        .pushUnusedAttachment(vk::Format::eR16G16B16A16Snorm) // Normals
+        .pushUnusedAttachment(vk::Format::eR8G8Unorm) // Metallic + AO
         .pushRenderingAttachment(
         vk::PipelineColorBlendAttachmentState{}
              .setBlendEnable(false)
              .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
             vk::Format::eR16G16Sfloat
         )
+        .pushUnusedAttachment(vk::Format::eR8G8B8A8Srgb) // Color
+        .setRenderingAttachmentLocations(Slice<const u32>(clearVelbufferLocations, 5))
+        .setRenderingInputAttachmentIndices(Slice<const u32>(inputLocationsAllUnused, 5), nullptr)
         .build();
 
     m_quadOverdrawVisLayout = VulkanPipelineLayout::builder()

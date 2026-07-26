@@ -11,12 +11,8 @@ namespace projnekomata::graphics {
 
 TransientRenderingResources::TransientRenderingResources(std::nullptr_t) {  }
 
-TransientRenderingResources::TransientRenderingResources(vk::Extent2D renderImageExtent) {
+TransientRenderingResources::TransientRenderingResources(vk::Extent2D renderImageExtent, SharedRenderingResources& sharedResources) {
     auto& srt = texturesystem::TextureManager::get().shaderResourceTable();
-    m_depthBufferIndex = srt.allocateSampledImageIndex();
-    m_albedoAndRoughnessBufferIndex = srt.allocateSampledImageIndex();
-    m_normalBufferIndex = srt.allocateSampledImageIndex();
-    m_metallicAndAoBufferIndex = srt.allocateSampledImageIndex();
     m_velocityBufferIndex = srt.allocateSampledImageIndex();
     m_smaaEdgesImageIndex = srt.allocateSampledImageIndex();
     m_smaaWeightsImageIndex = srt.allocateSampledImageIndex();
@@ -31,7 +27,10 @@ TransientRenderingResources::TransientRenderingResources(vk::Extent2D renderImag
 
     m_overdrawCountersImageIndex = srt.allocateStorageImageIndex();
 
+    m_subpassInputsDescriptorSet = sharedResources.m_subpassInputAttachmentsDescriptorPool.allocateDescriptorSet(sharedResources.m_subpassInputAttachmentsDescriptorSetLayout);
+
     setupRenderingAttachments(renderImageExtent);
+
 }
 
 auto TransientRenderingResources::handleWindowSizeChange(vk::Extent2D newWindowSize) -> void {
@@ -45,10 +44,10 @@ auto TransientRenderingResources::setupRenderingAttachments(vk::Extent2D renderI
 
     auto colorMutableFormats = StaticSlice<const vk::Format>::inst<vk::Format::eR8G8B8A8Srgb, vk::Format::eR8G8B8A8Unorm>();
 
-    m_depthBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eD32Sfloat, vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
-    m_albedoAndRoughnessBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
-    m_normalBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR16G16B16A16Snorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
-    m_metallicAndAoBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR8G8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
+    m_depthBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eD32Sfloat, vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eInputAttachment, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
+    m_albedoAndRoughnessBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eInputAttachment, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
+    m_normalBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR16G16B16A16Snorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eInputAttachment, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
+    m_metallicAndAoBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR8G8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eInputAttachment, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
     m_velocityBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR16G16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
     m_colorBuffer = VulkanImage::createMutableFormat(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined, colorMutableFormats);
     m_colorBufferUnormView = m_colorBuffer.createImageViewWithFormat(vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1, false);
@@ -73,10 +72,6 @@ auto TransientRenderingResources::setupRenderingAttachments(vk::Extent2D renderI
     };
     m_overdrawCountersImage = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { halfExtentCeil, 1 }, 1, 1, false, vk::Format::eR32Uint, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
 
-    srt.bindSampledImage(m_depthBuffer, m_depthBufferIndex);
-    srt.bindSampledImage(m_albedoAndRoughnessBuffer, m_albedoAndRoughnessBufferIndex);
-    srt.bindSampledImage(m_normalBuffer, m_normalBufferIndex);
-    srt.bindSampledImage(m_metallicAndAoBuffer, m_metallicAndAoBufferIndex);
     srt.bindSampledImage(m_velocityBuffer, m_velocityBufferIndex);
     srt.bindSampledImage(m_smaaEdgesImage, m_smaaEdgesImageIndex);
     srt.bindSampledImage(m_smaaWeightsImage, m_smaaWeightsImageIndex);
@@ -88,6 +83,13 @@ auto TransientRenderingResources::setupRenderingAttachments(vk::Extent2D renderI
     srt.bindSampledImageView(m_postSmaaImageUnormView, m_postSmaaImageUnormViewIndex);
 
     srt.bindStorageImage(m_overdrawCountersImage, m_overdrawCountersImageIndex);
+
+    VulkanDescriptorSetWriter(m_subpassInputsDescriptorSet)
+        .bindInputAttachment(0, 0, m_albedoAndRoughnessBuffer)
+        .bindInputAttachment(1, 0, m_normalBuffer)
+        .bindInputAttachment(2, 0, m_metallicAndAoBuffer)
+        .bindInputAttachment(3, 0, m_depthBuffer)
+        .commit();
 
     zeroinitColorBuffers();
 }

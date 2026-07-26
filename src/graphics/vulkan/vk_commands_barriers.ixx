@@ -46,6 +46,11 @@ public:
         return *this;
     }
 
+    auto byRegion() -> VulkanPipelineBarriers& {
+        m_dependencyFlags |= vk::DependencyFlagBits::eByRegion;
+        return *this;
+    }
+
     auto flush(VulkanCommandBuffer& cb) -> void {
         auto dependency_info = vk::DependencyInfo{}
             .setImageMemoryBarriers(m_imageMemoryBarriers)
@@ -59,6 +64,7 @@ private:
     Vec<vk::BufferMemoryBarrier2> m_bufferMemoryBarriers;
     Vec<vk::ImageMemoryBarrier2> m_imageMemoryBarriers;
     Vec<vk::MemoryBarrier2> m_memoryBarriers;
+    vk::DependencyFlags m_dependencyFlags = {};
 };
 
 }

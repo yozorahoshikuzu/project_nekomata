@@ -96,6 +96,16 @@ public:
         m_renderingColorAttachmentFormats.emplace(attachmentFormat);
         return *this;
     }
+    [[nodiscard]] constexpr auto pushInputAttachment(vk::Format attachmentFormat) noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_renderingColorAttachmentFormats.emplace(attachmentFormat);
+        m_renderingColorAttachmentBlendStates.emplace(vk::PipelineColorBlendAttachmentState{}.setBlendEnable(false));
+        return *this;
+    }
+    [[nodiscard]] constexpr auto pushUnusedAttachment(vk::Format attachmentFormat) noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_renderingColorAttachmentFormats.emplace(attachmentFormat);
+        m_renderingColorAttachmentBlendStates.emplace(vk::PipelineColorBlendAttachmentState{}.setBlendEnable(false));
+        return *this;
+    }
     [[nodiscard]] constexpr auto disableDepthTest() noexcept -> VulkanGraphicsPipelineBuilder& {
         m_depthStencilState.depthTestEnable = false;
         m_depthStencilState.depthWriteEnable = false;
@@ -134,6 +144,22 @@ public:
         );
         return *this;
     }
+    [[nodiscard]] constexpr auto setRenderingAttachmentLocations(Slice<const u32> locations) noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_renderingAttachmentLocationInfo = Some(
+            vk::RenderingAttachmentLocationInfo{}
+                .setColorAttachmentLocations(locations)
+        );
+        return *this;
+    }
+    [[nodiscard]] constexpr auto setRenderingInputAttachmentIndices(Slice<const u32> indices, const u32* depthIndex) noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_renderingInputAttachmentIndexInfo = Some(
+            vk::RenderingInputAttachmentIndexInfo{}
+                .setColorAttachmentInputIndices(indices)
+                .setPDepthInputAttachmentIndex(depthIndex)
+        );
+        return *this;
+    }
+
     [[nodiscard]] constexpr auto build() -> VulkanGraphicsPipeline {
         auto viewportState = vk::PipelineViewportStateCreateInfo{}
             .setViewportCount(1)
@@ -174,9 +200,22 @@ public:
         auto sc = vk::StructureChain{
             pipelineInfo,
             m_renderingCreateInfo,
+            vk::RenderingAttachmentLocationInfo{},
+            vk::RenderingInputAttachmentIndexInfo{},
             vk::PipelineBinaryInfoKHR{},
             vk::PipelineCreateFlags2CreateInfo{}
         };
+        if (m_renderingAttachmentLocationInfo.isSome()) {
+            sc.assign<vk::RenderingAttachmentLocationInfo>(m_renderingAttachmentLocationInfo.unwrap());
+        } else {
+            sc.unlink<vk::RenderingAttachmentLocationInfo>();
+        }
+        if (m_renderingInputAttachmentIndexInfo.isSome()) {
+            sc.assign<vk::RenderingInputAttachmentIndexInfo>(m_renderingInputAttachmentIndexInfo.unwrap());
+        } else {
+            sc.unlink<vk::RenderingInputAttachmentIndexInfo>();
+        }
+
         auto pipeline = VulkanContext::get().shaderCache()->createGraphicsPipeline(sc);
 
         return VulkanGraphicsPipeline(std::move(pipeline));
@@ -184,6 +223,8 @@ public:
 
 private:
     vk::PipelineLayout m_pipelineLayout = nullptr;
+    Option<vk::RenderingAttachmentLocationInfo> m_renderingAttachmentLocationInfo = None;
+    Option<vk::RenderingInputAttachmentIndexInfo> m_renderingInputAttachmentIndexInfo = None;
     vk::PipelineInputAssemblyStateCreateInfo m_inputAssemblyState = {};
     vk::PipelineRasterizationStateCreateInfo m_rasterizationState = {};
     vk::PipelineMultisampleStateCreateInfo m_multisampleState = {};

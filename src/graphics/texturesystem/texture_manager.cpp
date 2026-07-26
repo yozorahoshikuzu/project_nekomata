@@ -130,6 +130,33 @@ auto TextureManager::freeTexture(Texture texture) -> void {
     log::warn("some texture just got leaked");
 }
 
+auto pickTranscodeDst(u32 numChannels) -> ktx_transcode_fmt_e {
+    return KTX_TTF_RGBA32;
+    auto& physdevProps = VulkanContext::get().vkPhysicalDeviceProps();
+    switch (numChannels) {
+        case 4:
+        case 3: {
+            if (physdevProps.m_textureFormatSupportASTC) return KTX_TTF_ASTC_4x4_RGBA;
+            if (physdevProps.m_textureFormatSupportBC7) return KTX_TTF_BC7_RGBA;
+            if (physdevProps.m_textureFormatSupportETC2) return KTX_TTF_ETC2_RGBA;
+            return KTX_TTF_RGBA32;
+        }
+        case 2: {
+            if (physdevProps.m_textureFormatSupportASTC) return KTX_TTF_ASTC_4x4_RGBA;
+            if (physdevProps.m_textureFormatSupportEAC) return KTX_TTF_ETC2_EAC_RG11;
+            if (physdevProps.m_textureFormatSupportBC5) return KTX_TTF_BC5_RG;
+            return KTX_TTF_RGBA32;
+        }
+        case 1: {
+            if (physdevProps.m_textureFormatSupportEAC) return KTX_TTF_ETC2_EAC_R11;
+            if (physdevProps.m_textureFormatSupportBC4) return KTX_TTF_BC4_R;
+            if (physdevProps.m_textureFormatSupportASTC) return KTX_TTF_ASTC_4x4_RGBA;
+            return KTX_TTF_RGBA32;
+        }
+        default: panic("unsupported number of channels in loaded texture");
+    }
+}
+
 auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesystem::path& path, const SamplerParams& samplerParams) -> void {
     cmdalloc::VulkanCommandPoolsList::initThreadLocalCommandPools();
 
@@ -146,16 +173,8 @@ auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesy
     bool needsTranscoding = ktxTexture2_NeedsTranscoding(ktxData);
     if (needsTranscoding) {
         auto numComponents = ktxTexture2_GetNumComponents(ktxData);
-        ktx_transcode_fmt_e transcodeFormat;
-
-        if (numComponents == 1) {
-            transcodeFormat = KTX_TTF_BC4_R;
-        } else if (numComponents == 2) {
-            transcodeFormat = KTX_TTF_BC5_RG;
-        } else {
-            transcodeFormat = KTX_TTF_BC7_RGBA;
-        }
-
+        auto& physdevProps = VulkanContext::get().vkPhysicalDeviceProps();
+        ktx_transcode_fmt_e transcodeFormat = pickTranscodeDst(numComponents);
         KTX_error_code transcodeResult = ktxTexture2_TranscodeBasis(ktxData, transcodeFormat, 0);
         if (transcodeResult != KTX_SUCCESS) {
             panic("failed to transcode texture");

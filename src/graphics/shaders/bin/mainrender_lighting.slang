@@ -1,6 +1,11 @@
 import "../globallayout";
 import "../normalpack/normalpack";
 
+[vk::input_attachment_index(0)] [vk::binding(0, 1)] SubpassInput<float4> sp_albedoAndRoughness;
+[vk::input_attachment_index(1)] [vk::binding(1, 1)] SubpassInput<float4> sp_normal;
+[vk::input_attachment_index(2)] [vk::binding(2, 1)] SubpassInput<float4> sp_metallicAo;
+[vk::binding(3, 1)] SubpassInput<float4> sp_depth;
+
 struct Pointlight {
     float3 position;
     float3 lightRadiance;
@@ -10,10 +15,6 @@ struct PushConstants {
     projnekomata::ShGlobalData* globalData;
     Pointlight* pointlights;
     uint pointlightCount;
-    uint depthTextureSrtID;
-    uint albedoAndRoughnessTextureSrtID;
-    uint normalTextureSrtID;
-    uint metallicAoTextureSrtID;
     uint skyboxTextureSrtID;
     uint irradianceTextureSrtID;
     uint prefiltTextureSrtID;
@@ -187,10 +188,10 @@ float3 computePixelColor(float3 fragmentPosWS, float3 norm, float3 geometricNorm
 
 [shader("fragment")]
 float4 main(VSOut input) : SV_Target {
-    let depth = s_textures2D[s_pushConstants.depthTextureSrtID].SampleLevel(s_samplers[s_pushConstants.nearestSamplerSrtID], input.texcoord, 0).r;
-    let albedoAndRoughness = s_textures2D[s_pushConstants.albedoAndRoughnessTextureSrtID].SampleLevel(s_samplers[s_pushConstants.nearestSamplerSrtID], input.texcoord, 0);
-    let pn = s_textures2D[s_pushConstants.normalTextureSrtID].SampleLevel(s_samplers[s_pushConstants.nearestSamplerSrtID], input.texcoord, 0);
-    let metallicAo = s_textures2D[s_pushConstants.metallicAoTextureSrtID].SampleLevel(s_samplers[s_pushConstants.nearestSamplerSrtID], input.texcoord, 0).xy;
+    let depth = sp_depth.SubpassLoad().x;
+    let albedoAndRoughness = sp_albedoAndRoughness.SubpassLoad();
+    let pn = sp_normal.SubpassLoad();
+    let metallicAo = sp_metallicAo.SubpassLoad().xy;
 
     const float ev = -2.0f;
     const float exposure = pow(2.0f, ev);
