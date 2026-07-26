@@ -3,7 +3,6 @@ module;
 #include <malloc.h>
 export module projnekomata.cs:vec;
 import std;
-import :log;
 import :iterators;
 import :mem;
 import :nonnull_ptr;
@@ -42,6 +41,12 @@ public:
         other.m_len = 0;
         other.m_capacity = 0;
         return *this;
+    }
+
+    constexpr auto clone() noexcept -> Vec {
+        auto other = Vec::withCapacity(m_len);
+        other.extend(asSlice());
+        return other;
     }
 
     constexpr static auto create() noexcept -> Vec { return Vec(nullptr, 0, 0); }

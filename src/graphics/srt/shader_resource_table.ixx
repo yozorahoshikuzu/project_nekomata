@@ -20,16 +20,23 @@ public:
 
     virtual auto modelName() const -> std::string_view = 0;
 
-    virtual auto allocateImageIndex() -> SRTResourceIndex = 0;
-    virtual auto allocateImageIndices(u32 count, Slice<SRTResourceIndex> dstIndices) -> void = 0;
-    virtual auto freeImageIndex(SRTResourceIndex index) -> void = 0;
-    virtual auto freeImageIndices(Slice<const SRTResourceIndex> indices) -> void = 0;
+    virtual auto allocateSampledImageIndex() -> SRTResourceIndex = 0;
+    virtual auto allocateSampledImageIndices(u32 count, Slice<SRTResourceIndex> dstIndices) -> void = 0;
+    virtual auto freeSampledImageIndex(SRTResourceIndex index) -> void = 0;
+    virtual auto freeSampledImageIndices(Slice<const SRTResourceIndex> indices) -> void = 0;
+
+    virtual auto allocateStorageImageIndex() -> SRTResourceIndex = 0;
+    virtual auto allocateStorageImageIndices(u32 count, Slice<SRTResourceIndex> dstIndices) -> void = 0;
+    virtual auto freeStorageImageIndex(SRTResourceIndex index) -> void = 0;
+    virtual auto freeStorageImageIndices(Slice<const SRTResourceIndex> indices) -> void = 0;
 
     virtual auto allocateSamplerIndex() -> SRTResourceIndex = 0;
     virtual auto allocateSamplerIndices(u32 count, Slice<SRTResourceIndex> dstIndices) -> void = 0;
 
-    virtual auto bindImage(const VulkanImage& image, SRTResourceIndex index) -> void = 0;
-    virtual auto bindImageView(const VulkanImageView& imageView, SRTResourceIndex index) -> void = 0;
+    virtual auto bindSampledImage(const VulkanImage& image, SRTResourceIndex index) -> void = 0;
+    virtual auto bindSampledImageView(const VulkanImageView& imageView, SRTResourceIndex index) -> void = 0;
+    virtual auto bindStorageImage(const VulkanImage& image, SRTResourceIndex index) -> void = 0;
+    virtual auto bindStorageImageView(const VulkanImageView& imageView, SRTResourceIndex index) -> void = 0;
     virtual auto bindSampler(const VulkanSampler& sampler, SRTResourceIndex index) -> void = 0;
 
     virtual auto bindToCommandBuffer(const VulkanCommandBuffer& cmd, const VulkanPipelineLayout& pipelineLayout, vk::PipelineBindPoint pipelineBindPoint) -> void = 0;

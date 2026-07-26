@@ -7,6 +7,7 @@ import :graphics.vulkan.spv_shader_code;
 import :graphics.vulkan.vk_pipeline_layout;
 import :graphics.vulkan.context;
 import :graphics.vulkan.shadercache;
+import :graphics.vulkan.vk_spec_constants;
 
 export namespace projnekomata {
 
@@ -44,6 +45,23 @@ public:
         m_shaderStages.emplace(stageTuple);
         return *this;
     }
+
+    template <HasSpecializationInfo T>
+    [[nodiscard]] constexpr auto addShader(const SpirvShaderCode& shader, vk::ShaderStageFlagBits stage, const T& specializationInfo) noexcept -> VulkanGraphicsPipelineBuilder& {
+        m_specializationInfos.emplace(specializationInfo.specializationInfo());
+        auto specInfoPtr = &m_specializationInfos.last();
+
+        auto stageTuple = vk::StructureChain<vk::PipelineShaderStageCreateInfo, vk::ShaderModuleCreateInfo>{
+            vk::PipelineShaderStageCreateInfo{}
+                .setStage(stage)
+                .setPName("main")
+                .setPSpecializationInfo(specInfoPtr),
+            shader.shaderModuleCreateInfo()
+        };
+        m_shaderStages.emplace(stageTuple);
+        return *this;
+    }
+
     [[nodiscard]] constexpr auto setPipelineLayout(const VulkanPipelineLayout& layout) noexcept -> VulkanGraphicsPipelineBuilder& {
         m_pipelineLayout = layout.vkPipelineLayout();
         return *this;
@@ -174,6 +192,7 @@ private:
     Option<vk::PipelineTessellationStateCreateInfo> m_tessellationState = None;
     Vec<vk::PipelineColorBlendAttachmentState> m_renderingColorAttachmentBlendStates;
     Vec<vk::Format> m_renderingColorAttachmentFormats;
+    Vec<vk::SpecializationInfo> m_specializationInfos;
 
     Vec<vk::StructureChain<vk::PipelineShaderStageCreateInfo, vk::ShaderModuleCreateInfo>> m_shaderStages = Vec<vk::StructureChain<vk::PipelineShaderStageCreateInfo, vk::ShaderModuleCreateInfo>>::create();
 };

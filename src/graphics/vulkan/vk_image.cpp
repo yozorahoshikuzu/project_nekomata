@@ -36,6 +36,10 @@ std::unordered_map<vk::Format, ImageFormatMd> VulkanImage::s_formatMetadata = {
     {vk::Format::eB10G11R11UfloatPack32,                      ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 4 }},
     {vk::Format::eA2R10G10B10UnormPack32,                     ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 4 }},
 
+    // Integer Formats
+
+    { vk::Format::eR32Uint,                                   ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .bpp = 4 } },
+
     // Compressed Color Formats
     // BC1 - 4x4 blocks, 8 bytes per block
     { vk::Format::eBc1RgbUnormBlock,                          ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 8, .blockWidth = 4, .blockHeight = 4 } },
@@ -88,7 +92,7 @@ auto VulkanImage::create(vk::ImageType type, vk::Extent3D extent, u32 layerCount
         .setSharingMode(queueFamilyIndices.size() == 1 ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent);
 
     if (isCubemap) imageCreateInfo.flags |= vk::ImageCreateFlagBits::eCubeCompatible;
-    
+
     auto allocationCreateInfo = vma::AllocationCreateInfo{}
         .setUsage(memoryUsage)
         .setRequiredFlags(memoryRequiredFlags);

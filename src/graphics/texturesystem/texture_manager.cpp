@@ -23,12 +23,12 @@ TextureResources::TextureResources(VulkanImage&& image)
 
 TextureManager::TextureManager(std::nullptr_t) {}
 TextureManager::TextureManager(Unique<srt::IShaderResourceTable>&& srt)
-    : m_textureToShaderIndexTable(2048), m_srt(std::move(srt)) {}
+    : m_textureToShaderIndexTable(2048), m_srt(std::move(srt)), m_loadedTextures(FreelistPoolV2<TextureResources, 4096>::create()) {}
 
 auto TextureManager::create() -> Unique<TextureManager> {
     debug_assert(g_textureManager == nullptr, "only one TextureManager may live at any given time");
 
-    auto srt = srt::BindlessDescriptorSetShaderResourceTable::create(2048, 2048);
+    auto srt = srt::BindlessDescriptorSetShaderResourceTable::create(2048, 2048, 2048);
 
     auto textureManager = Unique<TextureManager>::create(Unique<srt::IShaderResourceTable>::upcast(std::move(srt)));
     g_textureManager = textureManager.ptr();
@@ -45,9 +45,9 @@ auto TextureManager::createTexture(u32 width, u32 height, u32 depth, u32 layers,
     // TODO: fix UB with assigning 2D null image when image is a type other than 2D
     auto image = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { width, height, depth }, layers, mipLevels, isCube, format, usage, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics | QueueFamily::AsyncCompute], vk::ImageLayout::eUndefined);
     auto texture = allocateTexture(std::move(image));
-    auto imageShaderIndex = m_srt->allocateImageIndex();
+    auto imageShaderIndex = m_srt->allocateSampledImageIndex();
     auto samplerShaderIndex = m_samplerCache.acquireSampler(samplerParams);
-    TextureManager::get().m_srt->bindImage(getTextureResources(texture).image(), imageShaderIndex);
+    TextureManager::get().m_srt->bindSampledImage(getTextureResources(texture).image(), imageShaderIndex);
     m_textureToShaderIndexTable.setTextureShaderImageIndex(texture.index, imageShaderIndex.imageIndex);
     m_textureToShaderIndexTable.setTextureShaderSamplerIndex(texture.index, samplerShaderIndex);
     return texture;
@@ -97,9 +97,9 @@ auto TextureManager::loadTextureFromMemoryInternal(u32 width, u32 height, u32 de
     asyncOp.await();
 
     auto texture = allocateTexture(std::move(image));
-    auto imageShaderIndex = m_srt->allocateImageIndex();
+    auto imageShaderIndex = m_srt->allocateSampledImageIndex();
     auto samplerShaderIndex = m_samplerCache.acquireSampler(samplerParams);
-    TextureManager::get().m_srt->bindImage(getTextureResources(texture).image(), imageShaderIndex);
+    TextureManager::get().m_srt->bindSampledImage(getTextureResources(texture).image(), imageShaderIndex);
     m_textureToShaderIndexTable.setTextureShaderImageIndex(texture.index, imageShaderIndex.imageIndex);
     m_textureToShaderIndexTable.setTextureShaderSamplerIndex(texture.index, samplerShaderIndex);
 
@@ -127,7 +127,7 @@ auto TextureManager::allocateTexture(VulkanImage&& img) -> Texture {
 }
 
 auto TextureManager::freeTexture(Texture texture) -> void {
-    log::error("freeTexture not implemented");
+    log::warn("some texture just got leaked");
 }
 
 auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesystem::path& path, const SamplerParams& samplerParams) -> void {
@@ -145,7 +145,18 @@ auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesy
 
     bool needsTranscoding = ktxTexture2_NeedsTranscoding(ktxData);
     if (needsTranscoding) {
-        KTX_error_code transcodeResult = ktxTexture2_TranscodeBasis(ktxData, KTX_TTF_BC7_RGBA, 0);
+        auto numComponents = ktxTexture2_GetNumComponents(ktxData);
+        ktx_transcode_fmt_e transcodeFormat;
+
+        if (numComponents == 1) {
+            transcodeFormat = KTX_TTF_BC4_R;
+        } else if (numComponents == 2) {
+            transcodeFormat = KTX_TTF_BC5_RG;
+        } else {
+            transcodeFormat = KTX_TTF_BC7_RGBA;
+        }
+
+        KTX_error_code transcodeResult = ktxTexture2_TranscodeBasis(ktxData, transcodeFormat, 0);
         if (transcodeResult != KTX_SUCCESS) {
             panic("failed to transcode texture");
         }
@@ -264,8 +275,8 @@ auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesy
     textureResources.setImage(std::move(image));
     // Wait for the upload to complete and then let the texture be used for rendering
     future.await();
-    auto imageShaderIndex = TextureManager::get().m_srt->allocateImageIndex();
-    TextureManager::get().m_srt->bindImage(textureResources.image(), imageShaderIndex);
+    auto imageShaderIndex = TextureManager::get().m_srt->allocateSampledImageIndex();
+    TextureManager::get().m_srt->bindSampledImage(textureResources.image(), imageShaderIndex);
     TextureManager::get().m_textureToShaderIndexTable.setTextureShaderImageIndex(texture.index, imageShaderIndex.imageIndex);
     TextureManager::get().m_textureToShaderIndexTable.setTextureShaderSamplerIndex(texture.index, TextureManager::get().m_samplerCache.acquireSampler(samplerParams));
 }

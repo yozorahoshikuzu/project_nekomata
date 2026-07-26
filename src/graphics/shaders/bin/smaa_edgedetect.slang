@@ -3,7 +3,6 @@ import "../globallayout";
 struct PushConstants {
     float4 rtMetrics;
     uint colorTextureSrtID;
-    uint depthTextureSrtID;
     uint smaaLinearSamplerSrtID;
     uint smaaNearestSamplerSrtID;
 };
@@ -38,7 +37,6 @@ VSOut main(uint vertexID : SV_VulkanVertexID) {
 [shader("fragment")]
 float2 main(VSOut input) : SV_Target {
     let colorTex = pipeline::getTexture2DBySrtId(s_pushConstants.colorTextureSrtID);
-    let depthTex = pipeline::getTexture2DBySrtId(s_pushConstants.depthTextureSrtID);
 
-    return SMAAColorEdgeDetectionPS(input.uv, input.offsets, colorTex, depthTex);
+    return SMAAColorEdgeDetectionPS(input.uv, input.offsets, colorTex);
 }

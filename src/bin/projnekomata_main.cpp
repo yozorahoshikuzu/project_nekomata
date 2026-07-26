@@ -1,28 +1,84 @@
 import std;
 import fmt;
+import vulkan;
 import projnekomata;
-#include <immintrin.h>
 #include <cstdlib>
+#include <immintrin.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
-#include <stddef.h>
 
 using namespace projnekomata::math;
 using namespace projnekomata::core::input;
+
+class MaterialProps {
+public:
+    constexpr static u32 kFlagColorIsTex = 1 << 0;
+    constexpr static u32 kFlagRoughnessIsTex = 1 << 1;
+    constexpr static u32 kFlagMetallicIsTex = 1 << 2;
+    constexpr static u32 kFlagHasNormalMap = 1 << 3;
+
+    MaterialProps() = default;
+
+    [[nodiscard]] constexpr auto setColor(Vector3f color) -> MaterialProps& {
+        colorOrTex = color;
+        flags &= ~kFlagColorIsTex;
+        return *this;
+    }
+    [[nodiscard]] constexpr auto setColor(projnekomata::graphics::texturesystem::Texture tex) -> MaterialProps& {
+        colorOrTex.x() = std::bit_cast<f32>(tex.index);
+        flags |= kFlagColorIsTex;
+        return *this;
+    }
+    [[nodiscard]] constexpr auto setRoughness(f32 roughness) -> MaterialProps& {
+        roughnessOrTex = roughness;
+        flags &= ~kFlagRoughnessIsTex;
+        return *this;
+    }
+    [[nodiscard]] constexpr auto setRoughness(projnekomata::graphics::texturesystem::Texture tex) -> MaterialProps& {
+        roughnessOrTex = std::bit_cast<f32>(tex.index);
+        flags |= kFlagRoughnessIsTex;
+        return *this;
+    }
+    [[nodiscard]] constexpr auto setMetallic(f32 metallic) -> MaterialProps& {
+        metallicOrTex = metallic;
+        flags &= ~kFlagMetallicIsTex;
+        return *this;
+    }
+    [[nodiscard]] constexpr auto setMetallic(projnekomata::graphics::texturesystem::Texture tex) -> MaterialProps& {
+        metallicOrTex = std::bit_cast<f32>(tex.index);
+        flags |= kFlagMetallicIsTex;
+        return *this;
+    }
+    [[nodiscard]] constexpr auto setNormalMap(projnekomata::graphics::texturesystem::Texture tex) -> MaterialProps& {
+        normalMapTex = std::bit_cast<u32>(tex.index);
+        flags |= kFlagHasNormalMap;
+        return *this;
+    }
+
+private:
+    u32 flags = 0;
+
+    Vector3f colorOrTex = Vector3f(1.0f, 1.0f, 1.0f);
+    f32 roughnessOrTex = 1.0f;
+    f32 metallicOrTex = 0.0f;
+    u32 normalMapTex = 0;
+};
 
 class MovingScript : public projnekomata::ecs::ScriptBase {
 public:
     MovingScript(float time, float spinRadius, float spinThetaSpeed, float spinPhiSpeed, float spinInitialTheta, float spinInitialPhi, float rotationConstX, float rotationConstY) :
         m_time(time), m_spinRadius(spinRadius), m_spinThetaSpeed(spinThetaSpeed), m_spinPhiSpeed(spinPhiSpeed), m_spinInitialTheta(spinInitialTheta), m_spinInitialPhi(spinInitialPhi), m_rotationConstX(rotationConstX), m_rotationConstY(rotationConstY) {}
 
-    void onCreate() override {
+    void onCreate() override {/*
         m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity)
-            .m_transform3d = Transform3D::identity();
+            .m_transform3d = Transform3D::identity();*/
     }
     void onDestroy() override {}
     void onUpdate(float dt) override {
         m_time += dt;
 
+/*
         m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity).m_transform3d.m_position =
             Vector3f(
                 m_spinRadius * std::cos(m_spinInitialTheta + m_spinThetaSpeed * m_time),
@@ -31,7 +87,7 @@ public:
             );
         m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity)
             .m_transform3d.m_rotation = Quaternion::fromEulerAngles(0.8f * m_time * m_rotationConstX, 0.8f * m_time * m_rotationConstY, 0.4f * m_time * m_rotationConstX);
-    }
+*/    }
 
     float m_time;
 
@@ -52,7 +108,7 @@ public:
         m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity)
             .m_transform3d = Transform3D::identity();
         m_workingWorld->get<projnekomata::ecs::components::Transform>(m_workingEntity)
-            .m_transform3d.m_position = { 2.0f, 1.0f, 1.0f };
+            .m_transform3d.m_position = { 0.0f, 0.0f, 0.0f };
 
         auto& ts = projnekomata::graphics::texturesystem::TextureManager::get();
 
@@ -292,11 +348,12 @@ public:
 
 struct Vertex {
     Vector3f position;
-    float uvX;
     Vector3f normal;
-    float uvY;
+    Vector3f tangent;
+    Vector2f texcoord;
     Vector4f color;
 };
+
 std::pair<Vec<Vertex>, Vec<u32>> generateSphere(u32 latSegments, u32 lonSegments, float radius) {
     Vec<Vertex> vertices;
     Vec<u32> indices;
@@ -315,8 +372,11 @@ std::pair<Vec<Vertex>, Vec<u32>> generateSphere(u32 latSegments, u32 lonSegments
             float y = cosTheta;
             float z = sinPhi * sinTheta;
 
-            vertices.emplace(Vector3f(x * radius, y * radius, z * radius), static_cast<float>(lon) / static_cast<float>(lonSegments),
-                                Vector3f(x, y, z), static_cast<float>(lat) / static_cast<float>(latSegments), Vector4f(1.0f, 0.0f, 0.0f, 1.0f));
+            Vector2f texcoord = Vector2f(static_cast<float>(lon) / static_cast<float>(lonSegments), static_cast<float>(lat) / static_cast<float>(latSegments));
+            Vector3f normal = Vector3f(x, y, z);
+            Vector3f tangent = Vector3f(-sinPhi, 0.0f, cosPhi).normalize();
+
+            vertices.emplace(Vector3f(x * radius, y * radius, z * radius), normal, tangent, texcoord, Vector4f(1.0f, 0.0f, 0.0f, 1.0f));
         }
     }
 
@@ -341,12 +401,26 @@ std::pair<Vec<Vertex>, Vec<u32>> generateSphere(u32 latSegments, u32 lonSegments
 void onGameInit(Unique<projnekomata::ecs::World>& world) {
     auto& ts = projnekomata::graphics::texturesystem::TextureManager::get();
 
+    auto matShaderCode = projnekomata::SpirvShaderCode::loadFromFile("../spirv/mainrender_geom.spv").unwrap();
+    auto mainMaterialShader = projnekomata::MaterialShader::builder()
+        .setPrerastVS(matShaderCode)
+        .setFragmentShader(matShaderCode)
+        .useInDeferredPass()
+        .setMaterialPropertyStructSize(sizeof(MaterialProps))
+        .build();
+
+
     auto samplerSettings = projnekomata::graphics::texturesystem::SamplerParams::defaultValues()
         .setAnisotropy(16.0f);
 
     projnekomata::graphics::texturesystem::Texture ts1 = ts.loadKtx2TextureAsync("../../Assets/abstractart.ktx2", samplerSettings);
+    projnekomata::graphics::texturesystem::Texture ts2 = ts.loadKtx2TextureAsync("../../Assets/fihcalling.ktx2", samplerSettings);
+    projnekomata::graphics::texturesystem::Texture ts3 = ts.loadKtx2TextureAsync("../../Assets/ui_test.ktx2", samplerSettings);
+    projnekomata::graphics::texturesystem::Texture ts4 = ts.loadKtx2TextureAsync("../../Assets/ui_test2.ktx2", samplerSettings);
+    projnekomata::graphics::texturesystem::Texture ts5 = ts.loadKtx2TextureAsync("../../Assets/ui_test3.ktx2", samplerSettings);
+    projnekomata::graphics::texturesystem::Texture ts6 = ts.loadKtx2TextureAsync("../../Assets/ui_test4.ktx2", samplerSettings);
+    projnekomata::graphics::texturesystem::Texture ts7 = ts.loadKtx2TextureAsync("../../Assets/ui_test5.ktx2", samplerSettings);
     auto fnt = projnekomata::graphics::fonts::FontManager::get().loadFont("/usr/share/fonts/noto/NotoSans-Regular.ttf");
-
 
     auto& mas = projnekomata::meshsystem::MeshAssetStorage::get();
     auto mesh = mas.allocateMeshAsset();
@@ -396,6 +470,9 @@ void onGameInit(Unique<projnekomata::ecs::World>& world) {
     std::uniform_real_distribution<float> phiSpeedDist(0.01f, 0.07f);
     std::uniform_real_distribution<float> rotationConstDist(0.05f, 0.15f);
     std::uniform_real_distribution<float> lightradianceDist(60.0f, 20000.0f);
+    std::uniform_real_distribution<float> colorDist(0.02f, 1.0f);
+    std::uniform_real_distribution<float> roughnessDist(0.0f, 1.0f);
+    std::uniform_int_distribution<usize> texIndexDist(0, 7);
     //for (usize i = 0; i < 1990; i++) {
     //    auto ent = world->createEntity();
     //    world->emplace<projnekomata::ecs::components::Transform>(ent);
@@ -415,10 +492,29 @@ void onGameInit(Unique<projnekomata::ecs::World>& world) {
                 auto rotation = Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
                 auto translation = Vector3f(x * spacing, 0.0f, y * spacing);
                 auto transform = projnekomata::ecs::components::Transform(translation, rotation, scale);
+                auto matprops = MaterialProps()
+                    .setRoughness(roughnessDist(gen))
+                    .setMetallic(roughnessDist(gen));
+
+                auto texindex = texIndexDist(gen);
+
+                switch (texindex) {
+                    case 0: matprops.setColor(ts1); break;
+                    case 1: matprops.setColor(ts2); break;
+                    case 2: matprops.setColor(ts3); break;
+                    case 3: matprops.setColor(ts4); break;
+                    case 4: matprops.setColor(ts5); break;
+                    case 5: matprops.setColor(ts6); break;
+                    case 6: matprops.setColor(ts7); break;
+                    case 7: matprops.setColor(Vector3f(colorDist(gen), colorDist(gen), colorDist(gen))); break;
+                }
+
+                auto matl = projnekomata::Material::create<MaterialProps>(mainMaterialShader, std::move(matprops));
 
                 auto ent = world->createEntity();
                 world->emplace<projnekomata::ecs::components::Transform>(ent, std::move(transform));
-                world->emplace<projnekomata::ecs::components::Renderable>(ent, mesh, ts1);
+                world->emplace<projnekomata::ecs::components::Renderable>(ent, mesh, matl);
+//                world->addScript<MovingScript>(ent, 0.0f, radiusDist(gen), thetaSpeedDist(gen), phiSpeedDist(gen), thetaDist(gen), phiDist(gen), rotationConstDist(gen), rotationConstDist(gen));
         }
     }
     auto scale = Vector3f(1.0f);
@@ -428,16 +524,14 @@ void onGameInit(Unique<projnekomata::ecs::World>& world) {
 
     auto lightEnt = world->createEntity();
 
-    world->emplace<projnekomata::ecs::components::PointLight>(lightEnt, Vector3f{1000.0f, 1000.0f, 1000.0f});
+    world->emplace<projnekomata::ecs::components::PointLight>(lightEnt, Vector3f{10000.0f, 10000.0f, 10000.0f});
     world->emplace<projnekomata::ecs::components::Transform>(lightEnt, std::move(transform));
 
     auto cameraEnt = world->createEntity();
-    world->emplace<projnekomata::ecs::components::Camera>(cameraEnt, projnekomata::ecs::components::Camera{0.01f, 10000.0f, 60.0f, true});
+    world->emplace<projnekomata::ecs::components::Camera>(cameraEnt, projnekomata::ecs::components::Camera{0.01f, 10000.0f, 90.0f, true});
     world->emplace<projnekomata::ecs::components::Transform>(cameraEnt);
     world->addScript<CameraScript>(cameraEnt, fnt);
     Input::get().setMouseMode(MouseMode::Captured);
-
-
 }
 
 int main(int argc, char* argv[]) {

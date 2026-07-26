@@ -13,21 +13,23 @@ TransientRenderingResources::TransientRenderingResources(std::nullptr_t) {  }
 
 TransientRenderingResources::TransientRenderingResources(vk::Extent2D renderImageExtent) {
     auto& srt = texturesystem::TextureManager::get().shaderResourceTable();
-    m_depthBufferIndex = srt.allocateImageIndex();
-    m_albedoAndRoughnessBufferIndex = srt.allocateImageIndex();
-    m_normalBufferIndex = srt.allocateImageIndex();
-    m_metallicAndAoBufferIndex = srt.allocateImageIndex();
-    m_velocityBufferIndex = srt.allocateImageIndex();
-    m_smaaEdgesImageIndex = srt.allocateImageIndex();
-    m_smaaWeightsImageIndex = srt.allocateImageIndex();
-    m_colorBufferIndex = srt.allocateImageIndex();
-    m_colorBufferUnormViewIndex = srt.allocateImageIndex();
+    m_depthBufferIndex = srt.allocateSampledImageIndex();
+    m_albedoAndRoughnessBufferIndex = srt.allocateSampledImageIndex();
+    m_normalBufferIndex = srt.allocateSampledImageIndex();
+    m_metallicAndAoBufferIndex = srt.allocateSampledImageIndex();
+    m_velocityBufferIndex = srt.allocateSampledImageIndex();
+    m_smaaEdgesImageIndex = srt.allocateSampledImageIndex();
+    m_smaaWeightsImageIndex = srt.allocateSampledImageIndex();
+    m_colorBufferIndex = srt.allocateSampledImageIndex();
+    m_colorBufferUnormViewIndex = srt.allocateSampledImageIndex();
 
-    m_smaaColorResolvedBuffer0UnormViewIndex = srt.allocateImageIndex();
-    m_smaaColorResolvedBuffer1UnormViewIndex = srt.allocateImageIndex();
+    m_smaaColorResolvedBuffer0UnormViewIndex = srt.allocateSampledImageIndex();
+    m_smaaColorResolvedBuffer1UnormViewIndex = srt.allocateSampledImageIndex();
 
-    m_postSmaaImageIndex = srt.allocateImageIndex();
-    m_postSmmaImageUnormViewIndex = srt.allocateImageIndex();
+    m_postSmaaImageIndex = srt.allocateSampledImageIndex();
+    m_postSmaaImageUnormViewIndex = srt.allocateSampledImageIndex();
+
+    m_overdrawCountersImageIndex = srt.allocateStorageImageIndex();
 
     setupRenderingAttachments(renderImageExtent);
 }
@@ -45,7 +47,7 @@ auto TransientRenderingResources::setupRenderingAttachments(vk::Extent2D renderI
 
     m_depthBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eD32Sfloat, vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
     m_albedoAndRoughnessBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
-    m_normalBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR16G16Snorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
+    m_normalBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR16G16B16A16Snorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
     m_metallicAndAoBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR8G8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
     m_velocityBuffer = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR16G16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
     m_colorBuffer = VulkanImage::createMutableFormat(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined, colorMutableFormats);
@@ -65,19 +67,27 @@ auto TransientRenderingResources::setupRenderingAttachments(vk::Extent2D renderI
     m_finalImage = VulkanImage::createMutableFormat(vk::ImageType::e2D, vk::Extent3D { renderImageExtent, 1 }, 1, 1, false, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined, colorMutableFormats);
     m_finalImageUnormView = m_finalImage.createImageViewWithFormat(vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1, false);
 
-    srt.bindImage(m_depthBuffer, m_depthBufferIndex);
-    srt.bindImage(m_albedoAndRoughnessBuffer, m_albedoAndRoughnessBufferIndex);
-    srt.bindImage(m_normalBuffer, m_normalBufferIndex);
-    srt.bindImage(m_metallicAndAoBuffer, m_metallicAndAoBufferIndex);
-    srt.bindImage(m_velocityBuffer, m_velocityBufferIndex);
-    srt.bindImage(m_smaaEdgesImage, m_smaaEdgesImageIndex);
-    srt.bindImage(m_smaaWeightsImage, m_smaaWeightsImageIndex);
-    srt.bindImage(m_colorBuffer, m_colorBufferIndex);
-    srt.bindImageView(m_colorBufferUnormView, m_colorBufferUnormViewIndex);
-    srt.bindImageView(m_smaaColorResolvedBuffer0UnormView, m_smaaColorResolvedBuffer0UnormViewIndex);
-    srt.bindImageView(m_smaaColorResolvedBuffer1UnormView, m_smaaColorResolvedBuffer1UnormViewIndex);
-    srt.bindImage(m_postSmaaImage, m_postSmaaImageIndex);
-    srt.bindImageView(m_postSmaaImageUnormView, m_postSmmaImageUnormViewIndex);
+    vk::Extent2D halfExtentCeil = vk::Extent2D {
+        (renderImageExtent.width + 1) / 2,
+        (renderImageExtent.height + 1) / 2,
+    };
+    m_overdrawCountersImage = VulkanImage::create(vk::ImageType::e2D, vk::Extent3D { halfExtentCeil, 1 }, 1, 1, false, vk::Format::eR32Uint, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage, vk::ImageTiling::eOptimal, vma::MemoryUsage::eAutoPreferDevice, {}, affectedQueues, vk::ImageLayout::eUndefined);
+
+    srt.bindSampledImage(m_depthBuffer, m_depthBufferIndex);
+    srt.bindSampledImage(m_albedoAndRoughnessBuffer, m_albedoAndRoughnessBufferIndex);
+    srt.bindSampledImage(m_normalBuffer, m_normalBufferIndex);
+    srt.bindSampledImage(m_metallicAndAoBuffer, m_metallicAndAoBufferIndex);
+    srt.bindSampledImage(m_velocityBuffer, m_velocityBufferIndex);
+    srt.bindSampledImage(m_smaaEdgesImage, m_smaaEdgesImageIndex);
+    srt.bindSampledImage(m_smaaWeightsImage, m_smaaWeightsImageIndex);
+    srt.bindSampledImage(m_colorBuffer, m_colorBufferIndex);
+    srt.bindSampledImageView(m_colorBufferUnormView, m_colorBufferUnormViewIndex);
+    srt.bindSampledImageView(m_smaaColorResolvedBuffer0UnormView, m_smaaColorResolvedBuffer0UnormViewIndex);
+    srt.bindSampledImageView(m_smaaColorResolvedBuffer1UnormView, m_smaaColorResolvedBuffer1UnormViewIndex);
+    srt.bindSampledImage(m_postSmaaImage, m_postSmaaImageIndex);
+    srt.bindSampledImageView(m_postSmaaImageUnormView, m_postSmaaImageUnormViewIndex);
+
+    srt.bindStorageImage(m_overdrawCountersImage, m_overdrawCountersImageIndex);
 
     zeroinitColorBuffers();
 }

@@ -63,7 +63,7 @@ private:
 
     Texture m_defaultTexture;
 
-    FreelistPool<TextureResources, 10, 4096> m_loadedTextures;
+    FreelistPoolV2<TextureResources, 4096> m_loadedTextures = nullptr;
     SamplerCache m_samplerCache;
 
     TextureToShaderIndexTable m_textureToShaderIndexTable = nullptr;

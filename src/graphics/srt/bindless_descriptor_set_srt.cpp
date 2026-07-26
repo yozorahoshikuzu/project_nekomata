@@ -6,57 +6,83 @@ namespace projnekomata::graphics::srt {
 
 BindlessDescriptorSetShaderResourceTable::BindlessDescriptorSetShaderResourceTable(std::nullptr_t) {}
 BindlessDescriptorSetShaderResourceTable::BindlessDescriptorSetShaderResourceTable(VulkanDescriptorPool&& descriptorPool,
-    VulkanDescriptorSetLayout&& descriptorSetLayout, VulkanDescriptorSet&& descriptorSet, u32 maxImageCount, u32 maxSamplerCount)
+    VulkanDescriptorSetLayout&& descriptorSetLayout, VulkanDescriptorSet&& descriptorSet, u32 maxSampledImageCount, u32 maxStorageImageCount, u32 maxSamplerCount)
         : m_descriptorPool(std::move(descriptorPool)), m_descriptorSetLayout(std::move(descriptorSetLayout)), m_descriptorSet(std::move(descriptorSet)),
-            m_imageIndexAllocator(maxImageCount), m_maxSamplerCount(maxSamplerCount) {}
+            m_sampledImageIndexAllocator(maxSampledImageCount), m_storageImageIndexAllocator(maxStorageImageCount), m_maxSamplerCount(maxSamplerCount) {}
 
-auto BindlessDescriptorSetShaderResourceTable::create(u32 maxImageCount, u32 maxSamplerCount) -> Unique<BindlessDescriptorSetShaderResourceTable> {
+auto BindlessDescriptorSetShaderResourceTable::create(u32 maxSampledImageCount, u32 maxStorageImageCount, u32 maxSamplerCount) -> Unique<BindlessDescriptorSetShaderResourceTable> {
     auto descriptorSetLayout = VulkanDescriptorSetLayout::builder()
-        .addBindingWithFlags(0, maxImageCount, vk::DescriptorType::eSampledImage,
-            vk::ShaderStageFlagBits::eFragment,
-            vk::DescriptorBindingFlagBits::eUpdateAfterBind | vk::DescriptorBindingFlagBits::ePartiallyBound | vk::DescriptorBindingFlagBits::eUpdateUnusedWhilePending)
-        .setFlags(vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool)
-        .addBindingWithFlags(1, maxSamplerCount, vk::DescriptorType::eSampler,
+        .addBindingWithFlags(0, maxSampledImageCount, vk::DescriptorType::eSampledImage,
             vk::ShaderStageFlagBits::eFragment,
             vk::DescriptorBindingFlagBits::eUpdateAfterBind | vk::DescriptorBindingFlagBits::ePartiallyBound | vk::DescriptorBindingFlagBits::eUpdateUnusedWhilePending
         )
+        .addBindingWithFlags(1, maxStorageImageCount, vk::DescriptorType::eStorageImage,
+            vk::ShaderStageFlagBits::eFragment,
+            vk::DescriptorBindingFlagBits::eUpdateAfterBind | vk::DescriptorBindingFlagBits::ePartiallyBound | vk::DescriptorBindingFlagBits::eUpdateUnusedWhilePending
+        )
+        .addBindingWithFlags(2, maxSamplerCount, vk::DescriptorType::eSampler,
+            vk::ShaderStageFlagBits::eFragment,
+            vk::DescriptorBindingFlagBits::eUpdateAfterBind | vk::DescriptorBindingFlagBits::ePartiallyBound | vk::DescriptorBindingFlagBits::eUpdateUnusedWhilePending
+        )
+        .setFlags(vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool)
         .build();
 
     auto descriptorPool = VulkanDescriptorPool::builder()
         .setMaxSets(1)
         .setUpdateAfterBindPool(true)
         .setFreeDescriptorSetPool(true)
-        .addPoolSize(vk::DescriptorType::eSampledImage, maxImageCount)
+        .addPoolSize(vk::DescriptorType::eSampledImage, maxSampledImageCount)
+        .addPoolSize(vk::DescriptorType::eStorageImage, maxStorageImageCount)
         .addPoolSize(vk::DescriptorType::eSampler, maxSamplerCount)
         .build();
 
     auto descriptorSet = descriptorPool.allocateDescriptorSet(descriptorSetLayout);
 
     return Unique<BindlessDescriptorSetShaderResourceTable>::create(std::move(descriptorPool), std::move(descriptorSetLayout), std::move(descriptorSet),
-        maxImageCount, maxSamplerCount);
+        maxSampledImageCount, maxStorageImageCount, maxSamplerCount);
 }
 
-auto BindlessDescriptorSetShaderResourceTable::allocateImageIndex() -> SRTResourceIndex {
-    auto index = m_imageIndexAllocator.allocate();
+auto BindlessDescriptorSetShaderResourceTable::allocateSampledImageIndex() -> SRTResourceIndex {
+    auto index = m_sampledImageIndexAllocator.allocate();
     if (index.isNone()) {
-        panic("bindless descriptor set image index allocator ran out of indices");
+        panic("bindless descriptor set sampled image index allocator ran out of indices");
     }
     return SRTResourceIndex(index.unwrap());
 }
 
-auto BindlessDescriptorSetShaderResourceTable::allocateImageIndices(u32 count, Slice<SRTResourceIndex> dstIndices) -> void {
+auto BindlessDescriptorSetShaderResourceTable::allocateSampledImageIndices(u32 count, Slice<SRTResourceIndex> dstIndices) -> void {
     for (u32 i = 0; i < count; i++) {
-        dstIndices[i] = allocateImageIndex();
+        dstIndices[i] = allocateSampledImageIndex();
     }
 }
 
-auto BindlessDescriptorSetShaderResourceTable::freeImageIndex(SRTResourceIndex index) -> void {
-    m_imageIndexAllocator.release(index.imageIndex);
+auto BindlessDescriptorSetShaderResourceTable::freeSampledImageIndex(SRTResourceIndex index) -> void {
+    m_sampledImageIndexAllocator.release(index.imageIndex);
 }
 
-auto BindlessDescriptorSetShaderResourceTable::freeImageIndices(Slice<const SRTResourceIndex> indices) -> void {
+auto BindlessDescriptorSetShaderResourceTable::freeSampledImageIndices(Slice<const SRTResourceIndex> indices) -> void {
     for (auto index : indices) {
-        freeImageIndex(index);
+        freeSampledImageIndex(index);
+    }
+}
+auto BindlessDescriptorSetShaderResourceTable::allocateStorageImageIndex() -> SRTResourceIndex {
+    auto index = m_storageImageIndexAllocator.allocate();
+    if (index.isNone()) {
+        panic("bindless descriptor set storage image index allocator ran out of indices");
+    }
+    return SRTResourceIndex(index.unwrap());
+}
+auto BindlessDescriptorSetShaderResourceTable::allocateStorageImageIndices(u32 count, Slice<SRTResourceIndex> dstIndices) -> void {
+    for (u32 i = 0; i < count; i++) {
+        dstIndices[i] = allocateStorageImageIndex();
+    }
+}
+auto BindlessDescriptorSetShaderResourceTable::freeStorageImageIndex(SRTResourceIndex index) -> void {
+    m_storageImageIndexAllocator.release(index.imageIndex);
+}
+auto BindlessDescriptorSetShaderResourceTable::freeStorageImageIndices(Slice<const SRTResourceIndex> indices) -> void {
+    for (auto index : indices) {
+        freeStorageImageIndex(index);
     }
 }
 
@@ -74,20 +100,30 @@ auto BindlessDescriptorSetShaderResourceTable::allocateSamplerIndices(u32 count,
     }
 }
 
-auto BindlessDescriptorSetShaderResourceTable::bindImage(const VulkanImage& image, SRTResourceIndex index) -> void {
+auto BindlessDescriptorSetShaderResourceTable::bindSampledImage(const VulkanImage& image, SRTResourceIndex index) -> void {
     VulkanDescriptorSetWriter(m_descriptorSet)
-        .bindImage(0, index.imageIndex, image)
+        .bindSampledImage(0, index.imageIndex, image)
         .commit();
 }
-auto BindlessDescriptorSetShaderResourceTable::bindImageView(const VulkanImageView& imageView, SRTResourceIndex index) -> void {
+auto BindlessDescriptorSetShaderResourceTable::bindSampledImageView(const VulkanImageView& imageView, SRTResourceIndex index) -> void {
     VulkanDescriptorSetWriter(m_descriptorSet)
-        .bindImage(0, index.imageIndex, imageView)
+        .bindSampledImage(0, index.imageIndex, imageView)
+        .commit();
+}
+auto BindlessDescriptorSetShaderResourceTable::bindStorageImage(const VulkanImage& image, SRTResourceIndex index) -> void {
+    VulkanDescriptorSetWriter(m_descriptorSet)
+        .bindStorageImage(1, index.imageIndex, image)
+        .commit();
+}
+auto BindlessDescriptorSetShaderResourceTable::bindStorageImageView(const VulkanImageView& imageView, SRTResourceIndex index) -> void {
+    VulkanDescriptorSetWriter(m_descriptorSet)
+        .bindStorageImage(1, index.imageIndex, imageView)
         .commit();
 }
 
 auto BindlessDescriptorSetShaderResourceTable::bindSampler(const VulkanSampler& sampler, SRTResourceIndex index) -> void {
     VulkanDescriptorSetWriter(m_descriptorSet)
-        .bindSampler(1, index.imageIndex, sampler)
+        .bindSampler(2, index.imageIndex, sampler)
         .commit();
 }
 

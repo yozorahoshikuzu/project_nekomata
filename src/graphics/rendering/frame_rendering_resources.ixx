@@ -43,6 +43,9 @@ public:
     auto transformsBuffer() -> VulkanBuffer& { return m_transformsBuffer; }
     auto globalDataBuffer() -> VulkanBuffer& { return m_globalDataBuffer; }
     auto pointlightsBuffer() -> VulkanBuffer& { return m_pointlightsBuffer; }
+    auto textureToSrtImageIDBuffer() -> VulkanBuffer& { return m_textureToSrtImageIDBuffer; }
+    auto textureToSrtSamplerIDBuffer() -> VulkanBuffer& { return m_textureToSrtSamplerIDBuffer; }
+    auto materialPropBuffer(usize structSize) -> VulkanBuffer& { return m_materialPropBuffersBySize[structSize]; }
 
     auto frameDoneFence() -> VulkanFence& { return m_frameDoneFence; }
     auto imageAcquiredSemaphore() -> VulkanBinarySemaphore& { return m_imageAcquiredSemaphore; }
@@ -60,6 +63,10 @@ private:
     VulkanBuffer m_globalDataBuffer = nullptr;
     VulkanBuffer m_transformsBuffer = nullptr;
     VulkanBuffer m_pointlightsBuffer = nullptr;
+
+    VulkanBuffer m_textureToSrtImageIDBuffer = nullptr;
+    VulkanBuffer m_textureToSrtSamplerIDBuffer = nullptr;
+    HashMap<usize, VulkanBuffer> m_materialPropBuffersBySize = HashMap<usize, VulkanBuffer>::create();
 
     // --------------------------------------------------------------------------------------------------------------------------------------------------------
     // Synchronization

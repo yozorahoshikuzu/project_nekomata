@@ -145,7 +145,7 @@ float3 computeLightContribution(float3 norm, float3 viewdir, float3 lightdir, fl
 }
 
 const static float roughnessMaxLod = 6.0f;
-float3 computePixelColor(float3 fragmentPosWS, float3 norm, float3 albedo, float metallic, float roughness, float ao) {
+float3 computePixelColor(float3 fragmentPosWS, float3 norm, float3 geometricNorm, float3 albedo, float metallic, float roughness, float ao) {
     float3 viewdir = normalize(s_pushConstants.globalData.cameraPos - fragmentPosWS);
     float3 accum = float3(0.0);
 
@@ -154,9 +154,11 @@ float3 computePixelColor(float3 fragmentPosWS, float3 norm, float3 albedo, float
         let light = s_pushConstants.pointlights[i];
         float3 lz = light.position - fragmentPosWS;
         float3 l = normalize(lz);
+        float ngl = dot(geometricNorm, l);
+        float lighthorizon = clamp(ngl / 0.1f, 0.0f, 1.0f);
         float3 ld = length(lz);
         float3 radiance = light.lightRadiance / (ld * ld);
-        accum += computeLightContribution(norm, viewdir, l, radiance, albedo, metallic, roughness);
+        accum += computeLightContribution(norm, viewdir, l, radiance, albedo, metallic, roughness) * lighthorizon;
     }
 
     // ---- Diffuse IBL ------------------------------------------------------------------------------------------------
@@ -166,6 +168,8 @@ float3 computePixelColor(float3 fragmentPosWS, float3 norm, float3 albedo, float
     // ---- Specular IBL -----------------------------------------------------------------------------------------------
     float nv = max(dot(norm, viewdir), 0.0f);
     float3 r = reflect(-viewdir, norm);
+    float horizon = clamp(1.0f + 1.5f * dot(r, geometricNorm), 0.0f, 1.0f);
+    float hbsoOcclusion = horizon * horizon;
 
     float3 prefiltered = s_texturesCube[s_pushConstants.prefiltTextureSrtID].SampleLevel(s_samplers[s_pushConstants.linearSamplerSrtID], r, roughness * roughnessMaxLod).rgb;
     float2 envbrdf = s_textures2D[s_pushConstants.iblLutTextureSrtID].Sample(s_samplers[s_pushConstants.linearSamplerSrtID], float2(nv, roughness)).rg;
@@ -174,7 +178,8 @@ float3 computePixelColor(float3 fragmentPosWS, float3 norm, float3 albedo, float
     float3 fibl = fresnelSchlickRoughnessApprox(nv, f0, roughness);
     float3 kdibl = (float3(1.0) - fibl) * (1.0 - metallic);
 
-    float3 specularibl = prefiltered * (fibl * envbrdf.x + envbrdf.y);
+    float3 specularibl = prefiltered * (fibl * envbrdf.x + envbrdf.y) * hbsoOcclusion;
+
     float3 ambient = (kdibl * diffuseibl + specularibl) * ao;
 
     return ambient + accum;
@@ -184,7 +189,7 @@ float3 computePixelColor(float3 fragmentPosWS, float3 norm, float3 albedo, float
 float4 main(VSOut input) : SV_Target {
     let depth = s_textures2D[s_pushConstants.depthTextureSrtID].SampleLevel(s_samplers[s_pushConstants.nearestSamplerSrtID], input.texcoord, 0).r;
     let albedoAndRoughness = s_textures2D[s_pushConstants.albedoAndRoughnessTextureSrtID].SampleLevel(s_samplers[s_pushConstants.nearestSamplerSrtID], input.texcoord, 0);
-    let pn = s_textures2D[s_pushConstants.normalTextureSrtID].SampleLevel(s_samplers[s_pushConstants.nearestSamplerSrtID], input.texcoord, 0).xy;
+    let pn = s_textures2D[s_pushConstants.normalTextureSrtID].SampleLevel(s_samplers[s_pushConstants.nearestSamplerSrtID], input.texcoord, 0);
     let metallicAo = s_textures2D[s_pushConstants.metallicAoTextureSrtID].SampleLevel(s_samplers[s_pushConstants.nearestSamplerSrtID], input.texcoord, 0).xy;
 
     const float ev = -2.0f;
@@ -201,12 +206,14 @@ float4 main(VSOut input) : SV_Target {
 
     float3 position = reconstructPositionWS(input.positionCS, depth);
     float3 albedo = albedoAndRoughness.rgb;
-    float3 n = octahedronNormalUnpack(pn);
+    float3 n = octahedronNormalUnpack(pn.xy);
+    float3 geometricN = octahedronNormalUnpack(pn.zw);
+
     float roughness = albedoAndRoughness.a;
     float metallic = metallicAo.r;
     float ao = metallicAo.g;
 
-    float3 color = computePixelColor(position, n, albedo, metallic, roughness, ao) * exposure;
+    float3 color = computePixelColor(position, n, geometricN, albedo, metallic, roughness, ao) * exposure;
     float3 tonemapped = AcesTonemap::map(color);
     tonemapped += (interleavedGradientNoise(input.position.xy) - 0.5) / 255.0;
 

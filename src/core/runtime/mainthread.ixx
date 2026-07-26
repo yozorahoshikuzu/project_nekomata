@@ -11,6 +11,7 @@ import :graphics.texturesystem.texture_manager;
 import :graphics.fontsystem.font_manager;
 import :core.ui.ui_node;
 import :core.ui.ui_system;
+import :graphics.materialsystem.mat_manager;
 
 export namespace projnekomata {
 
@@ -32,7 +33,9 @@ private:
     Unique<VulkanContext> m_vkContext = nullptr;
     Unique<meshsystem::MeshAssetStorage> m_meshAssetStorage = nullptr;
     Unique<graphics::texturesystem::TextureManager> m_textureManager = nullptr;
+    Unique<MaterialManager> m_materialManager = nullptr;
     Unique<graphics::fonts::FontManager> m_fontManager = nullptr;
+
 
     Unique<ui::UiSystem> m_uiSystem = nullptr;
 

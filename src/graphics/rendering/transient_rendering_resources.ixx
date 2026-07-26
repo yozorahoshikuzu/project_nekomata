@@ -38,6 +38,8 @@ public:
     [[nodiscard]] VulkanImage& postSmaaImage() { return m_postSmaaImage; }
     [[nodiscard]] VulkanImageView& postSmaaImageUnormView() { return m_postSmaaImageUnormView; }
 
+    [[nodiscard]] VulkanImage& overdrawCountersImage() { return m_overdrawCountersImage; }
+
     [[nodiscard]] auto depthBufferIndex() const -> srt::SRTResourceIndex { return m_depthBufferIndex; }
     [[nodiscard]] auto albedoAndRoughnessBufferIndex() const -> srt::SRTResourceIndex { return m_albedoAndRoughnessBufferIndex; }
     [[nodiscard]] auto normalBufferIndex() const -> srt::SRTResourceIndex { return m_normalBufferIndex; }
@@ -50,7 +52,8 @@ public:
     [[nodiscard]] auto smaaEdgesImageIndex() const -> srt::SRTResourceIndex { return m_smaaEdgesImageIndex; }
     [[nodiscard]] auto smaaWeightsImageIndex() const -> srt::SRTResourceIndex { return m_smaaWeightsImageIndex; }
     [[nodiscard]] auto postSmaaImageIndex() const -> srt::SRTResourceIndex { return m_postSmaaImageIndex; }
-    [[nodiscard]] auto postSmaaImageUnormViewIndex() const -> srt::SRTResourceIndex { return m_postSmmaImageUnormViewIndex; }
+    [[nodiscard]] auto postSmaaImageUnormViewIndex() const -> srt::SRTResourceIndex { return m_postSmaaImageUnormViewIndex; }
+    [[nodiscard]] auto overdrawCountersImageIndex() const -> srt::SRTResourceIndex { return m_overdrawCountersImageIndex; }
 
 
     auto handleWindowSizeChange(vk::Extent2D newWindowSize) -> void;
@@ -89,11 +92,14 @@ private:
     srt::SRTResourceIndex m_smaaEdgesImageIndex           = {};
     srt::SRTResourceIndex m_smaaWeightsImageIndex         = {};
     srt::SRTResourceIndex m_postSmaaImageIndex          = {};
-    srt::SRTResourceIndex m_postSmmaImageUnormViewIndex = {};
+    srt::SRTResourceIndex m_postSmaaImageUnormViewIndex = {};
+    srt::SRTResourceIndex m_overdrawCountersImageIndex = {};
 
 
     VulkanImage m_postSmaaImage = nullptr;
     VulkanImageView m_postSmaaImageUnormView = nullptr;
+
+    VulkanImage m_overdrawCountersImage = nullptr;
 
     auto setupRenderingAttachments(vk::Extent2D renderImageExtent) -> void;
     auto zeroinitColorBuffers() -> void;

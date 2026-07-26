@@ -5,6 +5,7 @@ import :graphics.vulkan.vk_pipeline_layout;
 import :graphics.vulkan.vk_pipeline_graphics;
 import :graphics.fontsystem.font_face;
 import :graphics.fontsystem.dynamic_font_atlas;
+import :graphics.materialsystem.mat_manager;
 
 export namespace projnekomata::graphics {
 
@@ -56,9 +57,6 @@ public:
     VulkanPipelineLayout m_uiTextureRendererLayout = nullptr;
     VulkanGraphicsPipeline m_uiTextureRendererPipeline = nullptr;
 
-    VulkanPipelineLayout m_mainGeometryRenderLayout = nullptr;
-    VulkanGraphicsPipeline m_mainGeometryRenderPipeline = nullptr;
-
     VulkanPipelineLayout m_mainLightingPassLayout = nullptr;
     VulkanGraphicsPipeline m_mainLightingPassPipeline = nullptr;
 
@@ -76,6 +74,9 @@ public:
 
     VulkanPipelineLayout m_velbufferBgLayout = nullptr;
     VulkanGraphicsPipeline m_velbufferBgPipeline = nullptr;
+
+    VulkanPipelineLayout m_quadOverdrawVisLayout = nullptr;
+    VulkanGraphicsPipeline m_quadOverdrawVisPipeline = nullptr;
 
     math::Matrix4x4f m_lastProjview = math::Matrix4x4f::identity();
     math::Matrix4x4f m_lastProjviewNoTranslation = math::Matrix4x4f::identity();

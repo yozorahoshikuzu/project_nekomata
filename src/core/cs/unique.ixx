@@ -10,7 +10,12 @@ public:
     constexpr static auto null() noexcept -> Unique { return Unique(nullptr); }
 
     template <typename... Args>
-    constexpr static auto create(Args&&... args) noexcept -> Unique { return Unique(new T(std::forward<Args>(args)...)); }
+    constexpr static auto create(Args&&... args) noexcept -> Unique {
+        auto uniq = Unique::null();
+        uniq.m_ptr = new T(std::forward<Args>(args)...);
+        return uniq;
+    }
+
     constexpr static auto from(T&& t) noexcept -> Unique { return Unique(new T(std::forward<T>(t))); }
 
     template <typename D> constexpr static auto upcast(Unique<D>&& other) noexcept -> Unique<T> {

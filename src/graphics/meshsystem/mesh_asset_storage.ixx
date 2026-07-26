@@ -77,7 +77,7 @@ public:
 private:
 
     MeshPool m_meshPool = nullptr;
-    FreelistPool<LodList, 10, 4096> m_lodLists;
+    FreelistPoolV2<LodList, 131072> m_lodLists = nullptr;
 };
 
 }

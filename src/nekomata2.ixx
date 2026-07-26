@@ -23,3 +23,5 @@ export import :graphics.fontsystem.font_face;
 export import :core.ui.layout;
 export import :core.color;
 export import :core.ui.element_style;
+export import :graphics.vulkan.spv_shader_code;
+export import :graphics.materialsystem.mat_manager;

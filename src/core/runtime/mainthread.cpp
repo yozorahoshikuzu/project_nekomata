@@ -28,6 +28,7 @@ MainThread::MainThread(std::shared_ptr<MRThreadsSharedData> mrSharedData, Unique
     m_inputManager = core::input::Input::create();
     m_meshAssetStorage = meshsystem::MeshAssetStorage::create();
     m_textureManager = graphics::texturesystem::TextureManager::create();
+    m_materialManager = MaterialManager::create();
     m_fontManager = graphics::fonts::FontManager::create();
     m_uiSystem = ui::UiSystem::create();
 }
@@ -148,6 +149,15 @@ auto MainThread::loop(float dt) -> void {
         m_mrSharedData->m_leafs.getPrimary().m_textureToImageShaderIndexSnapshot,
         m_mrSharedData->m_leafs.getPrimary().m_textureToSamplerShaderIndexSnapshot
     );
+    m_mrSharedData->m_leafs.getPrimary().m_materialHeapSnapshotsBySize.clear();
+
+    for (auto [size, heap] : m_materialManager->materialParamHeapsMap().iter()) {
+        auto data = heap->data();
+        auto vec = Vec<u8>::withCapacity(data.len());
+        vec.extend(data);
+        m_mrSharedData->m_leafs.getPrimary().m_materialHeapSnapshotsBySize.emplace(size, std::move(vec));
+    }
+
     m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds.clear();
     ui::UiSystem::get().buildUi(m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds, logicalSizeFloat);
 

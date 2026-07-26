@@ -47,6 +47,31 @@ public:
         freeAll();
     }
 
+    constexpr HashMap(const HashMap&) = delete;
+    constexpr HashMap& operator=(const HashMap&) = delete;
+    constexpr HashMap(HashMap&& other) noexcept : m_ctrls(other.m_ctrls), m_entries(other.m_entries), m_dibs(other.m_dibs), m_len(other.m_len), m_capacity(other.m_capacity) {
+        other.m_ctrls = nullptr;
+        other.m_entries = nullptr;
+        other.m_dibs = nullptr;
+        other.m_len = 0;
+        other.m_capacity = 0;
+    }
+    constexpr HashMap& operator=(HashMap&& other) noexcept {
+        if (this == &other) return *this;
+        freeAll();
+        m_ctrls = other.m_ctrls;
+        m_entries = other.m_entries;
+        m_dibs = other.m_dibs;
+        m_len = other.m_len;
+        m_capacity = other.m_capacity;
+        other.m_ctrls = nullptr;
+        other.m_entries = nullptr;
+        other.m_dibs = nullptr;
+        other.m_len = 0;
+        other.m_capacity = 0;
+        return *this;
+    }
+
     static auto create() -> HashMap {
         auto hashmap = HashMap();
         hashmap.alloc(kInitialCapacity);
@@ -102,7 +127,39 @@ public:
         return None;
     }
 
+    constexpr auto get(const K& key) const -> Option<std::reference_wrapper<const V>> {
+        u64 hash = H::hash(key);
+        u8 h2 = computeH2(hash);
+        usize index = hashHomeIndex(hash);
+
+        __m128i needle = _mm_set1_epi8(h2);
+        __m128i empty = _mm_set1_epi8(kCtrlSentinelEmpty);
+
+        for (usize step = 0; step < m_capacity; step += 16) {
+            usize base = step + index;
+
+            __m128i group = _mm_loadu_si128(reinterpret_cast<const __m128i*>(m_ctrls + base));
+            u32 matches = _mm_movemask_epi8(_mm_cmpeq_epi8(group, needle));
+
+            while (matches) {
+                u32 bit = __builtin_ctz(matches);
+                usize slot = (base + bit) & (m_capacity - 1);
+                if (m_entries[slot].key == key) return Some(std::cref(m_entries[slot].value));
+                matches &= (matches - 1);
+            }
+            u32 emptyCount = _mm_movemask_epi8(_mm_cmpeq_epi8(group, empty));
+            if (emptyCount) return None;
+        }
+        return None;
+    }
+
     constexpr auto operator[](const K& key) -> V& {
+        auto ref = get(key);
+        debug_assert(ref.isSome(), "HashMap: key not found");
+        return ref.unwrap();
+    }
+
+    constexpr auto operator[](const K& key) const -> const V& {
         auto ref = get(key);
         debug_assert(ref.isSome(), "HashMap: key not found");
         return ref.unwrap();
@@ -199,8 +256,8 @@ private:
 
     static constexpr auto computeH2(u64 hash) -> u8 { return static_cast<u8>(hash & 0x7f); }
 
-    constexpr auto hashHomeIndex(u64 hash) -> usize { return static_cast<usize>(hash >> 7) & (m_capacity - 1); }
-    constexpr auto computeNextIndex(usize index) -> usize { return (index + 1) & (m_capacity - 1); }
+    constexpr auto hashHomeIndex(u64 hash) const -> usize { return static_cast<usize>(hash >> 7) & (m_capacity - 1); }
+    constexpr auto computeNextIndex(usize index) const -> usize { return (index + 1) & (m_capacity - 1); }
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
 

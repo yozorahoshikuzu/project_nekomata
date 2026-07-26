@@ -9,6 +9,7 @@ export namespace projnekomata {
 
 enum class PhysicalDevicePropertyQueryErrorKind {
     MissingKhrSwapchain,
+    MissingVk14DynamicRenderingLocalRead,
     MissingVk14Maintenance5,
     MissingVk13Synchronization2,
     MissingVk13DynamicRendering,
@@ -17,6 +18,7 @@ enum class PhysicalDevicePropertyQueryErrorKind {
     MissingVk12DescriptorIndexing,
     MissingVk12ShaderSampledImageArrayNonUniformIndexing,
     MissingVk12DescriptorBindingPartiallyBound,
+    MissingVk12DescriptorBindingStorageImageUpdateAfterBind,
     MissingVk12DescriptorBindingSampledImageUpdateAfterBind,
     MissingVk12DescriptorBindingUpdateUnusedWhilePending,
     MissingVk12RuntimeDescriptorArray,
@@ -36,6 +38,9 @@ struct PhysicalDevicePropertyQueryError {
         switch (m_kind) {
             case PhysicalDevicePropertyQueryErrorKind::MissingKhrSwapchain:
                 cause = "Missing Vulkan extension VK_KHR_swapchain";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk14DynamicRenderingLocalRead:
+                cause = "Missing Vulkan 1.4 feature dynamicRenderingLocalRead";
                 break;
             case PhysicalDevicePropertyQueryErrorKind::MissingVk14Maintenance5:
                 cause = "Missing Vulkan 1.4 feature maintenance5";
@@ -60,6 +65,9 @@ struct PhysicalDevicePropertyQueryError {
                 break;
             case PhysicalDevicePropertyQueryErrorKind::MissingVk12DescriptorBindingPartiallyBound:
                 cause = "Missing Vulkan 1.2 feature descriptorBindingPartiallyBound";
+                break;
+            case PhysicalDevicePropertyQueryErrorKind::MissingVk12DescriptorBindingStorageImageUpdateAfterBind:
+                cause = "Missing Vulkan 1.2 feature descriptorBindingStorageImageUpdateAfterBind";
                 break;
             case PhysicalDevicePropertyQueryErrorKind::MissingVk12DescriptorBindingSampledImageUpdateAfterBind:
                 cause = "Missing Vulkan 1.2 feature descriptorBindingSampledImageUpdateAfterBind";
@@ -129,6 +137,7 @@ public:
     bool m_hasKhrPipelineBinary = false;
     bool m_hasAMDAntiLag2       = false;
     bool m_hasPipelineStatisticsQuery = false;
+    bool m_hasTessellation      = false;
 
     vk::PhysicalDeviceAccelerationStructurePropertiesKHR m_accelerationStructureProperties = {};
     vk::PhysicalDeviceRayTracingPipelinePropertiesKHR    m_rayTracingPipelineProperties    = {};

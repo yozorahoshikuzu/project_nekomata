@@ -47,8 +47,8 @@ struct UiMouseHitRegion {
     bool capturesClicks = false;
     bool capturesHover = false;
 
-    Option<std::function_ref<auto(math::Vector2f) -> void>> clickCallback;
-    Option<std::function_ref<auto(math::Vector2f) -> void>> hoverCallback;
+    Option<std::function<auto(math::Vector2f) -> void>> clickCallback;
+    Option<std::function<auto(math::Vector2f) -> void>> hoverCallback;
 };
 
 struct UiNode {
@@ -103,13 +103,13 @@ struct UiNode {
         auto endPos = position + extent;
 
         if (capturesClicks || capturesHover) {
-            auto optClickCallback = Option<std::function_ref<auto(math::Vector2f) -> void>>::someIf(
+            auto optClickCallback = Option<std::function<auto(math::Vector2f) -> void>>::someIf(
                 capturesClicks && (clickCallback != nullptr),
-                [&] { return std::function_ref<auto(math::Vector2f) -> void>(clickCallback); }
+                [&] { return std::function<auto(math::Vector2f) -> void>(clickCallback); }
             );
-            auto optHoverCallback = Option<std::function_ref<auto(math::Vector2f) -> void>>::someIf(
+            auto optHoverCallback = Option<std::function<auto(math::Vector2f) -> void>>::someIf(
                 capturesHover && (hoverCallback != nullptr),
-                [&] { return std::function_ref<auto(math::Vector2f) -> void>(hoverCallback); }
+                [&] { return std::function<auto(math::Vector2f) -> void>(hoverCallback); }
             );
 
             dstHitregions.emplace(UiMouseHitRegion{

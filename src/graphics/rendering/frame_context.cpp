@@ -17,6 +17,7 @@ import :graphics.vulkan.vk_commands_barriers;
 import :core.ecs.entity;
 import :core.overloaded;
 import :graphics.rendering.frame_context;
+import :graphics.materialsystem.mat_manager;
 
 namespace projnekomata::graphics {
 
@@ -260,6 +261,19 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     // ---- Deferred Geometry Stage ----------------------------------------------------------------------------------------------------------------------------
 
     VulkanPipelineBarriers::builder()
+        .insertImageMemoryBarrier(transientRenderingResources.overdrawCountersImage(),
+            vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eFragmentShader, {},
+            vk::ImageLayout::eTransferDstOptimal, vk::PipelineStageFlagBits2::eClear, vk::AccessFlagBits2::eTransferWrite
+        )
+        .flush(m_frameRenderingResources.commandBuffer());
+
+    cb.clearColorImage(transientRenderingResources.overdrawCountersImage().vkImage(), vk::ImageLayout::eTransferDstOptimal, vk::ClearColorValue{}.setUint32({0, 0, 0, 0}), transientRenderingResources.overdrawCountersImage().subresourceRangeFull());
+
+    VulkanPipelineBarriers::builder()
+        .insertImageMemoryBarrier(transientRenderingResources.overdrawCountersImage(),
+            vk::ImageLayout::eTransferDstOptimal, vk::PipelineStageFlagBits2::eClear, vk::AccessFlagBits2::eTransferWrite,
+            vk::ImageLayout::eGeneral, vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite
+        )
         .insertImageMemoryBarrier(transientRenderingResources.albedoAndRoughnessBuffer(),
             vk::ImageLayout::eUndefined, vk::PipelineStageFlagBits2::eFragmentShader, {},
             vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite
@@ -325,18 +339,18 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     cb.setViewport(0, viewport);
     cb.setScissor(0, scissor);
 
-    cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.m_mainGeometryRenderPipeline.vkPipeline());
-    texturesystem::TextureManager::get().shaderResourceTable().bindToCommandBuffer(m_frameRenderingResources.commandBuffer(), sharedRenderingResources.m_mainGeometryRenderLayout, vk::PipelineBindPoint::eGraphics);
+    auto& globPipelineLayout = MaterialManager::get().globalPipelineLayout();
+
+    texturesystem::TextureManager::get().shaderResourceTable().bindToCommandBuffer(m_frameRenderingResources.commandBuffer(), globPipelineLayout, vk::PipelineBindPoint::eGraphics);
     auto uboDeviceAddr = m_frameRenderingResources.transformsBuffer().memoryDevicePtr();
 
     struct RenderPushConstantData {
         vk::DeviceAddress objectUniformAddr;
         vk::DeviceAddress vertexbufferAddr;
         vk::DeviceAddress globaldataAddr;
-        u32 textureId;
-        u32 samplerId;
-        float roughness;
-        float metallic;
+        vk::DeviceAddress materialDataAddr;
+        vk::DeviceAddress textureToImageShaderIndexTableAddr;
+        vk::DeviceAddress textureToSamplerShaderIndexTableAddr;
     };
 
     for (auto [i, renderable] : renderingData.m_renderables.m_storage.iter().enumerate()) {
@@ -347,9 +361,6 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
 
         // Copy its transforms addr to push constants
         vk::DeviceAddress uboFinalAddr = uboDeviceAddr + i * sizeof(Transforms);
-
-        auto textureImageId = renderingData.m_textureToImageShaderIndexSnapshot[renderable.texture.index];
-        auto textureSamplerId = renderingData.m_textureToSamplerShaderIndexSnapshot[renderable.texture.index];
 
         // Pick an LOD
         Vector3f objectPos = Vector3f(0.0f);
@@ -400,23 +411,21 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
         auto& lod = lodList.lods[hysteresisState.currentLod];
 
         auto vboDeviceAddr = lod.meshSuballocation.vertexBuffer.deviceAddress;
-
-        float roughness = static_cast<float>(i % 11) / 10.0f;
-        float metallic = static_cast<float>(i / 11) / 10.0f;
+        auto materialDataStride = renderable.material.shader->materialPropStructSize();
+        auto materialDataAddr = m_frameRenderingResources.materialPropBuffer(materialDataStride).memoryDevicePtr() + materialDataStride * renderable.material.properties.propertiesIndex;
 
         auto pushconstData = RenderPushConstantData {
             .objectUniformAddr = uboFinalAddr,
             .vertexbufferAddr = vboDeviceAddr,
             .globaldataAddr = globaldataAddr,
-            .textureId = textureImageId,
-            .samplerId = textureSamplerId,
-            .roughness = roughness,
-            .metallic = metallic,
+            .materialDataAddr = materialDataAddr,
+            .textureToImageShaderIndexTableAddr = m_frameRenderingResources.textureToSrtImageIDBuffer().memoryDevicePtr(),
+            .textureToSamplerShaderIndexTableAddr = m_frameRenderingResources.textureToSrtSamplerIDBuffer().memoryDevicePtr()
         };
 
+        cb.bindPipeline(vk::PipelineBindPoint::eGraphics, renderable.material.shader->pipeline().vkPipeline());
         cb.bindIndexBuffer(lod.meshSuballocation.indexBuffer.buffer, lod.meshSuballocation.indexBuffer.offset, vk::IndexType::eUint32);
-
-        cb.pushConstants<RenderPushConstantData>(sharedRenderingResources.m_mainGeometryRenderLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, pushconstData);
+        cb.pushConstants<RenderPushConstantData>(globPipelineLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eAll, 0, pushconstData);
         cb.drawIndexed(lod.meshSuballocation.indexBuffer.size / sizeof(u32), 1, 0, 0, 0);
         m_numDrawcalls++;
     }
@@ -592,7 +601,6 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     struct SmaaEdgeDetectionPushConstantData {
         Vector4f rtMetrics;
         u32 colorBufferSrtID;
-        u32 depthBufferSrtID;
         u32 linearSamplerSrtID;
         u32 nearestSamplerSrtID;
     };
@@ -600,7 +608,6 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     auto smaaEdgeDetectionPushconstData = SmaaEdgeDetectionPushConstantData {
         .rtMetrics = smaaRtMetrics,
         .colorBufferSrtID = transientRenderingResources.colorBufferUnormViewIndex().imageIndex,
-        .depthBufferSrtID = transientRenderingResources.depthBufferIndex().imageIndex,
         .linearSamplerSrtID = smaaLinearSamplerSrtID,
         .nearestSamplerSrtID = smaaNearestSamplerSrtID
     };
@@ -796,7 +803,36 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     if (recordStatistics) {
         cb.writeTimestamp2(vk::PipelineStageFlagBits2::eBottomOfPipe, m_timestampsQueryPool.vkQueryPool(), 5);
     }
+    // ---- Temporary : Quad Overdraw Vis ----------------------------------------------------------------------------------------------------------------------
+/*
+    VulkanPipelineBarriers::builder()
+        .insertImageMemoryBarrier(transientRenderingResources.finalImage(),
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentWrite,
+            vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eColorAttachmentRead | vk::AccessFlagBits2::eColorAttachmentWrite
+        )
+        .flush(m_frameRenderingResources.commandBuffer());
 
+    auto finalDrawBufferAttachmentInfodbg = vk::RenderingAttachmentInfo{}
+    .setImageView(transientRenderingResources.finalImage().vkImageViewWholeSize())
+    .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
+    .setLoadOp(vk::AttachmentLoadOp::eLoad)
+    .setStoreOp(vk::AttachmentStoreOp::eStore);
+
+    auto finalDrawBufferDbgRenderingInfo = vk::RenderingInfo{}
+        .setColorAttachments(finalDrawBufferAttachmentInfodbg)
+        .setLayerCount(1)
+        .setRenderArea(vk::Rect2D{}.setExtent(vkRenderingArea));
+
+    cb.beginRendering(finalDrawBufferDbgRenderingInfo);
+    cb.setViewport(0, viewport);
+    cb.setScissor(0, scissor);
+
+    cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.m_quadOverdrawVisPipeline.vkPipeline());
+    texturesystem::TextureManager::get().shaderResourceTable().bindToCommandBuffer(m_frameRenderingResources.commandBuffer(), sharedRenderingResources.m_quadOverdrawVisLayout, vk::PipelineBindPoint::eGraphics);
+    cb.pushConstants<u32>(sharedRenderingResources.m_quadOverdrawVisLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, transientRenderingResources.overdrawCountersImageIndex().imageIndex);
+    cb.draw(3, 1, 0, 0);
+    cb.endRendering();
+*/
     // ---- UI -------------------------------------------------------------------------------------------------------------------------------------------------
 
     VulkanPipelineBarriers::builder()

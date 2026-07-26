@@ -1,1 +1,0 @@
-#include "material_props_shared.h"

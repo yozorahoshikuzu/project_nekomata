@@ -33,6 +33,35 @@ auto FrameRenderingResources::prepareBuffers(MRThreadsSharedDataLeaf& renderingD
     auto viewMatrix = cameraModelMatrix.inverse().unwrapOr(math::Matrix4x4f::identity());
     auto viewportSize = Vector2f(renderingData.m_currentWindowExtent.width, renderingData.m_currentWindowExtent.height);
 
+    auto queuesForBuffer = VulkanContext::get().vkPhysicalDeviceProps().m_queueFamilies[QueueFamily::Graphics];
+    // ---- Shader Resource Table Handles ----------------------------------------------------------------------------------------------------------------------
+
+    auto srtImageHandlesData = renderingData.m_textureToImageShaderIndexSnapshot.asSlice();
+    auto srtSamplerHandlesData = renderingData.m_textureToSamplerShaderIndexSnapshot.asSlice();
+    if (m_textureToSrtImageIDBuffer.vkBuffer() == nullptr || m_textureToSrtImageIDBuffer.size() < srtImageHandlesData.len() * sizeof(u32)) {
+        m_textureToSrtImageIDBuffer = VulkanBuffer::create(srtImageHandlesData.len() * sizeof(u32), vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer, VulkanBufferMemoryMapping::MapForSequentialWrite, vma::MemoryUsage::eAutoPreferDevice, vk::MemoryPropertyFlagBits::eHostVisible, queuesForBuffer);
+    }
+
+    if (m_textureToSrtSamplerIDBuffer.vkBuffer() == nullptr || m_textureToSrtSamplerIDBuffer.size() < srtSamplerHandlesData.len() * sizeof(u32)) {
+        m_textureToSrtSamplerIDBuffer = VulkanBuffer::create(srtSamplerHandlesData.len() * sizeof(u32), vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer, VulkanBufferMemoryMapping::MapForSequentialWrite, vma::MemoryUsage::eAutoPreferDevice, vk::MemoryPropertyFlagBits::eHostVisible, queuesForBuffer);
+    }
+
+    memcpy(m_textureToSrtImageIDBuffer.memoryHostPtr(), srtImageHandlesData.data(), srtImageHandlesData.len() * sizeof(u32));
+    memcpy(m_textureToSrtSamplerIDBuffer.memoryHostPtr(), srtSamplerHandlesData.data(), srtSamplerHandlesData.len() * sizeof(u32));
+
+    // ---- Material Data --------------------------------------------------------------------------------------------------------------------------------------
+
+    for (auto& [size, heapdata] : renderingData.m_materialHeapSnapshotsBySize.iter()) {
+        // make sure we have an appropriate size buffer first:
+        if (!m_materialPropBuffersBySize.contains(size)) {
+            m_materialPropBuffersBySize.insert(size, VulkanBuffer::create(heapdata.len(), vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer, VulkanBufferMemoryMapping::MapForSequentialWrite, vma::MemoryUsage::eAutoPreferDevice, vk::MemoryPropertyFlagBits::eHostVisible, queuesForBuffer));
+        } else if (m_materialPropBuffersBySize[size].size() < heapdata.len()) {
+            m_materialPropBuffersBySize[size] = VulkanBuffer::create(heapdata.len(), vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer, VulkanBufferMemoryMapping::MapForSequentialWrite, vma::MemoryUsage::eAutoPreferDevice, vk::MemoryPropertyFlagBits::eHostVisible, queuesForBuffer);
+        }
+
+        memcpy(m_materialPropBuffersBySize[size].memoryHostPtr(), heapdata.data(), heapdata.len());
+    }
+
     // ---- Per-Object Data ------------------------------------------------------------------------------------------------------------------------------------
 
     for (auto [i, rend] : renderingData.m_renderables.m_storage.iter().enumerate()) {

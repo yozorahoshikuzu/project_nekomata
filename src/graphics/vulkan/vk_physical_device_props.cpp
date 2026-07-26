@@ -57,6 +57,7 @@ static constexpr auto kRequiredPhysicalDeviceExtensions = std::to_array<Required
 });
 
 static constexpr auto kRequiredPhysicalDeviceFeatures = std::to_array<RequiredFeatureRule>({
+    { "dynamicRenderingLocalRead"sv,                         {}, {}, {}, {}, &vk::PhysicalDeviceVulkan14Features::dynamicRenderingLocalRead, PhysicalDevicePropertyQueryErrorKind::MissingVk14DynamicRenderingLocalRead },
     { "maintenance5"sv,                                      {}, {}, {}, {}, &vk::PhysicalDeviceVulkan14Features::maintenance5, PhysicalDevicePropertyQueryErrorKind::MissingVk14Maintenance5 },
     { "synchronization2"sv,                                  {}, {}, {}, &vk::PhysicalDeviceVulkan13Features::synchronization2, {},   PhysicalDevicePropertyQueryErrorKind::MissingVk13Synchronization2 },
     { "dynamicRendering"sv,                                  {}, {}, {}, &vk::PhysicalDeviceVulkan13Features::dynamicRendering, {},   PhysicalDevicePropertyQueryErrorKind::MissingVk13DynamicRendering },
@@ -65,6 +66,7 @@ static constexpr auto kRequiredPhysicalDeviceFeatures = std::to_array<RequiredFe
     { "descriptorIndexing"sv,                                {}, {}, &vk::PhysicalDeviceVulkan12Features::descriptorIndexing,  {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12DescriptorIndexing },
     { "shaderSampledImageArrayNonUniformIndexing"sv,         {}, {}, &vk::PhysicalDeviceVulkan12Features::shaderSampledImageArrayNonUniformIndexing, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12ShaderSampledImageArrayNonUniformIndexing },
     { "descriptorBindingPartiallyBound"sv,                   {}, {}, &vk::PhysicalDeviceVulkan12Features::descriptorBindingPartiallyBound, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12DescriptorBindingPartiallyBound },
+    { "descriptorBindingStorageImageUpdateAfterBind"sv,      {}, {}, &vk::PhysicalDeviceVulkan12Features::descriptorBindingStorageImageUpdateAfterBind, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12DescriptorBindingStorageImageUpdateAfterBind },
     { "descriptorBindingSampledImageUpdateAfterBind"sv,      {}, {}, &vk::PhysicalDeviceVulkan12Features::descriptorBindingSampledImageUpdateAfterBind, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12DescriptorBindingSampledImageUpdateAfterBind },
     { "descriptorBindingUpdateUnusedWhilePending"sv,         {}, {}, &vk::PhysicalDeviceVulkan12Features::descriptorBindingUpdateUnusedWhilePending, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12DescriptorBindingUpdateUnusedWhilePending },
     { "runtimeDescriptorArray"sv,                            {}, {}, &vk::PhysicalDeviceVulkan12Features::runtimeDescriptorArray, {}, {}, PhysicalDevicePropertyQueryErrorKind::MissingVk12RuntimeDescriptorArray },
@@ -113,6 +115,10 @@ static auto kOptFeaturesAMDAntiLag2 = std::to_array<VulkanFeaturePtr>({ &vk::Phy
 static auto kOptExtensionsPipelineStatisticsQuery = emptyArray<std::string_view>();
 static auto kOptFeaturesPipelineStatisticsQuery = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceFeatures::pipelineStatisticsQuery });
 
+// for Tessellation
+static auto kOptExtensionsTessellation = emptyArray<std::string_view>();
+static auto kOptFeaturesTessellation = std::to_array<VulkanFeaturePtr>({ &vk::PhysicalDeviceFeatures::tessellationShader });
+
 // Table
 static auto kOptionalPhysicalDeviceFeatures = std::to_array<OptFeatureRule>({
     { "FP16 Arithmetic"sv,                                   kOptExtensionsFp16, kOptFeaturesFp16, &VulkanPhysicalDeviceProperties::m_hasFp16 },
@@ -124,6 +130,7 @@ static auto kOptionalPhysicalDeviceFeatures = std::to_array<OptFeatureRule>({
     { "Pipeline Binaries"sv,                                 kOptExtensionsKhrPipelineBinary, kOptFeaturesKhrPipelineBinary, &VulkanPhysicalDeviceProperties::m_hasKhrPipelineBinary },
     { "AMD Anti-Lag 2"sv,                                    kOptExtensionsAMDAntiLag2, kOptFeaturesAMDAntiLag2, &VulkanPhysicalDeviceProperties::m_hasAMDAntiLag2 },
     { "Pipeline Statistics Query"sv,                         kOptExtensionsPipelineStatisticsQuery, kOptFeaturesPipelineStatisticsQuery, &VulkanPhysicalDeviceProperties::m_hasPipelineStatisticsQuery },
+    { "Tessellation"sv,                                      kOptExtensionsTessellation, kOptFeaturesTessellation, &VulkanPhysicalDeviceProperties::m_hasTessellation },
 });
 // clang-format on
 

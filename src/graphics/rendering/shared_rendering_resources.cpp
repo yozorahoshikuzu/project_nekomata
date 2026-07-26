@@ -1,3 +1,5 @@
+module;
+#include <cstddef>
 module projnekomata;
 import vulkan;
 import :graphics.texturesystem.texture_manager;
@@ -6,6 +8,7 @@ import :graphics.fontsystem.font_manager;
 import :graphics.rendering.shared_rendering_resources;
 import :graphics.cmd_alloc;
 import :graphics.vulkan.vk_commands_barriers;
+import :graphics.materialsystem.mat_manager;
 
 namespace projnekomata::graphics {
 
@@ -101,49 +104,6 @@ SharedRenderingResources::SharedRenderingResources() {
             vk::Format::eB10G11R11UfloatPack32
         )
         .setMultiviewViewsMask(0b111111)
-        .build();
-
-    m_mainGeometryRenderLayout = VulkanPipelineLayout::builder()
-        .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
-        .addPushConstantRange(0, 40, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
-        .build();
-    auto geometryRenderShader = SpirvShaderCode::loadFromFile("../spirv/mainrender_geom.spv").unwrap();
-    m_mainGeometryRenderPipeline = VulkanGraphicsPipeline::builder()
-        .setPipelineLayout(m_mainGeometryRenderLayout)
-        .addShader(geometryRenderShader, vk::ShaderStageFlagBits::eVertex)
-        .addShader(geometryRenderShader, vk::ShaderStageFlagBits::eFragment)
-        .setInputTopology(vk::PrimitiveTopology::eTriangleList)
-        .setRastPolygonMode(vk::PolygonMode::eFill)
-        .setRastCulling(vk::CullModeFlagBits::eBack, vk::FrontFace::eCounterClockwise)
-        .setRastLineWidth(1.0)
-        .disableMultisampling()
-        .enableDepthTest()
-        .enableDepthWrite()
-        .setDepthAttachmentFormat(vk::Format::eD32Sfloat)
-        .pushRenderingAttachment(
-            vk::PipelineColorBlendAttachmentState{}
-                 .setBlendEnable(false)
-                 .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
-            vk::Format::eR8G8B8A8Unorm
-        )
-        .pushRenderingAttachment(
-            vk::PipelineColorBlendAttachmentState{}
-                 .setBlendEnable(false)
-                 .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
-            vk::Format::eR16G16Snorm
-        )
-        .pushRenderingAttachment(
-            vk::PipelineColorBlendAttachmentState{}
-                 .setBlendEnable(false)
-                 .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
-            vk::Format::eR8G8Unorm
-        )
-        .pushRenderingAttachment(
-            vk::PipelineColorBlendAttachmentState{}
-                .setBlendEnable(false)
-                .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
-            vk::Format::eR16G16Sfloat
-        )
         .build();
 
     m_mainLightingPassLayout = VulkanPipelineLayout::builder()
@@ -262,7 +222,7 @@ SharedRenderingResources::SharedRenderingResources() {
 
     m_smaaEdgeDetectLayout = VulkanPipelineLayout::builder()
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
-        .addPushConstantRange(0, 32, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+        .addPushConstantRange(0, 28, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
         .build();
     auto smaaEdgeDetectShader = SpirvShaderCode::loadFromFile("../spirv/smaa_edgedetect.spv").unwrap();
     m_smaaEdgeDetectPipeline = VulkanGraphicsPipeline::builder()
@@ -378,6 +338,29 @@ SharedRenderingResources::SharedRenderingResources() {
              .setBlendEnable(false)
              .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
             vk::Format::eR16G16Sfloat
+        )
+        .build();
+
+    m_quadOverdrawVisLayout = VulkanPipelineLayout::builder()
+        .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
+        .addPushConstantRange(0, 4, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+        .build();
+    auto quadOverdrawVisShader = SpirvShaderCode::loadFromFile("../spirv/quad_overdraw_vis.spv").unwrap();
+    m_quadOverdrawVisPipeline = VulkanGraphicsPipeline::builder()
+        .setPipelineLayout(m_quadOverdrawVisLayout)
+        .addShader(quadOverdrawVisShader, vk::ShaderStageFlagBits::eVertex)
+        .addShader(quadOverdrawVisShader, vk::ShaderStageFlagBits::eFragment)
+        .setInputTopology(vk::PrimitiveTopology::eTriangleList)
+        .setRastPolygonMode(vk::PolygonMode::eFill)
+        .setRastCulling(vk::CullModeFlagBits::eNone, vk::FrontFace::eCounterClockwise)
+        .setRastLineWidth(1.0f)
+        .disableMultisampling()
+        .disableDepthTest()
+        .pushRenderingAttachment(
+            vk::PipelineColorBlendAttachmentState{}
+             .setBlendEnable(false)
+             .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA),
+            vk::Format::eR8G8B8A8Srgb
         )
         .build();
 

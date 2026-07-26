@@ -37,7 +37,7 @@ public:
     VulkanDescriptorSetWriter& operator=(const VulkanDescriptorSetWriter&) = delete;
     VulkanDescriptorSetWriter& operator=(VulkanDescriptorSetWriter&&) = default;
 
-    [[nodiscard]] constexpr auto bindImage(u32 binding, u32 dstDescriptorIndex, const VulkanImage& image) -> VulkanDescriptorSetWriter& {
+    [[nodiscard]] constexpr auto bindSampledImage(u32 binding, u32 dstDescriptorIndex, const VulkanImage& image) -> VulkanDescriptorSetWriter& {
         auto imageInfo = vk::DescriptorImageInfo{}
             .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
             .setSampler(nullptr)
@@ -45,12 +45,29 @@ public:
         m_descriptorImageInfos.emplace(binding, dstDescriptorIndex, vk::DescriptorType::eSampledImage, imageInfo);
         return *this;
     }
-    [[nodiscard]] constexpr auto bindImage(u32 binding, u32 dstDescriptorIndex, const VulkanImageView& imageView) -> VulkanDescriptorSetWriter& {
+    [[nodiscard]] constexpr auto bindSampledImage(u32 binding, u32 dstDescriptorIndex, const VulkanImageView& imageView) -> VulkanDescriptorSetWriter& {
         auto imageInfo = vk::DescriptorImageInfo{}
             .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
             .setSampler(nullptr)
             .setImageView(imageView.vkImageView());
         m_descriptorImageInfos.emplace(binding, dstDescriptorIndex, vk::DescriptorType::eSampledImage, imageInfo);
+        return *this;
+    }
+
+    [[nodiscard]] constexpr auto bindStorageImage(u32 binding, u32 dstDescriptorIndex, const VulkanImage& image) -> VulkanDescriptorSetWriter& {
+        auto imageInfo = vk::DescriptorImageInfo{}
+            .setImageLayout(vk::ImageLayout::eGeneral)
+            .setSampler(nullptr)
+            .setImageView(image.vkImageViewWholeSize());
+        m_descriptorImageInfos.emplace(binding, dstDescriptorIndex, vk::DescriptorType::eStorageImage, imageInfo);
+        return *this;
+    }
+    [[nodiscard]] constexpr auto bindStorageImage(u32 binding, u32 dstDescriptorIndex, const VulkanImageView& imageView) -> VulkanDescriptorSetWriter& {
+        auto imageInfo = vk::DescriptorImageInfo{}
+            .setImageLayout(vk::ImageLayout::eGeneral)
+            .setSampler(nullptr)
+            .setImageView(imageView.vkImageView());
+        m_descriptorImageInfos.emplace(binding, dstDescriptorIndex, vk::DescriptorType::eStorageImage, imageInfo);
         return *this;
     }
 
