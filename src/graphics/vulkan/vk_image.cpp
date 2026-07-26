@@ -71,6 +71,22 @@ std::unordered_map<vk::Format, ImageFormatMd> VulkanImage::s_formatMetadata = {
     { vk::Format::eBc7UnormBlock,                             ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 16, .blockWidth = 4, .blockHeight = 4 } },
     { vk::Format::eBc7SrgbBlock,                              ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 16, .blockWidth = 4, .blockHeight = 4 } },
 
+    // ASTC 4x4 - 4x4 blocks, 16 bytes per block
+    { vk::Format::eAstc4x4UnormBlock,                         ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 16, .blockWidth = 4, .blockHeight = 4 } },
+    { vk::Format::eAstc4x4SrgbBlock,                          ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 16, .blockWidth = 4, .blockHeight = 4 } },
+
+    // ETC2 - 4x4, 8 bytes per block
+    { vk::Format::eEtc2R8G8B8A8SrgbBlock,                     ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 8, .blockWidth = 4, .blockHeight = 4 } },
+    { vk::Format::eEtc2R8G8B8A8UnormBlock,                    ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 8, .blockWidth = 4, .blockHeight = 4 } },
+
+    // EAC R11 - 4x4 blocks, 8 bytes per block
+    { vk::Format::eEacR11UnormBlock,                           ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 8, .blockWidth = 4, .blockHeight = 4 } },
+    { vk::Format::eEacR11SnormBlock,                           ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 8, .blockWidth = 4, .blockHeight = 4 } },
+
+    // EAC R11G11 - 4x4 blocks, 16 bytes per block
+    { vk::Format::eEacR11G11UnormBlock,                        ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 16, .blockWidth = 4, .blockHeight = 4 } },
+    { vk::Format::eEacR11G11SnormBlock,                        ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 16, .blockWidth = 4, .blockHeight = 4 } },
+
     // Depth Formats
     {vk::Format::eD32Sfloat,                                  ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eDepth, .bpp = 4 }},
 };
