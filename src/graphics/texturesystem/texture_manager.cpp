@@ -131,7 +131,6 @@ auto TextureManager::freeTexture(Texture texture) -> void {
 }
 
 auto pickTranscodeDst(u32 numChannels) -> ktx_transcode_fmt_e {
-    return KTX_TTF_RGBA32;
     auto& physdevProps = VulkanContext::get().vkPhysicalDeviceProps();
     switch (numChannels) {
         case 4:
