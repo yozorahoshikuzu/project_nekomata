@@ -130,8 +130,15 @@ auto TextureManager::freeTexture(Texture texture) -> void {
     log::warn("some texture just got leaked");
 }
 
-auto pickTranscodeDst(u32 numChannels) -> ktx_transcode_fmt_e {
+auto pickTranscodeDst(u32 numChannels, bool isHdr) -> ktx_transcode_fmt_e {
     auto& physdevProps = VulkanContext::get().vkPhysicalDeviceProps();
+
+    if (isHdr) {
+        if (physdevProps.m_textureFormatSupportASTCHDR) return KTX_TTF_ASTC_HDR_4x4_RGBA;
+        if (physdevProps.m_textureFormatSupportBC6HU) return KTX_TTF_BC6HU;
+        return KTX_TTF_RGBA_HALF;
+    }
+
     switch (numChannels) {
         case 4:
         case 3: {
@@ -169,11 +176,11 @@ auto TextureManager::temporary_uploadTheImage(Texture texture, const std::filesy
         panic("failed to load texture: {}", path.string());
     }
 
-    bool needsTranscoding = ktxTexture2_NeedsTranscoding(ktxData);
+    bool needsTranscoding = ktxTexture2_IsTranscodable(ktxData);
     if (needsTranscoding) {
         auto numComponents = ktxTexture2_GetNumComponents(ktxData);
-        auto& physdevProps = VulkanContext::get().vkPhysicalDeviceProps();
-        ktx_transcode_fmt_e transcodeFormat = pickTranscodeDst(numComponents);
+        auto isHdr = ktxTexture2_IsHDR(ktxData);
+        ktx_transcode_fmt_e transcodeFormat = pickTranscodeDst(numComponents, isHdr);
         KTX_error_code transcodeResult = ktxTexture2_TranscodeBasis(ktxData, transcodeFormat, 0);
         if (transcodeResult != KTX_SUCCESS) {
             panic("failed to transcode texture");

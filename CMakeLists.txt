@@ -94,10 +94,12 @@ set(CMAKE_SKIP_INSTALL_RULES ON)
 FetchContent_MakeAvailable(fastgltf)
 set(CMAKE_SKIP_INSTALL_RULES OFF)
 
+# workaround for compiler errors from KTX
+set(CMAKE_CXX_STANDARD 20)
 FetchContent_Declare(
         ktx
         GIT_REPOSITORY https://github.com/KhronosGroup/KTX-Software.git
-        GIT_TAG        v4.4.2
+        GIT_TAG        v5.0.0-rc1
         GIT_SHALLOW    TRUE
         GIT_SUBMODULES ""
         SYSTEM
@@ -109,6 +111,7 @@ set(KTX_FEATURE_TOOLS OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(ktx)
 
+set(CMAKE_CXX_STANDARD 26)
 # Find tcmalloc, prefer tcmalloc_minimal over tcmalloc.
 
 find_library(TCMALLOC_MINIMAL tcmalloc_minimal)

@@ -149,6 +149,8 @@ static auto kTextureFormatSupportRules = std::to_array<TextureFormatSupportRule>
     { vk::Format::eEacR11G11UnormBlock,                                 &VulkanPhysicalDeviceProperties::m_textureFormatSupportEAC },
     { vk::Format::eEtc2R8G8B8A8SrgbBlock,                               &VulkanPhysicalDeviceProperties::m_textureFormatSupportETC2 },
     { vk::Format::eAstc4x4SrgbBlock,                                    &VulkanPhysicalDeviceProperties::m_textureFormatSupportASTC },
+    { vk::Format::eAstc4x4SfloatBlock,                                  &VulkanPhysicalDeviceProperties::m_textureFormatSupportASTCHDR },
+    { vk::Format::eBc6HUfloatBlock,                                     &VulkanPhysicalDeviceProperties::m_textureFormatSupportBC6HU },
 });
 
 consteval auto defaultEnabledVk10Features() -> vk::PhysicalDeviceFeatures {

@@ -150,6 +150,9 @@ public:
     bool m_textureFormatSupportETC2 = false;
     bool m_textureFormatSupportASTC = false;
 
+    bool m_textureFormatSupportBC6HU = false;
+    bool m_textureFormatSupportASTCHDR = false;
+
     vk::PhysicalDeviceAccelerationStructurePropertiesKHR m_accelerationStructureProperties = {};
     vk::PhysicalDeviceRayTracingPipelinePropertiesKHR    m_rayTracingPipelineProperties    = {};
 
