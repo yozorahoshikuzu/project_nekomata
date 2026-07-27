@@ -75,6 +75,9 @@ std::unordered_map<vk::Format, ImageFormatMd> VulkanImage::s_formatMetadata = {
     { vk::Format::eAstc4x4UnormBlock,                         ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 16, .blockWidth = 4, .blockHeight = 4 } },
     { vk::Format::eAstc4x4SrgbBlock,                          ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 16, .blockWidth = 4, .blockHeight = 4 } },
 
+    // ASTC 4x4 HDR - 4x4 blocks, 16 bytes per block
+    { vk::Format::eAstc4x4SfloatBlock,                        ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 16, .blockWidth = 4, .blockHeight = 4 } },
+
     // ETC2 - 4x4, 8 bytes per block
     { vk::Format::eEtc2R8G8B8A8SrgbBlock,                     ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 8, .blockWidth = 4, .blockHeight = 4 } },
     { vk::Format::eEtc2R8G8B8A8UnormBlock,                    ImageFormatMd { .aspectFlags = vk::ImageAspectFlagBits::eColor, .blockByteSize = 8, .blockWidth = 4, .blockHeight = 4 } },
