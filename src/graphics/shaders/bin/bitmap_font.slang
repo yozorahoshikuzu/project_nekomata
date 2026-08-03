@@ -1,8 +1,8 @@
 import "../globallayout";
 
 struct GlyphInstance {
-    float2 positionStart;
-    float2 positionEnd;
+    float2 sspStart;
+    float2 sspEnd;
     float2 texcoordStart;
     float2 texcoordEnd;
     uint textureSrtID;
@@ -10,6 +10,8 @@ struct GlyphInstance {
 
 struct PushConstants {
     GlyphInstance* glyphs;
+    float2 ssGlobalOffset;
+    float2 screenSize;
     uint samplerSrtID;
     float4 color;
 };
@@ -28,8 +30,13 @@ VSOut main(uint vertexId : SV_VulkanVertexID, uint instanceId : SV_VulkanInstanc
 
     float2 baseTexcoord = float2(vertexId & 1, vertexId >> 1);
 
+    float2 sspStart = glyph.sspStart + s_pushConstants.ssGlobalOffset;
+    float2 sspEnd = glyph.sspEnd + s_pushConstants.ssGlobalOffset;
+    float2 ndcStart = (sspStart / s_pushConstants.screenSize) * 2.0 - 1.0;
+    float2 ndcEnd = (sspEnd / s_pushConstants.screenSize) * 2.0 - 1.0;
+
     VSOut output;
-    output.position = float4(lerp(glyph.positionStart, glyph.positionEnd, baseTexcoord), 0.0, 1.0);
+    output.position = float4(lerp(ndcStart, ndcEnd, baseTexcoord), 0.0, 1.0);
     output.texcoord = lerp(glyph.texcoordStart, glyph.texcoordEnd, baseTexcoord);
     output.textureSrtID = glyph.textureSrtID;
     return output;
