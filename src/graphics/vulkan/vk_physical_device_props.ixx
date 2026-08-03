@@ -105,6 +105,11 @@ struct PhysicalDevicePropertyQueryError {
     }
 };
 
+enum class PhysicalDeviceRendererArchitecture {
+    ImmediateMode,
+    TileBasedDeferred,
+};
+
 consteval auto defaultEnabledVk10Features() -> vk::PhysicalDeviceFeatures;
 consteval auto defaultEnabledVk11Features() -> vk::PhysicalDeviceVulkan11Features;
 consteval auto defaultEnabledVk12Features() -> vk::PhysicalDeviceVulkan12Features;
@@ -121,6 +126,7 @@ public:
     std::string m_deviceName            = "(unknown)";
     std::string m_driverName            = "(unknown driver name)";
     vk::PhysicalDeviceType m_deviceType = vk::PhysicalDeviceType::eOther;
+    PhysicalDeviceRendererArchitecture m_rendererArchitecture = PhysicalDeviceRendererArchitecture::ImmediateMode;
     vk::DriverId m_driverId             = {};
     u32 m_driverVersion                 = 0_u32;
     u64 m_vramSize                      = 0_u64;

@@ -204,6 +204,24 @@ auto findBestQueue(Slice<const u32> queueIndices, std::unordered_set<u32>& hashs
         .unwrapOr(queueIndices.first());
 }
 
+auto determineRendererArch(u32 gpuVid) -> PhysicalDeviceRendererArchitecture {
+    switch (gpuVid) {
+        case 0x5143: // Qualcomm
+        case 0x13b5: // ARM
+        case 0x106b: // Apple
+        case 0x1010: // Imagination
+        case 0x144d: // Samsung
+        case 0x14e4: // Broadcom
+            return PhysicalDeviceRendererArchitecture::TileBasedDeferred;
+
+        case 0x1002: // AMD
+        case 0x10de: // NVIDIA
+        case 0x8086: // Intel
+        default:
+            return PhysicalDeviceRendererArchitecture::ImmediateMode;
+    }
+}
+
 auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhysicalDevice, const vk::raii::SurfaceKHR& vkSurface)
     -> Result<VulkanPhysicalDeviceProperties, PhysicalDevicePropertyQueryError> {
     auto supportedExtensionProperties = Vec<vk::ExtensionProperties>::fromStdVector(vkCheckResult(vkPhysicalDevice.enumerateDeviceExtensionProperties()));
@@ -363,6 +381,7 @@ auto VulkanPhysicalDeviceProperties::query(const vk::raii::PhysicalDevice& vkPhy
     props.m_deviceName = deviceName;
     props.m_driverName = driverName;
     props.m_deviceType = deviceType;
+    props.m_rendererArchitecture = determineRendererArch(coreProperties.vendorID);
     props.m_driverId = propertiesQuery.get<vk::PhysicalDeviceVulkan12Properties>().driverID;
     props.m_driverVersion = coreProperties.driverVersion;
     props.m_apiVersion = coreProperties.apiVersion;
