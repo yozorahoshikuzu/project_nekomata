@@ -41,8 +41,8 @@ struct FontRasterInfo {
 };
 
 struct GlyphInstance {
-    math::Vector2f positionStart;
-    math::Vector2f positionEnd;
+    math::Vector2f ssStart;
+    math::Vector2f ssEnd;
     math::Vector2f texcoordStart;
     math::Vector2f texcoordEnd;
     u32 imageShaderIndex;
@@ -64,7 +64,7 @@ public:
     auto freeFont(FontFace font) -> void;
 
     auto rasterizeGlyphs(FontRasterInfo rasterInfo) -> void;
-    auto shapeText(FontFace font, rendering::DynamicBitmapFontAtlas& atlas, std::string_view text, u32 pixelSize, math::Vector2f baselineStartPos, math::Vector2f screenSize) -> Vec<GlyphInstance>;
+    auto shapeText(FontFace font, rendering::DynamicBitmapFontAtlas& atlas, std::string_view text, u32 pixelSize) -> Vec<GlyphInstance>;
     auto findAndBatchMissingGlyphs(FontFace font, rendering::DynamicBitmapFontAtlas& atlas, std::string_view text, u32 pixelSize) -> Option<FontRasterBatch>;
 
 private:

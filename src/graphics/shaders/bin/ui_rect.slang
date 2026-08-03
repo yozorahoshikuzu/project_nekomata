@@ -1,8 +1,9 @@
 import "../globallayout";
 
 struct PushConstants {
-    float2 ndcBegin;
-    float2 ndcEnd;
+    float2 ssBegin;
+    float2 ssEnd;
+    float2 screenSize;
     float4 color;
 };
 
@@ -16,8 +17,12 @@ struct VSOut {
 VSOut main(uint vertexId : SV_VulkanVertexID) {
     float2 baseTexcoord = float2(vertexId & 1, vertexId >> 1);
 
+    float2 ndcBegin = (s_pushConstants.ssBegin / s_pushConstants.screenSize) * 2.0f - 1.0f;
+    float2 ndcEnd = (s_pushConstants.ssEnd / s_pushConstants.screenSize) * 2.0f - 1.0f;
+
+
     VSOut output;
-    output.position = float4(lerp(s_pushConstants.ndcBegin, s_pushConstants.ndcEnd, baseTexcoord), 0.0f, 1.0f);
+    output.position = float4(lerp(ndcBegin, ndcEnd, baseTexcoord), 0.0f, 1.0f);
     return output;
 }
 

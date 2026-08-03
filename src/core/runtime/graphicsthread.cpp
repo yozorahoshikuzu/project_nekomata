@@ -150,7 +150,7 @@ auto RenderThread::loop() -> void {
             queryStats
         );
         m_mrSharedData->m_leafs.getSecondary().m_uiDrawCmds.emplace(ui::UiTextDrawCmd {
-            .baselinePos = Vector2f(4.0f, 18.0f),
+            .ssPosition = Vector2f(4.0f, 18.0f),
             .text = text,
             .face = m_overlayFont,
             .size = 14.0f,

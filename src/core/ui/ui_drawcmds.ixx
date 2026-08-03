@@ -8,21 +8,21 @@ import :core.color;
 export namespace projnekomata::ui {
 
 struct UiRectDrawCmd {
-    math::Vector2f ndcBegin;
-    math::Vector2f ndcEnd;
+    math::Vector2f ssBegin;
+    math::Vector2f ssEnd;
     Color color;
 };
 
 struct UiTextureDrawCmd {
-    math::Vector2f ndcBegin;
-    math::Vector2f ndcEnd;
+    math::Vector2f ssBegin;
+    math::Vector2f ssEnd;
     math::Vector2f texcoordBegin;
     math::Vector2f texcoordEnd;
     graphics::texturesystem::Texture texture;
 };
 
 struct UiTextDrawCmd {
-    math::Vector2f baselinePos;
+    math::Vector2f ssPosition;
     std::string text;
     graphics::fonts::FontFace face;
     float size;

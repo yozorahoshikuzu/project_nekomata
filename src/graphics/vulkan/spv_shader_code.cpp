@@ -23,7 +23,7 @@ auto SpirvShaderCode::loadFromFile(const std::filesystem::path& path) -> Result<
     }
 
     auto shaderCodeDwordCount = fileSize / 4;
-    auto spvCode = Vec<u32>::fromValue(shaderCodeDwordCount, 0);
+    auto spvCode = Vec<u32>::filledWith(shaderCodeDwordCount, 0);
 
     shaderCodeFile.seekg(0);
     shaderCodeFile.read(reinterpret_cast<char*>(spvCode.data()), fileSize);

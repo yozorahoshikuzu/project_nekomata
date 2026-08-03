@@ -126,16 +126,16 @@ struct UiNode {
         match(element,
             [&](const UiRect& rect) {
                 auto drawCmd = UiRectDrawCmd{
-                    .ndcBegin = unormToNdc(position.componentWiseDivide(screenLogicalSize)),
-                    .ndcEnd   = unormToNdc(endPos.componentWiseDivide(screenLogicalSize)),
+                    .ssBegin  = position,
+                    .ssEnd    = endPos,
                     .color    = style.getEndColor(isHovered, isPressed),
                 };
                 list.emplace(drawCmd);
             },
             [&](const UiTexture& texture) {
                 auto drawCmd = UiTextureDrawCmd{
-                    .ndcBegin      = unormToNdc(position.componentWiseDivide(screenLogicalSize)),
-                    .ndcEnd        = unormToNdc(endPos.componentWiseDivide(screenLogicalSize)),
+                    .ssBegin       = position,
+                    .ssEnd         = endPos,
                     .texcoordBegin = texture.texcoordStart,
                     .texcoordEnd = texture.texcoordEnd,
                     .texture = texture.texture
@@ -145,7 +145,7 @@ struct UiNode {
             [&](const UiText& text) {
                 if (text.text.empty()) return;
                 auto drawCmd = UiTextDrawCmd{
-                    .baselinePos = position,
+                    .ssPosition = position,
                     .text = text.text,
                     .face = text.fontFace.clone(),
                     .size = text.size,

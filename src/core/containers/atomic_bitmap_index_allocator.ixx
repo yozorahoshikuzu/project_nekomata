@@ -8,7 +8,7 @@ class AtomicBitmapIndexAllocator {
 public:
     AtomicBitmapIndexAllocator(std::nullptr_t) : m_bitmapSize(0), m_qwordCount(0) {}
     explicit AtomicBitmapIndexAllocator(usize bitmapSize)
-        : m_bitmapSize(bitmapSize), m_qwordCount((bitmapSize + 63) / 64), m_bitmap(Vec<std::atomic<u64>>::fromValue(m_qwordCount, 0)) {
+        : m_bitmapSize(bitmapSize), m_qwordCount((bitmapSize + 63) / 64), m_bitmap(Vec<std::atomic<u64>>::filledWith(m_qwordCount, 0)) {
         for (auto& qword : m_bitmap) {
             qword.store(0, std::memory_order_relaxed);
         }

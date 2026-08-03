@@ -167,7 +167,7 @@ math::Vector2f pixelsToNDC(math::Vector2f px, math::Vector2f screenSize) {
     );
 }
 
-auto FontManager::shapeText(FontFace font, rendering::DynamicBitmapFontAtlas& atlas, std::string_view text, u32 pixelSize, math::Vector2f baselineStartPos, math::Vector2f screenSize)
+auto FontManager::shapeText(FontFace font, rendering::DynamicBitmapFontAtlas& atlas, std::string_view text, u32 pixelSize)
     -> Vec<GlyphInstance> {
     std::shared_lock lock(m_registryMutex);
     auto& fontEntry = *m_fontEntries[font.handleIndex];
@@ -179,14 +179,14 @@ auto FontManager::shapeText(FontFace font, rendering::DynamicBitmapFontAtlas& at
 
     auto glyphInstances = Vec<GlyphInstance>::withCapacity(text.size());
 
-    math::Vector2f cursor = baselineStartPos;
+    math::Vector2f cursor = math::Vector2f(0.0f, 0.0f);
     u32 previousGlyphIndex = 0;
 
     for (auto it = utf8::iterator(text.begin(), text.begin(), text.end()); it != utf8::iterator(text.end(), text.begin(), text.end()); it++) {
         u32 c = *it;
 
         if (c == '\n') {
-            cursor.x() = baselineStartPos.x();
+            cursor.x() = 0.0f;
             cursor.y() += fontEntry.face->size->metrics.height / 64.0f;
             previousGlyphIndex = 0;
             continue;
@@ -219,8 +219,8 @@ auto FontManager::shapeText(FontFace font, rendering::DynamicBitmapFontAtlas& at
         float gy = cursor.y() - param.bearing.y();
 
         GlyphInstance inst;
-        inst.positionStart = pixelsToNDC({ gx,                     gy                      }, screenSize);
-        inst.positionEnd   = pixelsToNDC({ gx + param.size.x(),    gy + param.size.y()     }, screenSize);
+        inst.ssStart = math::Vector2f(gx, gy);
+        inst.ssEnd   = math::Vector2f(gx + param.size.x(), gy + param.size.y());
         inst.texcoordStart = param.texcoordStart;
         inst.texcoordEnd   = param.texcoordEnd;
         inst.imageShaderIndex  = param.imageShaderIndex;

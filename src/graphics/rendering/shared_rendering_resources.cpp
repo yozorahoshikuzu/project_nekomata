@@ -165,7 +165,7 @@ SharedRenderingResources::SharedRenderingResources() {
 
     m_bitmapFontRendererLayout = VulkanPipelineLayout::builder()
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
-        .addPushConstantRange(0, 28, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+        .addPushConstantRange(0, 44, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
         .build();
     auto bitmapFontRendererShader = SpirvShaderCode::loadFromFile("../spirv/bitmap_font.spv").unwrap();
     m_bitmapFontRendererPipeline = VulkanGraphicsPipeline::builder()
@@ -193,7 +193,7 @@ SharedRenderingResources::SharedRenderingResources() {
         .build();
 
     m_uiRectRendererLayout = VulkanPipelineLayout::builder()
-        .addPushConstantRange(0, 32, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+        .addPushConstantRange(0, 40, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
         .build();
     auto uiRectRendererShader = SpirvShaderCode::loadFromFile("../spirv/ui_rect.spv").unwrap();
     m_uiRectRendererPipeline = VulkanGraphicsPipeline::builder()
@@ -221,7 +221,7 @@ SharedRenderingResources::SharedRenderingResources() {
     .build();
 
     m_uiTextureRendererLayout = VulkanPipelineLayout::builder()
-        .addPushConstantRange(0, 40, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+        .addPushConstantRange(0, 48, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
         .addDescriptorSetLayout(texturesystem::TextureManager::get().shaderResourceTable().descriptorSetLayout())
         .build();
     auto uiTextureRendererShader = SpirvShaderCode::loadFromFile("../spirv/ui_texture.spv").unwrap();

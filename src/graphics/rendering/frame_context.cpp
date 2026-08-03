@@ -853,13 +853,28 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
     for (const auto& uiDrawCmd : renderingData.m_uiDrawCmds) {
         match(uiDrawCmd,
             [&](const ui::UiRectDrawCmd& drawCmd) {
+                struct PushConstants {
+                    Vector2f ssBegin, ssEnd;
+                    Vector2f screenSize;
+                    Vector4f color;
+                };
+
+                PushConstants pushConstants = {
+                    .ssBegin = drawCmd.ssBegin,
+                    .ssEnd = drawCmd.ssEnd,
+                    .screenSize = renderingArea,
+                    .color = drawCmd.color.asRgba32Float()
+                };
+
                 cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.m_uiRectRendererPipeline.vkPipeline());
-                cb.pushConstants<ui::UiRectDrawCmd>(sharedRenderingResources.m_uiRectRendererLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, drawCmd);
+                cb.pushConstants<PushConstants>(sharedRenderingResources.m_uiRectRendererLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, pushConstants);
                 cb.draw(4, 1, 0, 0);
             },
             [&](const ui::UiTextureDrawCmd& drawCmd) {
                 struct PushConstants {
-                    Vector2f ndcBegin, ndcEnd, texcoordBegin, texcoordEnd;
+                    Vector2f ssBegin, ssEnd;
+                    Vector2f screenSize;
+                    Vector2f texcoordBegin, texcoordEnd;
                     u32 textureIndex;
                     u32 samplerIndex;
                 };
@@ -868,8 +883,9 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
                 u32 samplerIndex = renderingData.m_textureToSamplerShaderIndexSnapshot[drawCmd.texture.index];
 
                 PushConstants pushConstants = {
-                    .ndcBegin = drawCmd.ndcBegin,
-                    .ndcEnd = drawCmd.ndcEnd,
+                    .ssBegin = drawCmd.ssBegin,
+                    .ssEnd = drawCmd.ssEnd,
+                    .screenSize = renderingArea,
                     .texcoordBegin = drawCmd.texcoordBegin,
                     .texcoordEnd = drawCmd.texcoordEnd,
                     .textureIndex = textureIndex,
@@ -881,26 +897,35 @@ auto FrameContext::execute(TransientRenderingResources& transientRenderingResour
                 cb.draw(4, 1, 0, 0);
             },
             [&](const ui::UiTextDrawCmd& drawCmd) {
-                auto shapedText = fonts::FontManager::get().shapeText(drawCmd.face, sharedRenderingResources.m_fontAtlas, drawCmd.text, drawCmd.size, drawCmd.baselinePos, renderingArea);
+                auto shapedText = fonts::FontManager::get().shapeText(drawCmd.face, sharedRenderingResources.m_fontAtlas, drawCmd.text, drawCmd.size);
                 auto buffer = VulkanBuffer::create(shapedText.size() * sizeof(fonts::GlyphInstance), vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer, VulkanBufferMemoryMapping::MapForSequentialWrite, vma::MemoryUsage::eAutoPreferDevice, {}, queuesForBuffer);
                 memcpy(buffer.memoryHostPtr(), shapedText.data(), shapedText.size() * sizeof(fonts::GlyphInstance));
 
                 u32 sampler2 = texturesystem::TextureManager::get().samplerCache().acquireSampler(
                     texturesystem::SamplerParams::defaultValues().setMinFilter(vk::Filter::eNearest).setMagFilter(vk::Filter::eNearest).setMipmapMode(vk::SamplerMipmapMode::eNearest).setMaxLod(0.0f)
                 );
-                auto instanceDevicePtr2 = buffer.memoryDevicePtr();
-
-                auto col = drawCmd.color.asRgba32Float();
-                auto fontPushConstantData2 = std::array<unsigned char, 28>{};
-                memcpy(fontPushConstantData2.data(), &instanceDevicePtr2, 8);
-                memcpy(fontPushConstantData2.data() + 8, &sampler2, 4);
-                memcpy(fontPushConstantData2.data() + 12, &col, 16);
                 textInstanceBuffers.emplace(std::move(buffer));
+
+                struct PushConstants {
+                    vk::DeviceAddress instanceBuffer;
+                    Vector2f ssGlobalOffset;
+                    Vector2f screenSize;
+                    u32 samplerSrtID;
+                    Vector4f color;
+                };
+
+                PushConstants pushConstants = {
+                    .instanceBuffer = buffer.memoryDevicePtr(),
+                    .ssGlobalOffset = drawCmd.ssPosition,
+                    .screenSize = renderingArea,
+                    .samplerSrtID = sampler2,
+                    .color = drawCmd.color.asRgba32Float()
+                };
 
                 cb.bindPipeline(vk::PipelineBindPoint::eGraphics, sharedRenderingResources.m_bitmapFontRendererPipeline.vkPipeline());
                 texturesystem::TextureManager::get().shaderResourceTable().bindToCommandBuffer(m_frameRenderingResources.commandBuffer(), sharedRenderingResources.m_bitmapFontRendererLayout, vk::PipelineBindPoint::eGraphics);
 
-                cb.pushConstants<unsigned char>(sharedRenderingResources.m_bitmapFontRendererLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, fontPushConstantData2);
+                cb.pushConstants<PushConstants>(sharedRenderingResources.m_bitmapFontRendererLayout.vkPipelineLayout(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, pushConstants);
                 cb.draw(4, shapedText.size(), 0, 0);
             }
         );

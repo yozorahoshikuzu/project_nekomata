@@ -22,8 +22,8 @@ struct MRThreadsSharedDataLeaf {
     ecs::ComponentSetSnapshot<ecs::components::Transform> m_transforms;
     ecs::ComponentSetSnapshot<ecs::components::Camera> m_cameras;
 
-    Vec<u32> m_textureToImageShaderIndexSnapshot   = Vec<u32>::fromValue(4096, 0);
-    Vec<u32> m_textureToSamplerShaderIndexSnapshot = Vec<u32>::fromValue(4096, 0);
+    Vec<u32> m_textureToImageShaderIndexSnapshot   = Vec<u32>::filledWith(4096, 0);
+    Vec<u32> m_textureToSamplerShaderIndexSnapshot = Vec<u32>::filledWith(4096, 0);
     Vec<ui::UiDrawCmd> m_uiDrawCmds                = Vec<ui::UiDrawCmd>::create();
     Vec<std::tuple<usize, Vec<u8>>> m_materialHeapSnapshotsBySize = Vec<std::tuple<usize, Vec<u8>>>::create();
     bool m_hasValidFrame = false;
