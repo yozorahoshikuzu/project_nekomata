@@ -6,12 +6,8 @@ namespace projnekomata::graphics::texturesystem {
 
 TextureToShaderIndexTable::TextureToShaderIndexTable(std::nullptr_t) {}
 TextureToShaderIndexTable::TextureToShaderIndexTable(usize maxTextureCount)
-    : m_textureToShaderImageIndexTable(Vec<std::atomic<u32>>::withCapacity(maxTextureCount)), m_textureToShaderSamplerIndexTable(Vec<std::atomic<u32>>::withCapacity(maxTextureCount)) {
+    : m_textureToShaderImageIndexTable(Vec<std::atomic<u32>>::filledWith(maxTextureCount, 0)), m_textureToShaderSamplerIndexTable(Vec<std::atomic<u32>>::filledWith(maxTextureCount, 0)) {
     // Preinitialize the arrays with zeroes, so any potential invalid/not-ready references resolve to index 0 (default/dummy image/samplers).
-    for (usize i = 0; i < maxTextureCount; i++) {
-        m_textureToShaderImageIndexTable.emplace(0);
-        m_textureToShaderSamplerIndexTable.emplace(0);
-    }
 }
 
 auto TextureToShaderIndexTable::setTextureShaderImageIndex(usize textureId, u32 shaderImageIndex) -> void {

@@ -8,12 +8,9 @@ import :mem;
 import :nonnull_ptr;
 import :primitives;
 import :slice;
+import :type_traits;
 
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-export template <typename T> struct TTriviallyRelocatable : std::bool_constant<std::is_trivially_copyable_v<T>> {};
-
-template <typename T> inline constexpr bool TTriviallyRelocatableValue = TTriviallyRelocatable<T>::value;
 
 export template <typename T> class Vec {
 public:
@@ -52,23 +49,25 @@ public:
     constexpr static auto create() noexcept -> Vec { return Vec(nullptr, 0, 0); }
     constexpr static auto create(std::initializer_list<T> list) -> Vec {
         auto vec = Vec::withCapacity(list.size());
-        for (auto& elem : list) vec.emplace(elem);
+        for (auto& elem : list) vec.emplaceUnchecked(elem);
         return vec;
     }
-    constexpr static auto fromValue(usize len, const T& val) -> Vec {
+    constexpr static auto filledWith(usize len, const T& val) -> Vec {
         auto vec = Vec::create();
-        vec.resize(len, val);
+        vec.setAlloc(len);
+        for (usize i = 0; i < len; i++) vec.emplaceUnchecked(val);
         return vec;
     }
     template <typename V>
-    constexpr static auto fromValue(usize len, V&& val) -> Vec {
+    constexpr static auto filledWith(usize len, V&& val) -> Vec {
         auto vec = Vec::create();
-        vec.resize(len, std::forward<V>(val));
+        vec.setAlloc(len);
+        for (usize i = 0; i < len; i++) vec.emplaceUnchecked(std::forward<V>(val));
         return vec;
     }
     constexpr static auto withCapacity(usize capacity) -> Vec {
         auto vec = Vec::create();
-        vec.reserveExact(capacity);
+        vec.setAlloc(capacity);
 
         return vec;
     }
@@ -80,7 +79,7 @@ public:
                 if (!vec.empty()) std::memcpy(dst.m_data, vec.data(), vec.size() * sizeof(T));
                 dst.m_len = vec.size();
             } else {
-                for (auto& elem : vec) dst.emplace(std::move(elem));
+                for (auto& elem : vec) dst.emplaceUnchecked(std::move(elem));
             }
         } else {
             /*                      std::vector<bool>
@@ -211,6 +210,14 @@ public:
         return *index;
     }
 
+    template <typename... Args>
+    constexpr auto emplaceUnchecked(Args&&... args) -> T& {
+        auto index = m_data + m_len;
+        new (index) T(std::forward<Args>(args)...);
+        m_len++;
+        return *index;
+    }
+
     constexpr auto pop() {
         if (m_len == 0) return;
         m_len--;
@@ -317,6 +324,12 @@ private:
             }
         }
         m_len = newLen;
+    }
+
+    constexpr auto setAlloc(usize capacity) {
+        Mem::free(m_data);
+        m_data = Mem::allocChecked<T>(capacity);
+        m_capacity = capacity;
     }
 
     constexpr auto reallocate(usize newCapacity) {
