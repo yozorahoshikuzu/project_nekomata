@@ -21,7 +21,7 @@ public:
     auto waitForLastFrame() -> void;
 
     [[nodiscard]] auto execute(TransientRenderingResources& transientRenderingResources, SharedRenderingResources& sharedRenderingResources,
-                               VulkanSwapchain& swapchain, MRThreadsSharedDataLeaf& renderingData, bool recordStatistics) -> FrameResult;
+                               VulkanSwapchain& swapchain, MRThreadsSharedDataLeaf& renderingData, MRThreadsSharedData& threadSharedData, bool recordStatistics) -> FrameResult;
 
     // ---------------------------------------------------------------------------------------------------------------------------------------------------------
     // Statistics

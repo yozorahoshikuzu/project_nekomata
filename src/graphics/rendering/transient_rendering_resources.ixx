@@ -34,8 +34,6 @@ public:
     [[nodiscard]] VulkanImage& finalImage() { return m_finalImage; }
     [[nodiscard]] VulkanImageView& finalImageUnormView() { return m_finalImageUnormView; }
 
-    [[nodiscard]] VulkanDescriptorSet& subpassInputsDescriptorSet() { return m_subpassInputsDescriptorSet; }
-
     [[nodiscard]] VulkanImage& smaaEdgesImage() { return m_smaaEdgesImage; }
     [[nodiscard]] VulkanImage& smaaWeightsImage() { return m_smaaWeightsImage; }
 
@@ -44,6 +42,10 @@ public:
 
     [[nodiscard]] VulkanImage& overdrawCountersImage() { return m_overdrawCountersImage; }
 
+    [[nodiscard]] auto depthBufferIndex() const -> srt::SRTResourceIndex { return m_depthBufferIndex; }
+    [[nodiscard]] auto albedoAndRoughnessBufferIndex() const -> srt::SRTResourceIndex { return m_albedoAndRoughnessBufferIndex; }
+    [[nodiscard]] auto normalBufferIndex() const -> srt::SRTResourceIndex { return m_normalBufferIndex; }
+    [[nodiscard]] auto metallicAndAoBufferIndex() const -> srt::SRTResourceIndex { return m_metallicAndAoBufferIndex; }
     [[nodiscard]] auto velocityBufferIndex() const -> srt::SRTResourceIndex { return m_velocityBufferIndex; }
     [[nodiscard]] auto colorBufferIndex() const -> srt::SRTResourceIndex { return m_colorBufferIndex; }
     [[nodiscard]] auto colorBufferUnormViewIndex() const -> srt::SRTResourceIndex { return m_colorBufferUnormViewIndex; }
@@ -69,8 +71,6 @@ private:
     VulkanImage m_colorBuffer = nullptr;
     VulkanImageView m_colorBufferUnormView = nullptr;
 
-    VulkanDescriptorSet m_subpassInputsDescriptorSet = nullptr;
-
     VulkanImage m_smaaColorResolvedBuffer0 = nullptr;
     VulkanImage m_smaaColorResolvedBuffer1 = nullptr;
     VulkanImageView m_smaaColorResolvedBuffer0UnormView = nullptr;
@@ -82,6 +82,10 @@ private:
     VulkanImage m_finalImage = nullptr;
     VulkanImageView m_finalImageUnormView = nullptr;
 
+    srt::SRTResourceIndex m_depthBufferIndex              = {};
+    srt::SRTResourceIndex m_albedoAndRoughnessBufferIndex = {};
+    srt::SRTResourceIndex m_normalBufferIndex             = {};
+    srt::SRTResourceIndex m_metallicAndAoBufferIndex      = {};
     srt::SRTResourceIndex m_velocityBufferIndex           = {};
     srt::SRTResourceIndex m_colorBufferIndex              = {};
     srt::SRTResourceIndex m_colorBufferUnormViewIndex     = {};

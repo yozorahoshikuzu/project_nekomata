@@ -26,7 +26,6 @@ auto RenderThread::runMainLoop() -> void {
     }
 
     m_timeAtStart = std::chrono::high_resolution_clock::now();
-    m_overlayFont = graphics::fonts::FontManager::get().loadFont("../../Assets/IosevkaTerm-Light.ttf");
 
     m_lastFrameTime = std::chrono::high_resolution_clock::now();
     while (true) {
@@ -36,6 +35,8 @@ auto RenderThread::runMainLoop() -> void {
             break;
         }
         // NOTE: The main thread is responsible for swapping the data buffer leafs.
+
+        m_mrSharedData->m_statsReady.store(false, std::memory_order_release);
 
         m_mrSharedData->m_syncpointBarrier.arrive_and_wait();
 
@@ -81,86 +82,26 @@ auto RenderThread::loop() -> void {
 
     m_frames[m_currentFrameContextIndex].waitForLastFrame();
 
-    if (m_mrSharedData->m_leafs.getSecondary().injectOverlay) {
-        struct QueryTimestamps {
-            u64 geomPassTopOfPipe;
-            u64 geomPassBottomOfPipe;
-            u64 lightingPassTopOfPipe;
-            u64 lightingPassAfterDoneBottomOfPipe;
-            u64 smaaTopOfPipe;
-            u64 smaaBottomOfPipe;
-        };
-        QueryTimestamps queryTimestamps;
-        u64 pipelineStats[4];
-
+    if (m_mrSharedData->m_leafs.getSecondary().m_captureStats) {
         bool hasStats = m_frames[m_currentFrameContextIndex].m_queryPoolsHaveResultsOnFinish;
         bool supportsPipelineStatisticsQuery = VulkanContext::get().vkPhysicalDeviceProps().m_hasPipelineStatisticsQuery;
-        std::string queryStats = "[stats not available]";
+        m_mrSharedData->m_queryPoolStatsAreValid = hasStats;
+
         if (hasStats) {
-            vkCheckResult(m_frames[m_currentFrameContextIndex].m_timestampsQueryPool.vkQueryPool().getResults(0, 6, 48, &queryTimestamps, 8, vk::QueryResultFlagBits::e64 | vk::QueryResultFlagBits::eWait));
-            if (supportsPipelineStatisticsQuery) vkCheckResult(m_frames[m_currentFrameContextIndex].m_pipelineStatisticsQueryPool.vkQueryPool().getResults(0, 1, 32, &pipelineStats, 8, vk::QueryResultFlagBits::e64 | vk::QueryResultFlagBits::eWait));
-
-            f64 deviceTimestampPeriod = VulkanContext::get().vkPhysicalDeviceProps().m_timestampPeriod;
-            auto geomPassTime = (queryTimestamps.geomPassBottomOfPipe - queryTimestamps.geomPassTopOfPipe) * deviceTimestampPeriod / 1000000.0_f64;
-            auto lightingPassTime = (queryTimestamps.lightingPassAfterDoneBottomOfPipe - queryTimestamps.lightingPassTopOfPipe) * deviceTimestampPeriod / 1000000.0_f64;
-            auto smaaTime = (queryTimestamps.smaaBottomOfPipe - queryTimestamps.smaaTopOfPipe) * deviceTimestampPeriod / 1000000.0_f64;
-
-            if (supportsPipelineStatisticsQuery) {
-                queryStats = fmt::format("\n GeomPass: {:.3f} ms #VS: {} #TCS: {} #TES: {} #FS: {}\n LightingPass: {:.3f} ms\n SMAA: {:.3f} ms", geomPassTime, pipelineStats[0], pipelineStats[2], pipelineStats[3], pipelineStats[1], lightingPassTime, smaaTime);
-            } else {
-                queryStats = fmt::format("\n GeomPass: {:.3f} ms\n LightingPass: {:.3f} ms\n SMAA: {:.3f} ms", geomPassTime, lightingPassTime, smaaTime);
-            }
+            vkCheckResult(m_frames[m_currentFrameContextIndex].m_timestampsQueryPool.vkQueryPool().getResults(0, 6, 48, &m_mrSharedData->m_queryTimestamps, 8, vk::QueryResultFlagBits::e64 | vk::QueryResultFlagBits::eWait));
+            if (supportsPipelineStatisticsQuery) vkCheckResult(m_frames[m_currentFrameContextIndex].m_pipelineStatisticsQueryPool.vkQueryPool().getResults(0, 1, 32, &m_mrSharedData->m_deferredGeometryPipelineStats, 8, vk::QueryResultFlagBits::e64 | vk::QueryResultFlagBits::eWait));
         }
 
-        auto& physicalDeviceProps = VulkanContext::get().vkPhysicalDeviceProps();
-        auto [blockBytes, allocBytes] = VulkanContext::get().currentVramUsage();
-        std::string vramStr;
-        if (physicalDeviceProps.m_hasExtMemoryBudget) {
-            f64 vramBudget = VulkanContext::get().extMemoryBudgetGetVramBudget();
-            vramStr = fmt::format("total {:.2f} MB used/allocd block bytes: {:.2f}/{:.2f} MB budget: {:.2f} MB",
-                physicalDeviceProps.m_vramSize / 1024.0_f64 / 1024.0_f64,
-                allocBytes / 1024.0_f64 / 1024.0_f64,
-                blockBytes / 1024.0_f64 / 1024.0_f64,
-                vramBudget / 1024.0_f64 / 1024.0_f64
-            );
-        } else {
-            vramStr = fmt::format("total {:.2f} MB used/allocd block bytes: {:.2f}/{:.2f} MB",
-                physicalDeviceProps.m_vramSize / 1024.0_f64 / 1024.0_f64,
-                allocBytes / 1024.0_f64 / 1024.0_f64,
-                blockBytes / 1024.0_f64 / 1024.0_f64
-            );
-        }
+        m_mrSharedData->m_deltaTime = m_sharedRenderingResources.displayMs;
+        m_mrSharedData->m_numDrawcalls = m_frames[m_currentFrameContextIndex].m_numDrawcalls;
 
-        std::string text = fmt::format(
-            "--- Project Nekomata ---\n"
-                " FPS: {:.2f} ({:.3f}ms)\n\n"
-                " -SDL-\n Video Driver: {}\n\n"
-                " -Vulkan-\n Device: {}\n Driver: {} {}.{}.{}.{} API Version {}.{}.{}.{}\n VRAM: {}\n Shader Cache: {}\n Descriptor Binding Model: {}\n Anti-Lag: {}\n\n"
-                " -Stats-\n Drawcalls: {}{}",
-            1000.0f / m_sharedRenderingResources.displayMs, m_sharedRenderingResources.displayMs,
-            m_mrSharedData->m_sdlVideoDriverName,
-            physicalDeviceProps.m_deviceName,
-            physicalDeviceProps.m_driverName, physicalDeviceProps.getDriverVersionVariant(), physicalDeviceProps.getDriverVersionMajor(), physicalDeviceProps.getDriverVersionMinor(), physicalDeviceProps.getDriverVersionPatch(),
-            physicalDeviceProps.getApiVersionVariant(), physicalDeviceProps.getApiVersionMajor(), physicalDeviceProps.getApiVersionMinor(), physicalDeviceProps.getApiVersionPatch(),
-            vramStr,
-            VulkanContext::get().shaderCache()->usesPipelineBinaries() ? "Yes" : "No",
-            graphics::texturesystem::TextureManager::get().shaderResourceTable().modelName(),
-            antiLagMethodToString(VulkanContext::get().antiLagMethod()),
-            m_frames[m_currentFrameContextIndex].m_numDrawcalls,
-            queryStats
-        );
-        m_mrSharedData->m_leafs.getSecondary().m_uiDrawCmds.emplace(ui::UiTextDrawCmd {
-            .ssPosition = Vector2f(4.0f, 18.0f),
-            .text = text,
-            .face = m_overlayFont,
-            .size = 14.0f,
-            .color = Color::fromRgba32Float(1.0f, 1.0f, 1.0f, 1.0f)
-        });
+        m_mrSharedData->m_statsReady.store(true, std::memory_order_release);
+        m_mrSharedData->m_statsReady.notify_one();
     }
 
-    bool shouldCaptureStats = m_mrSharedData->m_leafs.getSecondary().injectOverlay;
+    bool shouldCaptureStats = m_mrSharedData->m_leafs.getSecondary().m_captureStats;
     auto result = m_frames[m_currentFrameContextIndex].execute(m_transientRenderingResources, m_sharedRenderingResources, m_vkSwapchain,
-                                                               m_mrSharedData->m_leafs.getSecondary(), shouldCaptureStats);
+                                                               m_mrSharedData->m_leafs.getSecondary(), *m_mrSharedData, shouldCaptureStats);
     if (result.stepPerFrameResources)
         m_currentFrameContextIndex = (m_currentFrameContextIndex + 1) % MAX_FRAMES_IN_FLIGHT;
 

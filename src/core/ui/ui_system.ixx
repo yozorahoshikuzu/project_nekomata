@@ -14,7 +14,8 @@ public:
     static auto create() -> Unique<UiSystem>;
 
     auto getRoot() const -> ui::UiNode& { return *m_uiRoot; }
-    auto buildUi(Vec<ui::UiDrawCmd>& drawcmds, math::Vector2f screenLogicalSize) -> void;
+    auto buildUi(Vec<UiDrawCmd>& drawcmds, Vec<graphics::fonts::FontRasterBatch>& dstFontRasterBatches, graphics::rendering::DynamicBitmapFontAtlas& fontAtlas, math::Vector2f
+                 screenLogicalSize) -> void;
 
     auto testMouseDownHit(math::Vector2f pos) -> void;
     auto testMouseUpHit(math::Vector2f pos) -> void;

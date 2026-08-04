@@ -40,7 +40,9 @@ private:
     Unique<ui::UiSystem> m_uiSystem = nullptr;
 
     u64 m_frameIndex = 0;
-    bool injectOverlay = false;
+    bool m_waitForFrameStats = false;
+
+    graphics::fonts::FontFace m_overlayFont;
 };
 
 }

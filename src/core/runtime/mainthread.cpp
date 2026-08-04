@@ -2,6 +2,7 @@ module;
 #include <SDL3/SDL_events.h>
 module projnekomata;
 import vulkan;
+import fmt;
 import projnekomata.cs;
 import :graphics.cmd_alloc;
 import :core.ui.components.ui_rect;
@@ -31,6 +32,8 @@ MainThread::MainThread(std::shared_ptr<MRThreadsSharedData> mrSharedData, Unique
     m_materialManager = MaterialManager::create();
     m_fontManager = graphics::fonts::FontManager::create();
     m_uiSystem = ui::UiSystem::create();
+
+    m_overlayFont = graphics::fonts::FontManager::get().loadFont("../../Assets/IosevkaTerm-Light.ttf");
 }
 
 auto MainThread::runMainLoop(const std::function<void(Unique<ecs::World>&)>& initFn) -> void {
@@ -131,9 +134,7 @@ auto MainThread::loop(float dt) -> void {
             return x.key == core::input::Key::F12 && x.state && (!x.isRepeat) && hasAltMod;
         })
         .isSome();
-    if (specialKeyPressed) {
-        injectOverlay = !injectOverlay;
-    }
+
 
     m_currentWorld->scriptsUpdate(dt);
 
@@ -159,10 +160,103 @@ auto MainThread::loop(float dt) -> void {
     }
 
     m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds.clear();
-    ui::UiSystem::get().buildUi(m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds, logicalSizeFloat);
+    auto fontRasterBatches = Vec<graphics::fonts::FontRasterBatch>::create();
+    ui::UiSystem::get().buildUi(m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds, fontRasterBatches, m_mrSharedData->m_fontAtlas, logicalSizeFloat);
+
+    if (m_waitForFrameStats) {
+        m_mrSharedData->m_statsReady.wait(false, std::memory_order_acquire);
+        auto& physicalDeviceProps = VulkanContext::get().vkPhysicalDeviceProps();
+        auto supportsPipelineStatisticsQuery = physicalDeviceProps.m_hasPipelineStatisticsQuery;
+        f64 deviceTimestampPeriod = physicalDeviceProps.m_timestampPeriod;
+        auto [blockBytes, allocBytes] = VulkanContext::get().currentVramUsage();
+
+        std::string queryStats = "\n [statistics not available]";
+
+        if (m_mrSharedData->m_queryPoolStatsAreValid) {
+            auto& queryTimestamps = m_mrSharedData->m_queryTimestamps;
+            auto& pipelineStats = m_mrSharedData->m_deferredGeometryPipelineStats;
+            auto geomPassTime = (queryTimestamps.geomPassBottomOfPipe - queryTimestamps.geomPassTopOfPipe) * deviceTimestampPeriod / 1000000.0_f64;
+            auto lightingPassTime = (queryTimestamps.lightingPassAfterDoneBottomOfPipe - queryTimestamps.lightingPassTopOfPipe) * deviceTimestampPeriod / 1000000.0_f64;
+            auto smaaTime = (queryTimestamps.smaaBottomOfPipe - queryTimestamps.smaaTopOfPipe) * deviceTimestampPeriod / 1000000.0_f64;
+
+            if (supportsPipelineStatisticsQuery) {
+                queryStats = fmt::format("\n GeomPass: {:.3f} ms #VS: {} #TCS: {} #TES: {} #FS: {}\n LightingPass: {:.3f} ms\n SMAA: {:.3f} ms", geomPassTime, pipelineStats[0], pipelineStats[2], pipelineStats[3], pipelineStats[1], lightingPassTime, smaaTime);
+            } else {
+                queryStats = fmt::format("\n GeomPass: {:.3f} ms\n LightingPass: {:.3f} ms\n SMAA: {:.3f} ms", geomPassTime, lightingPassTime, smaaTime);
+            }
+        }
+
+        std::string vramStr;
+        if (physicalDeviceProps.m_hasExtMemoryBudget) {
+            f64 vramBudget = VulkanContext::get().extMemoryBudgetGetVramBudget();
+            vramStr = fmt::format("total {:.2f} MB used/allocd block bytes: {:.2f}/{:.2f} MB budget: {:.2f} MB",
+                physicalDeviceProps.m_vramSize / 1024.0_f64 / 1024.0_f64,
+                allocBytes / 1024.0_f64 / 1024.0_f64,
+                blockBytes / 1024.0_f64 / 1024.0_f64,
+                vramBudget / 1024.0_f64 / 1024.0_f64
+            );
+        } else {
+            vramStr = fmt::format("total {:.2f} MB used/allocd block bytes: {:.2f}/{:.2f} MB",
+                physicalDeviceProps.m_vramSize / 1024.0_f64 / 1024.0_f64,
+                allocBytes / 1024.0_f64 / 1024.0_f64,
+                blockBytes / 1024.0_f64 / 1024.0_f64
+            );
+        }
+
+
+        std::string text = fmt::format(
+            "--- Project Nekomata ---\n"
+                " FPS: {:.2f} ({:.3f}ms)\n\n"
+                " -SDL-\n Video Driver: {}\n\n"
+                " -Vulkan-\n Device: {}\n Driver: {} {}.{}.{}.{} API Version {}.{}.{}.{}\n VRAM: {}\n Shader Cache: {}\n Descriptor Binding Model: {}\n Anti-Lag: {}\n\n"
+                " -Stats-\n Drawcalls: {}{}",
+            1000.0f / m_mrSharedData->m_deltaTime, m_mrSharedData->m_deltaTime,
+            m_mrSharedData->m_sdlVideoDriverName,
+            physicalDeviceProps.m_deviceName,
+            physicalDeviceProps.m_driverName, physicalDeviceProps.getDriverVersionVariant(), physicalDeviceProps.getDriverVersionMajor(), physicalDeviceProps.getDriverVersionMinor(), physicalDeviceProps.getDriverVersionPatch(),
+            physicalDeviceProps.getApiVersionVariant(), physicalDeviceProps.getApiVersionMajor(), physicalDeviceProps.getApiVersionMinor(), physicalDeviceProps.getApiVersionPatch(),
+            vramStr,
+            VulkanContext::get().shaderCache()->usesPipelineBinaries() ? "Yes" : "No",
+            graphics::texturesystem::TextureManager::get().shaderResourceTable().modelName(),
+            antiLagMethodToString(VulkanContext::get().antiLagMethod()),
+            m_mrSharedData->m_numDrawcalls,
+            queryStats
+        );
+
+        auto fontSize = 14.0_f32;
+        auto rasterbatch = graphics::fonts::FontManager::get().findAndBatchMissingGlyphs(m_overlayFont, m_mrSharedData->m_fontAtlas, text, fontSize);
+
+        if (rasterbatch.isSome()) fontRasterBatches.emplace(std::move(rasterbatch.unwrap()));
+
+        m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds.emplace(ui::UiTextDrawCmd {
+            .ssPosition = Vector2f(4.0f, 18.0f),
+            .text = text,
+            .face = m_overlayFont,
+            .size = fontSize,
+            .color = Color::fromRgba32Float(1.0f, 1.0f, 1.0f, 1.0f)
+        });
+    }
+
+    m_mrSharedData->m_leafs.getPrimary().m_fontsCopyRegions.clear();
+    m_mrSharedData->m_leafs.getPrimary().m_fontsUploadPixelBuffer.clear();
+    m_mrSharedData->m_leafs.getPrimary().m_fontsNewImageIndices.clear();
+    if (fontRasterBatches.len() > 0) {
+        graphics::fonts::FontRasterInfo rasterInfo = {
+            .batches         = fontRasterBatches.asSlice(),
+            .atlas           = m_mrSharedData->m_fontAtlas,
+            .copyRegions     = m_mrSharedData->m_leafs.getPrimary().m_fontsCopyRegions,
+            .resultBuffer    = m_mrSharedData->m_leafs.getPrimary().m_fontsUploadPixelBuffer,
+            .newImageIndices = m_mrSharedData->m_leafs.getPrimary().m_fontsNewImageIndices
+        };
+        graphics::fonts::FontManager::get().rasterizeGlyphs(rasterInfo);
+    }
+
+    if (specialKeyPressed) {
+        m_waitForFrameStats = !m_waitForFrameStats;
+    }
 
     m_mrSharedData->m_leafs.getPrimary().m_hasValidFrame = true;
-    m_mrSharedData->m_leafs.getPrimary().injectOverlay = injectOverlay;
+    m_mrSharedData->m_leafs.getPrimary().m_captureStats = m_waitForFrameStats;
 
     m_frameIndex++;
 }

@@ -39,9 +39,6 @@ private:
 
     float fpsSmoothedDt = 0.0f;
     float fpsDtSmoothAlpha = 0.05f;
-
-    graphics::fonts::FontFace m_overlayFont;
-
 };
 
 }

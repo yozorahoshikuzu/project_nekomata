@@ -31,7 +31,6 @@ public:
     auto getLastRenderableModelMatrix(usize renderableSparseIndex) -> math::Matrix4x4f& { return m_lastRenderableModelMatrices[renderableSparseIndex]; }
 
 
-    rendering::DynamicBitmapFontAtlas m_fontAtlas;
 
     float displayMs = 0.0f;
 
@@ -42,9 +41,6 @@ public:
 
     texturesystem::Texture m_smaaAreaTexture = {};
     texturesystem::Texture m_smaaSearchTexture = {};
-
-    VulkanDescriptorSetLayout m_subpassInputAttachmentsDescriptorSetLayout = nullptr;
-    VulkanDescriptorPool m_subpassInputAttachmentsDescriptorPool = nullptr;
 
     VulkanPipelineLayout m_iblIrradianceCubeGeneratorLayout = nullptr;
     VulkanGraphicsPipeline m_iblIrradianceCubeGeneratorPipeline = nullptr;

@@ -200,8 +200,7 @@ auto FontManager::shapeText(FontFace font, rendering::DynamicBitmapFontAtlas& at
         }
 
         if (!atlas.hasGlyphParam(font, pixelSize, glyphId)) {
-            log::warn("Glyph {} (code {}) not found in atlas! font={} pixelSize={}", glyphId, (char)c, (u32)font.handleIndex, pixelSize);
-            continue;
+            panic("glyph {} (code {}) with font={}, pixelSize={} was not available in the atlas at time of rendering", glyphId, (char)c, (u32)font.handleIndex, pixelSize);
         }
 
         auto& param = atlas.getGlyphParams(font, pixelSize, glyphId);

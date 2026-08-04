@@ -20,9 +20,10 @@ auto UiSystem::create() -> Unique<UiSystem> {
     return inst;
 }
 
-auto UiSystem::buildUi(Vec<ui::UiDrawCmd>& drawcmds, math::Vector2f screenLogicalSize) -> void {
+auto UiSystem::buildUi(Vec<ui::UiDrawCmd>& drawcmds, Vec<graphics::fonts::FontRasterBatch>& dstFontRasterBatches,
+        graphics::rendering::DynamicBitmapFontAtlas& fontAtlas, math::Vector2f screenLogicalSize) -> void {
     m_lastFrameMouseHitRegions.clear();
-    m_uiRoot->buildDrawCmds(drawcmds, m_lastFrameMouseHitRegions, screenLogicalSize, math::Vector2f(0.0f), screenLogicalSize, m_pressedElement, m_hoveredElement, false, false);
+    m_uiRoot->buildDrawCmds(drawcmds, m_lastFrameMouseHitRegions, dstFontRasterBatches, fontAtlas, screenLogicalSize, math::Vector2f(0.0f), screenLogicalSize, m_pressedElement, m_hoveredElement, false, false);
 }
 
 auto UiSystem::testMouseDownHit(math::Vector2f pos) -> void {
