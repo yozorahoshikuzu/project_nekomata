@@ -90,8 +90,20 @@ struct UiNode {
         return *children.last();
     }
 
-    auto buildDrawCmds(Vec<UiDrawCmd>& list, Vec<UiMouseHitRegion>& dstHitregions, Vec<graphics::fonts::FontRasterBatch>& dstFontRasterBatches,
-        graphics::rendering::DynamicBitmapFontAtlas& fontAtlas, math::Vector2f screenLogicalSize, math::Vector2f origin, math::Vector2f bounds,
+    auto scanTextForUnrasterizedGlyphs(Vec<graphics::fonts::FontRasterBatch>& dstFontRasterBatches, graphics::rendering::DynamicBitmapFontAtlas& fontAtlas) -> void {
+        match(element,
+            [&](const UiText& text) {
+                auto batch = graphics::fonts::FontManager::get().findAndBatchMissingGlyphs(text.fontFace, fontAtlas, text.text, text.size);
+
+                if (batch.isSome()) dstFontRasterBatches.emplace(std::move(batch.unwrap()));
+            },
+            [](const auto&) {}
+        );
+
+        for (auto& child : children) child->scanTextForUnrasterizedGlyphs(dstFontRasterBatches, fontAtlas);
+    }
+
+    auto buildDrawCmds(Vec<UiDrawCmd>& list, Vec<UiMouseHitRegion>& dstHitregions, math::Vector2f screenLogicalSize, math::Vector2f origin, math::Vector2f bounds,
         UiNode* currentClicked, UiNode* currentHovered, bool styleParentIsClicked, bool styleParentIsHovered)
         -> math::Vector2f
     {
@@ -147,9 +159,6 @@ struct UiNode {
             },
             [&](const UiText& text) {
                 if (text.text.empty()) return;
-                auto batch = graphics::fonts::FontManager::get().findAndBatchMissingGlyphs(text.fontFace, fontAtlas, text.text, text.size);
-
-                if (batch.isSome()) dstFontRasterBatches.emplace(std::move(batch.unwrap()));
 
                 auto drawCmd = UiTextDrawCmd{
                     .ssPosition = position,
@@ -166,21 +175,21 @@ struct UiNode {
         match(childrenLayout,
             [&](const AbsoluteLayout& layout) {
                 for (auto& child : children)
-                    child->buildDrawCmds(list, dstHitregions, dstFontRasterBatches, fontAtlas, screenLogicalSize, position, extent, currentClicked, currentHovered, isPressed, isHovered);
+                    child->buildDrawCmds(list, dstHitregions, screenLogicalSize, position, extent, currentClicked, currentHovered, isPressed, isHovered);
             },
             [&](const StackLayout& layout) {
                 auto axisCursor = 0.0_f32;
                 switch (layout.direction) {
                 case StackDirection::VerticalTopToBottom: {
                     for (auto& child : children) {
-                        auto childExtent = child->buildDrawCmds(list, dstHitregions, dstFontRasterBatches, fontAtlas, screenLogicalSize, position + math::Vector2f(0.0f, axisCursor), extent, currentClicked, currentHovered, isPressed, isHovered);
+                        auto childExtent = child->buildDrawCmds(list, dstHitregions, screenLogicalSize, position + math::Vector2f(0.0f, axisCursor), extent, currentClicked, currentHovered, isPressed, isHovered);
                         axisCursor += childExtent.y() + layout.spacing;
                     }
                     break;
                 }
                 case StackDirection::HorizontalLeftToRight: {
                     for (auto& child : children) {
-                        auto childExtent = child->buildDrawCmds(list, dstHitregions, dstFontRasterBatches, fontAtlas, screenLogicalSize, position + math::Vector2f(axisCursor, 0.0f), extent, currentClicked, currentHovered, isPressed, isHovered);
+                        auto childExtent = child->buildDrawCmds(list, dstHitregions, screenLogicalSize, position + math::Vector2f(axisCursor, 0.0f), extent, currentClicked, currentHovered, isPressed, isHovered);
                         axisCursor += childExtent.x() + layout.spacing;
                     }
                 }

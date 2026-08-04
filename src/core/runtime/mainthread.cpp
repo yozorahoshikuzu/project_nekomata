@@ -159,6 +159,8 @@ auto MainThread::loop(float dt) -> void {
         m_mrSharedData->m_leafs.getPrimary().m_materialHeapSnapshotsBySize.emplace(size, std::move(vec));
     }
 
+    // ---- UI -------------------------------------------------------------------------------------------------------------------------------------------------
+
     m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds.clear();
     auto fontRasterBatches = Vec<graphics::fonts::FontRasterBatch>::create();
     ui::UiSystem::get().buildUi(m_mrSharedData->m_leafs.getPrimary().m_uiDrawCmds, fontRasterBatches, m_mrSharedData->m_fontAtlas, logicalSizeFloat);

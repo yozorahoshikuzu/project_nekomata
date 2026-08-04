@@ -23,7 +23,12 @@ auto UiSystem::create() -> Unique<UiSystem> {
 auto UiSystem::buildUi(Vec<ui::UiDrawCmd>& drawcmds, Vec<graphics::fonts::FontRasterBatch>& dstFontRasterBatches,
         graphics::rendering::DynamicBitmapFontAtlas& fontAtlas, math::Vector2f screenLogicalSize) -> void {
     m_lastFrameMouseHitRegions.clear();
-    m_uiRoot->buildDrawCmds(drawcmds, m_lastFrameMouseHitRegions, dstFontRasterBatches, fontAtlas, screenLogicalSize, math::Vector2f(0.0f), screenLogicalSize, m_pressedElement, m_hoveredElement, false, false);
+
+    // Scan all text in the UI tree for glyphs to be rasterized:
+    m_uiRoot->scanTextForUnrasterizedGlyphs(dstFontRasterBatches, fontAtlas);
+
+    // Build the UI draw commands:
+    m_uiRoot->buildDrawCmds(drawcmds, m_lastFrameMouseHitRegions, screenLogicalSize, math::Vector2f(0.0f), screenLogicalSize, m_pressedElement, m_hoveredElement, false, false);
 }
 
 auto UiSystem::testMouseDownHit(math::Vector2f pos) -> void {
